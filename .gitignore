@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Conda installer
+Miniconda3.exe
+
+#FFMPEG
+tools/ffmpeg
+
+# Environment or config files (customize if needed)
+.env
+*.env
+*.bak
+*.swp
+
+# Ignore large model directories
+LatentSync/
+LivePortrait/
+SadTalker/
+ditto-talkinghead/
+
+# Ignore Python virtual environments
+venv/
+env/
+.venv/
+.env/
+
+
+# Ignore cache or pip artifacts
+*.egg-info/
+dist/
+build/
+*.log
+
+# VS Code settings
+.vscode/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+#api keys
+groq_api_key.txt
+
