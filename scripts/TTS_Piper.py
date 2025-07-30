@@ -1,9 +1,10 @@
-# TTS_Piper.py
+# TTS_Piper.py - Enhanced with dynamic voice model switching
 """
-Streaming Text-to-Speech using Piper TTS with real-time playback.
+Streaming Text-to-Speech using Piper TTS with real-time playback and voice switching.
 
-The main function for external use is:
+The main functions for external use are:
     generate_and_stream_audio(text: str, output_filename: str = None) -> str
+    set_voice_model(voice_path: str) -> None
     
     bool use_cuda is set in config, can be changed live
 """
@@ -22,11 +23,12 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 # Initialize colorama for colored terminal output
 init(autoreset=True)
 
-# Voice model path (relative to project root) - UPDATED
-VOICE_PATH = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
+# Default voice model path - UPDATED
+DEFAULT_VOICE_PATH = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
 
-# Global voice instance for reuse
+# Global voice instance and path for reuse
 _voice_instance = None
+_current_voice_path = None
 _voice_load_lock = threading.Lock()
 
 def load_config():
@@ -43,24 +45,47 @@ def load_config():
         print(f"{Fore.RED}[TTS CONFIG] config.json not found or invalid. Using defaults.{Style.RESET_ALL}")
         return {'use_cuda': True, 'max_words': 50}
 
-def get_voice_instance():
-    """Get or create a voice instance (thread-safe singleton)."""
-    global _voice_instance
+def set_voice_model(voice_path: str):
+    """Set a new voice model path and reset the voice instance."""
+    global _voice_instance, _current_voice_path
     
-    if _voice_instance is None:
+    with _voice_load_lock:
+        if voice_path != _current_voice_path:
+            print(f"{Fore.CYAN}[TTS] Switching to voice model: {voice_path}{Style.RESET_ALL}")
+            _voice_instance = None  # Reset instance to force reload
+            _current_voice_path = voice_path
+
+def get_voice_instance(voice_path: str = None):
+    """Get or create a voice instance (thread-safe singleton)."""
+    global _voice_instance, _current_voice_path
+    
+    # Use provided path or default
+    if voice_path is None:
+        voice_path = _current_voice_path or DEFAULT_VOICE_PATH
+    
+    # Check if we need to load/reload the voice
+    if _voice_instance is None or _current_voice_path != voice_path:
         with _voice_load_lock:
-            if _voice_instance is None:  # Double-check pattern
+            # Double-check pattern
+            if _voice_instance is None or _current_voice_path != voice_path:
                 config = load_config()
                 use_cuda = config['use_cuda']
                 
-                print(f"{Fore.CYAN}[TTS] Loading Piper voice model...{Style.RESET_ALL}")
+                print(f"{Fore.CYAN}[TTS] Loading Piper voice model: {os.path.basename(voice_path)}...{Style.RESET_ALL}")
                 print(f"{Fore.CYAN}[TTS] Using CUDA: {use_cuda}{Style.RESET_ALL}")
                 
-                if not os.path.exists(VOICE_PATH):
-                    raise FileNotFoundError(f"Voice model not found at: {VOICE_PATH}")
+                if not os.path.exists(voice_path):
+                    print(f"{Fore.RED}[TTS] Voice model not found: {voice_path}{Style.RESET_ALL}")
+                    # Fallback to default voice
+                    if voice_path != DEFAULT_VOICE_PATH and os.path.exists(DEFAULT_VOICE_PATH):
+                        print(f"{Fore.YELLOW}[TTS] Falling back to default voice: {DEFAULT_VOICE_PATH}{Style.RESET_ALL}")
+                        voice_path = DEFAULT_VOICE_PATH
+                    else:
+                        raise FileNotFoundError(f"Voice model not found at: {voice_path}")
                 
                 t0 = time.time()
-                _voice_instance = PiperVoice.load(VOICE_PATH, use_cuda=use_cuda)
+                _voice_instance = PiperVoice.load(voice_path, use_cuda=use_cuda)
+                _current_voice_path = voice_path
                 load_time = time.time() - t0
                 print(f"{Fore.GREEN}[TTS] Voice model loaded in {load_time:.2f}s{Style.RESET_ALL}")
     
@@ -72,13 +97,26 @@ def ensure_temp_directory():
     os.makedirs(temp_dir, exist_ok=True)
     return temp_dir
 
-def generate_and_stream_audio(text: str, output_filename: str = None) -> str:
+def get_available_voices():
+    """Get list of available voice models from Piper_Voices directory."""
+    voices_dir = os.path.join(PROJECT_DIR, "Piper_Voices")
+    voices = []
+    
+    if os.path.exists(voices_dir):
+        for file in os.listdir(voices_dir):
+            if file.endswith('.onnx'):
+                voices.append(os.path.join(voices_dir, file))
+    
+    return voices
+
+def generate_and_stream_audio(text: str, output_filename: str = None, voice_path: str = None) -> str:
     """
     Generate and stream audio from text using Piper TTS.
     
     Args:
         text: Text to convert to speech
         output_filename: Optional custom filename (without extension)
+        voice_path: Optional specific voice model to use
     
     Returns:
         str: Path to the generated audio file
@@ -96,8 +134,8 @@ def generate_and_stream_audio(text: str, output_filename: str = None) -> str:
     output_path = os.path.join(temp_dir, f"{output_filename}.wav")
     
     try:
-        # Get voice instance
-        voice = get_voice_instance()
+        # Get voice instance (with optional specific voice)
+        voice = get_voice_instance(voice_path)
         
         # Configure synthesis
         syn_config = SynthesisConfig(
@@ -108,7 +146,8 @@ def generate_and_stream_audio(text: str, output_filename: str = None) -> str:
             normalize_audio=True
         )
         
-        print(f"{Fore.BLUE}[TTS] Starting streaming synthesis and playback...{Style.RESET_ALL}")
+        current_voice_name = os.path.basename(_current_voice_path or "unknown")
+        print(f"{Fore.BLUE}[TTS] Starting streaming synthesis and playback with {current_voice_name}...{Style.RESET_ALL}")
         print(f"{Fore.BLUE}[TTS] Text: {text[:50]}{'...' if len(text) > 50 else ''}{Style.RESET_ALL}")
         
         stream_start = time.time()
@@ -183,15 +222,24 @@ def test_tts_system():
         
         print(f"{Fore.CYAN}[TTS TEST] Testing TTS system...{Style.RESET_ALL}")
         
-        # Check if voice model exists first
-        if not os.path.exists(VOICE_PATH):
-            print(f"{Fore.RED}[TTS TEST] Voice model not found at: {VOICE_PATH}{Style.RESET_ALL}")
+        # Check available voices
+        available_voices = get_available_voices()
+        if not available_voices:
+            print(f"{Fore.RED}[TTS TEST] No voice models found in Piper_Voices directory{Style.RESET_ALL}")
+            return False
+        
+        print(f"{Fore.GREEN}[TTS TEST] Found {len(available_voices)} voice model(s){Style.RESET_ALL}")
+        
+        # Test with default voice
+        default_voice = available_voices[0] if available_voices else DEFAULT_VOICE_PATH
+        if not os.path.exists(default_voice):
+            print(f"{Fore.RED}[TTS TEST] Default voice model not found at: {default_voice}{Style.RESET_ALL}")
             return False
         
         # Try to load voice instance
         try:
-            voice = get_voice_instance()
-            print(f"{Fore.GREEN}[TTS TEST] Voice model loaded successfully.{Style.RESET_ALL}")
+            voice = get_voice_instance(default_voice)
+            print(f"{Fore.GREEN}[TTS TEST] Voice model loaded successfully: {os.path.basename(default_voice)}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[TTS TEST] Failed to load voice model: {e}{Style.RESET_ALL}")
             return False
@@ -207,10 +255,22 @@ def test_tts_system():
         print(f"{Fore.RED}[TTS TEST] Test failed with error: {e}{Style.RESET_ALL}")
         return False
 
+def list_available_voices():
+    """List all available voice models."""
+    voices = get_available_voices()
+    print(f"{Fore.CYAN}[TTS] Available voice models:{Style.RESET_ALL}")
+    for i, voice_path in enumerate(voices, 1):
+        voice_name = os.path.basename(voice_path).replace('.onnx', '')
+        print(f"{Fore.YELLOW}  {i}. {voice_name}{Style.RESET_ALL}")
+    return voices
+
 if __name__ == "__main__":
     print(f"{Fore.GREEN}{'=' * 50}")
-    print(f"{Fore.YELLOW}Piper TTS Streaming Test")
+    print(f"{Fore.YELLOW}Enhanced Piper TTS with Voice Switching")
     print(f"{Fore.GREEN}{'=' * 50}{Style.RESET_ALL}")
+    
+    # List available voices
+    available_voices = list_available_voices()
     
     # Test the system
     success = test_tts_system()
@@ -218,19 +278,48 @@ if __name__ == "__main__":
     if success:
         print(f"\n{Fore.GREEN}TTS system is working correctly!{Style.RESET_ALL}")
         
-        # Interactive test
-        print(f"\n{Fore.CYAN}Interactive TTS Test (Ctrl+C to exit):{Style.RESET_ALL}")
+        # Interactive test with voice selection
+        print(f"\n{Fore.CYAN}Interactive TTS Test with Voice Selection (Ctrl+C to exit):{Style.RESET_ALL}")
+        current_voice_idx = 0
+        
         while True:
             try:
-                user_input = input(f"\n{Fore.CYAN}Enter text to convert to speech: {Style.RESET_ALL}")
+                print(f"\n{Fore.MAGENTA}Current voice: {os.path.basename(available_voices[current_voice_idx]).replace('.onnx', '')}{Style.RESET_ALL}")
+                print(f"{Fore.CYAN}Commands: 'v' to change voice, or enter text to convert to speech{Style.RESET_ALL}")
+                
+                user_input = input(f"\n{Fore.CYAN}Enter text or command: {Style.RESET_ALL}")
+                
                 if not user_input.strip():
                     continue
                 
-                result = generate_and_stream_audio(user_input)
-                if result:
-                    print(f"{Fore.GREEN}Audio generated and played successfully!{Style.RESET_ALL}")
+                if user_input.lower() == 'v':
+                    # Voice selection
+                    print(f"\n{Fore.YELLOW}Available voices:{Style.RESET_ALL}")
+                    for i, voice_path in enumerate(available_voices):
+                        voice_name = os.path.basename(voice_path).replace('.onnx', '')
+                        marker = " <-- Current" if i == current_voice_idx else ""
+                        print(f"  {i + 1}. {voice_name}{marker}")
+                    
+                    try:
+                        choice = input(f"\n{Fore.CYAN}Select voice (1-{len(available_voices)}): {Style.RESET_ALL}")
+                        choice_idx = int(choice) - 1
+                        if 0 <= choice_idx < len(available_voices):
+                            current_voice_idx = choice_idx
+                            selected_voice = available_voices[current_voice_idx]
+                            set_voice_model(selected_voice)
+                            print(f"{Fore.GREEN}Voice changed to: {os.path.basename(selected_voice).replace('.onnx', '')}{Style.RESET_ALL}")
+                        else:
+                            print(f"{Fore.RED}Invalid choice. Please select 1-{len(available_voices)}{Style.RESET_ALL}")
+                    except ValueError:
+                        print(f"{Fore.RED}Invalid input. Please enter a number.{Style.RESET_ALL}")
                 else:
-                    print(f"{Fore.RED}Failed to generate audio.{Style.RESET_ALL}")
+                    # TTS generation
+                    selected_voice = available_voices[current_voice_idx]
+                    result = generate_and_stream_audio(user_input, voice_path=selected_voice)
+                    if result:
+                        print(f"{Fore.GREEN}Audio generated and played successfully!{Style.RESET_ALL}")
+                    else:
+                        print(f"{Fore.RED}Failed to generate audio.{Style.RESET_ALL}")
                     
             except KeyboardInterrupt:
                 print(f"\n{Fore.YELLOW}Goodbye!{Style.RESET_ALL}")

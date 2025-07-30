@@ -1,5 +1,5 @@
 {
   "useRAG": false,
-  "useCuda": true,
+  "useCuda": false,
   "maxWords": 50
 }
