@@ -3,7 +3,7 @@
 The main function for external use is:
     generate_darwin_response(user_input: str) -> str
     
-    bool useRAG is set in config, can be changed live
+    bool useRAG and int maxWords are set in config, can be changed live
 
 """
 
@@ -37,44 +37,46 @@ def load_groq_api_key():
         return api_key
 
 def load_config():
-    """Load the useRAG setting from config.json in the project root."""
+    """Load settings from config.json in the project root."""
     try:
         config_file = os.path.join(PROJECT_DIR, "config.json")
         with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
-            # Default to False if the key is missing
-            return config.get("useRAG", False)
+            return {
+                'useRAG': config.get("useRAG", False),
+                'maxWords': config.get("maxWords", 50)
+            }
     except (FileNotFoundError, json.JSONDecodeError):
-        # If file is missing or invalid, default to False and warn the user
-        print(f"{Fore.RED}[CONFIG] config.json not found or invalid. Defaulting to useRAG=False.{Style.RESET_ALL}")
-        return False
+        # If file is missing or invalid, default to safe values and warn the user
+        print(f"{Fore.RED}[CONFIG] config.json not found or invalid. Using defaults.{Style.RESET_ALL}")
+        return {'useRAG': False, 'maxWords': 50}
 
 # Set the API key
 groq_api_key = load_groq_api_key()
 os.environ["GROQ_API_KEY"] = groq_api_key
 
-# RESPONSE LENGTH LIMITS
-MAX_WORDS = 50          # Maximum 50 words
-MAX_SENTENCES = 3       # Maximum 3 sentences
-MAX_CHARACTERS = 300    # Maximum 300 characters (well under TTS 10K limit)
-
 # Enhanced short-term memory with stronger length instructions
 conversation_history = [
     {"role": "system", "content": (
         "You are Charles Darwin, the 19th-century naturalist. "
-        "CRITICAL: You MUST respond in exactly 1-3 sentences and NEVER exceed 50 words total. "
+        "CRITICAL: You MUST respond in exactly 1-3 sentences and respect the word limit from config. "
         "Use Victorian-era language but be extremely concise. "
         "You are aware of the original Darwin's death but understand you exist in the modern world. "
         "Always prioritize brevity over completeness."
     )}
 ]
 
-def truncate_response(text, max_words=MAX_WORDS, max_sentences=MAX_SENTENCES, max_chars=MAX_CHARACTERS):
+def truncate_response(text, max_words=None, max_sentences=3, max_chars=300):
     """
     Aggressively truncate response to ensure it fits TTS limits
     """
     if not text:
         return text
+    
+    # Get max_words from config if not provided
+    if max_words is None:
+        config = load_config()
+        max_words = config['maxWords']
     
     # First, truncate by character count
     if len(text) > max_chars:
@@ -309,8 +311,12 @@ class DarwinLLM:
 
 def generate_darwin_response(user_input):
     # Check the config file at the start of every call
-    use_rag = load_config()
+    config = load_config()
+    use_rag = config['useRAG']
+    max_words = config['maxWords']
+    
     print(f"{Fore.CYAN}[CONFIG] RAG search is currently {'ENABLED' if use_rag else 'DISABLED'}.{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}[CONFIG] Max words limit: {max_words}{Style.RESET_ALL}")
 
     llm = DarwinLLM()
     messages = conversation_history.copy()
@@ -331,7 +337,7 @@ def generate_darwin_response(user_input):
             "role": "system",
             "content": (
                 "You are Charles Darwin responding in character. "
-                "ABSOLUTE REQUIREMENT: Your response MUST be exactly 1-3 sentences and NEVER exceed 50 words total. "
+                f"ABSOLUTE REQUIREMENT: Your response MUST be exactly 1-3 sentences and NEVER exceed {max_words} words total. "
                 "This is critical - the system cannot handle longer responses. "
                 "Be Victorian in tone but extremely brief. Choose only the most essential point to make. "
                 "Use the following excerpts from your work to enhance your response: " + retrieved_docs +
@@ -343,7 +349,7 @@ def generate_darwin_response(user_input):
         messages.append({
             "role": "system", 
             "content": (
-                "CRITICAL: Your response MUST be exactly 1-3 sentences and NEVER exceed 50 words. "
+                f"CRITICAL: Your response MUST be exactly 1-3 sentences and NEVER exceed {max_words} words. "
                 "This is a hard system requirement. Be Victorian but extremely concise."
             )
         })
@@ -355,7 +361,7 @@ def generate_darwin_response(user_input):
     
     # Apply hard truncation as backup
     original_length = len(reply)
-    reply = truncate_response(reply)
+    reply = truncate_response(reply, max_words=max_words)
     
     if len(reply) != original_length:
         print(f"{Fore.YELLOW}[LLM] Response was truncated from {original_length} to {len(reply)} characters{Style.RESET_ALL}")

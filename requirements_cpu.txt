@@ -1,0 +1,25 @@
+# Requirements for LLM, UI, and TTS (CPU version)
+
+# === Core LangChain ecosystem ===
+langchain
+langchain-core
+langchain-community
+langchain-huggingface
+langchain-groq
+
+# === Embeddings and vector stores ===
+faiss-cpu
+numpy
+tqdm
+
+# === UI framework ===
+nicegui
+colorama
+
+# === Text-to-Speech (Piper) ===
+piper-tts
+simpleaudio
+
+# === ONNX runtime (CPU) ===
+# Default: CPU version only. For GPU support, see requirements-gpu.txt
+onnxruntime
