@@ -125,7 +125,7 @@ def check_dependencies():
     # Check if config files exist in project directory
     config_path = os.path.join(PROJECT_DIR, 'config.json')
     api_key_path = os.path.join(PROJECT_DIR, 'groq_api_key.txt')
-    voice_model_path = os.path.join(PROJECT_DIR, 'en_GB-semaine-medium.onnx')
+    voice_model_path = os.path.join(PROJECT_DIR,'Piper_Voices', 'en_GB-semaine-medium.onnx')
 
     if not os.path.exists(config_path):
         print(f"{Fore.RED}[ERROR] Config file not found at: {config_path}{Style.RESET_ALL}")

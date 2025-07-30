@@ -22,8 +22,8 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 # Initialize colorama for colored terminal output
 init(autoreset=True)
 
-# Voice model path (relative to project root)
-VOICE_PATH = os.path.join(PROJECT_DIR, "en_GB-semaine-medium.onnx")
+# Voice model path (relative to project root) - UPDATED
+VOICE_PATH = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
 
 # Global voice instance for reuse
 _voice_instance = None
