@@ -1,0 +1,25 @@
+# Requirements for LLM, UI, and TTS (CUDA version)
+
+# === Core LangChain ecosystem ===
+langchain
+langchain-core
+langchain-community
+langchain-huggingface
+langchain-groq
+
+# === Embeddings and vector stores ===
+faiss-cpu
+numpy
+tqdm
+
+# === UI framework ===
+nicegui
+colorama
+
+# === Text-to-Speech (Piper) ===
+piper-tts
+simpleaudio
+
+# === ONNX runtime (GPU build) ===
+# Use this version only if you have CUDA installed and configured.
+onnxruntime-gpu
