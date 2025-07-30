@@ -24,7 +24,10 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 init(autoreset=True)
 
 # Default voice model path - UPDATED
-DEFAULT_VOICE_PATH = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
+DEFAULT_VOICE_PATH = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-northern_english_male-medium")
+
+#en_GB-northern_english_male-medium
+#en_GB-semaine-medium.onnx
 
 # Global voice instance and path for reuse
 _voice_instance = None
