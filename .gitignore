@@ -6,6 +6,9 @@ __pycache__/
 # Conda installer
 Miniconda3.exe
 
+#Temp files
+tempstream/
+
 #FFMPEG
 tools/ffmpeg
 
