@@ -23,3 +23,7 @@ simpleaudio
 # === ONNX runtime (GPU build) ===
 # Use this version only if you have CUDA installed and configured.
 onnxruntime-gpu
+
+docker>=6.0.0
+asyncio
+pathlib
