@@ -23,7 +23,8 @@ def slow_down_audio(input_file, output_file, speed_ratio):
     print(f"Saved slowed audio to {output_file}")
 
 # Use absolute paths to be safe:
-input_path = r"C:\Users\Jason\Desktop\Important\Projects\AvatarResurrection\scripts\tools"
-output_path = r"C:\Users\Jason\Desktop\Important\Projects\AvatarResurrection\scripts\tools"
+input_path = r"C:\Users\Jason\Desktop\Important\Projects\AvatarResurrection\scripts\tools\t1.wav"
+output_path = r"C:\Users\Jason\Desktop\Important\Projects\AvatarResurrection\scripts\tools\t1s.wav"
 
-slow_down_audio("t1.wav", "t1s.wav", 0.8)  # 0.5 = 50% speed
+slow_down_audio(input_path, output_path, 0.80)
+

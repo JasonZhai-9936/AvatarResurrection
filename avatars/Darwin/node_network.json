@@ -1,0 +1,35 @@
+{
+  "nodes": {
+    "node_1": {
+      "id": "node_1",
+      "name": "Node 1",
+      "grid_x": 4,
+      "grid_y": 1,
+      "image_path": "c:\\Users\\Jason\\Documents\\DarwinChatbot\\avatars\\darwin\\node_node_1_node_main.png",
+      "connections": [
+        "node_2"
+      ],
+      "prompt": ""
+    },
+    "node_2": {
+      "id": "node_2",
+      "name": "Node 2",
+      "grid_x": 5,
+      "grid_y": 2,
+      "image_path": "c:\\Users\\Jason\\Documents\\DarwinChatbot\\avatars\\darwin\\node_node_2_node_mansion.png",
+      "connections": [
+        "node_1"
+      ],
+      "prompt": ""
+    }
+  },
+  "connections": [
+    [
+      "node_1",
+      "node_2"
+    ]
+  ],
+  "grid_size": 9,
+  "avatar_name": "Darwin",
+  "last_updated": "2025-06-06T10:54:46.441129"
+}

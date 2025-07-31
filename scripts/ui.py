@@ -1,4 +1,4 @@
-# ui.py - Simplified UI with working chat messages
+# enhanced_ui.py - UI with enhanced video player (no controls, autoplay)
 
 from nicegui import ui
 import os
@@ -79,9 +79,9 @@ def settings_page():
             ui.button('Apply Settings', on_click=apply_voice_settings).classes('w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-lg mt-6')
 
 def build_ui(trigger_response_callback, voice_change_callback=None):
-    """Build the UI with working chat interface."""
+    """Build the UI with enhanced no-controls video player."""
     
-    # Minimal CSS that doesn't interfere with NiceGUI
+    # Enhanced CSS with video styling
     ui.add_head_html('''
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -104,6 +104,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
             background: black;
             border-radius: 12px;
             overflow: hidden;
+            position: relative;
         }
         
         .chat-section {
@@ -174,6 +175,54 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
             width: fit-content;
         }
         
+        /* Enhanced video styling - no controls, no interaction */
+        #mainVideo {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            pointer-events: none !important;
+            user-select: none !important;
+            outline: none !important;
+            border: none !important;
+            background: black;
+        }
+        
+        #mainVideo::-webkit-media-controls {
+            display: none !important;
+        }
+        
+        #mainVideo::-webkit-media-controls-panel {
+            display: none !important;
+        }
+        
+        #mainVideo::-webkit-media-controls-play-button {
+            display: none !important;
+        }
+        
+        #mainVideo::-webkit-media-controls-timeline {
+            display: none !important;
+        }
+        
+        #mainVideo::-webkit-media-controls-current-time-display {
+            display: none !important;
+        }
+        
+        #mainVideo::-webkit-media-controls-time-remaining-display {
+            display: none !important;
+        }
+        
+        #mainVideo::-webkit-media-controls-mute-button {
+            display: none !important;
+        }
+        
+        #mainVideo::-webkit-media-controls-volume-slider {
+            display: none !important;
+        }
+        
+        #mainVideo::-webkit-media-controls-fullscreen-button {
+            display: none !important;
+        }
+        
         /* Input text styling - make text black */
         .q-field__native, .q-field__input, textarea {
             color: #000000 !important;
@@ -220,22 +269,34 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
             cursor: pointer;
             border: none;
         }
+        
+        /* Disable text selection on video area */
+        .video-section {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
     </style>
     ''')
     
     with ui.element('div').classes('main-layout'):
         
-        # LEFT SIDE - Video Player
+        # LEFT SIDE - Enhanced Video Player (No Controls)
         with ui.element('div').classes('video-section'):
             ui.html('''
-            <video id="mainVideo" autoplay playsinline controls 
-                style="width: 100%; height: 100%; object-fit: contain;">
+            <video id="mainVideo" 
+                   autoplay 
+                   muted="false"
+                   playsinline 
+                   disablepictureinpicture
+                   style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">
                 <source src="" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
             ''')
 
-        # RIGHT SIDE - Chat Interface
+        # RIGHT SIDE - Chat Interface (unchanged)
         with ui.element('div').classes('chat-section'):
             
             # Chat Messages Area
@@ -269,9 +330,10 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
                 
                 ui.button(icon='settings', on_click=lambda: ui.navigate.to('/settings')).props('flat').style('color: white;')
 
-    # Simple JavaScript
+    # Enhanced JavaScript for video control
     ui.add_body_html('''
     <script>
+        // Global video control functions
         window.loadVideo = function(videoId, source) {
             const video = document.getElementById(videoId);
             if (video && source) {
@@ -279,6 +341,48 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
                 video.load();
             }
         };
+        
+        // Enhanced video setup
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('mainVideo');
+            if (video) {
+                // Comprehensive control disabling
+                video.removeAttribute('controls');
+                video.setAttribute('autoplay', 'true');
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('disablepictureinpicture', 'true');
+                
+                // Disable all possible interaction methods
+                video.addEventListener('click', function(e) { e.preventDefault(); });
+                video.addEventListener('dblclick', function(e) { e.preventDefault(); });
+                video.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+                video.addEventListener('keydown', function(e) { e.preventDefault(); });
+                video.addEventListener('keyup', function(e) { e.preventDefault(); });
+                video.addEventListener('keypress', function(e) { e.preventDefault(); });
+                
+                // Prevent focus
+                video.addEventListener('focus', function() { this.blur(); });
+                
+                console.log('Video player fully configured: no controls, autoplay enabled');
+            }
+        });
+        
+        // Global keyboard event prevention for video control
+        document.addEventListener('keydown', function(e) {
+            // Prevent spacebar, arrow keys, and other media keys from controlling video
+            const preventKeys = ['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter'];
+            if (preventKeys.includes(e.code)) {
+                const video = document.getElementById('mainVideo');
+                if (video && document.activeElement !== document.querySelector('textarea') && 
+                    document.activeElement !== document.querySelector('input')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }
+        }, true);
+        
+        console.log('Global video control prevention enabled');
     </script>
     ''')
 
