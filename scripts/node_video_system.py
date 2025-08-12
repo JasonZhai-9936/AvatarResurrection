@@ -67,9 +67,10 @@ class NodeVideoSystem:
         """Get all available video files for a specific transition"""
         # Map node IDs to directory names
         node_mapping = {
-            "node_1": "main",
-            "node_2": "standingMansion",
-        }
+        "node_1": "main",
+        "node_2": "newspaper",
+        "node_3": "phone"       
+    }
         
         from_name = node_mapping.get(from_node, from_node.replace("node_", ""))
         to_name = node_mapping.get(to_node, to_node.replace("node_", ""))

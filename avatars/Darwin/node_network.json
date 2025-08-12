@@ -2,34 +2,101 @@
   "nodes": {
     "node_1": {
       "id": "node_1",
-      "name": "Node 1",
+      "name": "Main",
+      "type": "base_node",
       "grid_x": 4,
       "grid_y": 1,
       "image_path": "c:\\Users\\Jason\\Documents\\DarwinChatbot\\avatars\\darwin\\node_node_1_node_main.png",
       "connections": [
-        "node_2"
+        "node_1",
+        "node_2", 
+        "node_3"
       ],
-      "prompt": ""
+      "prompt": "Darwin sitting at his desk",
+      "can_talk": true,
+      "talking_animation": "main2main",
+      "video_directories": {
+        "loops": ["main2main", "mainSnuff"],
+        "transitions": {
+          "node_2": "main2newspaper",
+          "node_3": "main2phone"
+        }
+      }
     },
     "node_2": {
-      "id": "node_2",
-      "name": "Node 2",
+      "id": "node_2", 
+      "name": "Newspaper",
+      "type": "activity_node",
+      "grid_x": 3,
+      "grid_y": 2,
+      "image_path": "c:\\Users\\Jason\\Documents\\DarwinChatbot\\avatars\\darwin\\node_node_2_node_newspaper.png",
+      "connections": [
+        "node_1",
+        "node_2"
+      ],
+      "prompt": "Darwin reading newspaper at desk",
+      "can_talk": false,
+      "talking_node": "node_1",
+      "talking_animation": "main2main",
+      "video_directories": {
+        "loops": ["newspaper2newspaper"],
+        "transitions": {
+          "node_1": "newspaper2main"
+        }
+      }
+    },
+    "node_3": {
+      "id": "node_3",
+      "name": "Phone", 
+      "type": "activity_node",
       "grid_x": 5,
       "grid_y": 2,
-      "image_path": "c:\\Users\\Jason\\Documents\\DarwinChatbot\\avatars\\darwin\\node_node_2_node_mansion.png",
+      "image_path": "c:\\Users\\Jason\\Documents\\DarwinChatbot\\avatars\\darwin\\node_node_3_node_phone.png",
       "connections": [
-        "node_1"
+        "node_1",
+        "node_3"
       ],
-      "prompt": ""
+      "prompt": "Darwin using phone at desk",
+      "can_talk": false,
+      "talking_node": "node_1", 
+      "talking_animation": "main2main",
+      "video_directories": {
+        "loops": ["phone2phone"],
+        "transitions": {
+          "node_1": "phone2main"
+        }
+      }
     }
   },
   "connections": [
-    [
-      "node_1",
-      "node_2"
-    ]
+    ["node_1", "node_2"],
+    ["node_1", "node_3"],
+    ["node_2", "node_1"],
+    ["node_3", "node_1"]
   ],
   "grid_size": 9,
   "avatar_name": "Darwin",
-  "last_updated": "2025-06-06T10:54:46.441129"
+  "last_updated": "2025-08-12T00:00:00.000000",
+  "system_config": {
+    "node_mapping": {
+      "node_1": "main",
+      "node_2": "newspaper", 
+      "node_3": "phone"
+    },
+    "transition_probabilities": {
+      "node_1": {
+        "node_1": 0.6,
+        "node_2": 0.2,
+        "node_3": 0.2
+      },
+      "node_2": {
+        "node_1": 0.3,
+        "node_2": 0.7
+      },
+      "node_3": {
+        "node_1": 0.3,
+        "node_3": 0.7
+      }
+    }
+  }
 }
