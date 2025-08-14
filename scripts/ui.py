@@ -1,4 +1,4 @@
-# enhanced_ui.py - UI with enhanced video player (no controls, autoplay)
+# ui.py - Enhanced UI with integrated video management
 
 from nicegui import ui
 import os
@@ -35,6 +35,7 @@ def get_available_voices():
     if os.path.exists(voices_dir):
         for file in os.listdir(voices_dir):
             if file.endswith('.onnx'):
+                # Remove .onnx extension for display
                 voice_name = file.replace('.onnx', '')
                 voices.append(voice_name)
     
@@ -42,348 +43,317 @@ def get_available_voices():
 
 @ui.page('/settings')
 def settings_page():
-    """Modern settings page for voice configuration."""
+    """Settings page for configuration options."""
+    config = load_config()
     
+    # Page styling
     ui.add_head_html('''
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             margin: 0;
             padding: 0;
         }
+        .settings-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
     </style>
     ''')
     
-    with ui.column().classes('w-full max-w-3xl mx-auto p-8 gap-6').style('min-height: 100vh;'):
-        with ui.row().classes('w-full items-center justify-between mb-6'):
-            ui.label('Voice Settings').classes('text-4xl font-bold text-white')
-            ui.button('← Back to Chat', on_click=lambda: ui.navigate.to('/')).classes('bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg')
+    with ui.column().classes('w-full max-w-2xl mx-auto p-8 gap-6'):
+        # Header
+        with ui.row().classes('w-full items-center justify-between'):
+            ui.label('Settings').classes('text-3xl font-bold text-white')
+            ui.button('← Back to Chat', on_click=lambda: ui.navigate.to('/')).classes('bg-blue-600 text-white px-4 py-2 rounded-lg')
         
-        with ui.card().classes('p-8 w-full'):
-            ui.label('Choose Your Voice').classes('text-2xl font-semibold mb-6')
+        # Settings Card
+        with ui.card().classes('settings-card p-6 w-full'):
+            ui.label('Configuration Options').classes('text-xl font-semibold mb-4')
             
+            # RAG Setting
+            with ui.row().classes('w-full items-center justify-between mb-4'):
+                with ui.column():
+                    ui.label('Enable RAG Search').classes('font-medium')
+                    ui.label('Use Retrieval-Augmented Generation for enhanced responses').classes('text-sm text-gray-600')
+                rag_switch = ui.switch(value=config.get('useRAG', False))
+            
+            ui.separator()
+            
+            # CUDA Setting
+            with ui.row().classes('w-full items-center justify-between mb-4'):
+                with ui.column():
+                    ui.label('Use CUDA Acceleration').classes('font-medium')
+                    ui.label('Enable GPU acceleration for faster TTS processing').classes('text-sm text-gray-600')
+                cuda_switch = ui.switch(value=config.get('useCuda', True))
+            
+            ui.separator()
+            
+            # Max Words Setting
+            with ui.column().classes('w-full mb-4'):
+                ui.label('Maximum Words per Response').classes('font-medium mb-2')
+                max_words_slider = ui.slider(
+                    min=10, max=200, step=10, value=config.get('maxWords', 50)
+                ).props('label-always')
+                ui.label('Controls the length of Darwin\'s responses').classes('text-sm text-gray-600')
+            
+            ui.separator()
+            
+            # Save Button
+            def save_settings():
+                new_config = {
+                    'useRAG': rag_switch.value,
+                    'useCuda': cuda_switch.value,
+                    'maxWords': int(max_words_slider.value)
+                }
+                
+                if save_config(new_config):
+                    ui.notify('Settings saved successfully!', type='positive')
+                else:
+                    ui.notify('Failed to save settings', type='negative')
+            
+            ui.button('Save Settings', on_click=save_settings).classes('w-full bg-green-600 text-white py-3 rounded-lg mt-4')
+
+def build_ui(trigger_response_callback, voice_change_callback=None):
+    """Build the main UI with enhanced video integration."""
+    
+    # Global reference to video manager (will be set by main.py)
+    video_manager = None
+    
+    def set_video_manager(manager):
+        nonlocal video_manager
+        video_manager = manager
+    
+    with ui.column().classes('w-full h-screen gap-0'):
+        # === MAIN CONTENT ROW ===
+        with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4'):
+            
+            # === LEFT VIDEO PLAYER (MAIN AVATAR) ===
+            with ui.column().classes('items-start shrink-0').style('width: 35%; height: 100%;'):
+                video_container = ui.card().classes('p-0 overflow-hidden').style('width: 100%; aspect-ratio: 2/3; background: black;')
+                with video_container:
+                    ui.html('''
+                    <div id="main-video-container" style="width: 100%; height: 100%; position: relative;">
+                        <video id="mainVideo" autoplay muted playsinline 
+                            style="width: 100%; height: 100%; object-fit: contain;"
+                            onended="handleVideoEnded()">
+                            <source src="" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        <div id="video-status" style="position: absolute; top: 10px; left: 10px; 
+                             background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; 
+                             border-radius: 5px; font-size: 12px; z-index: 10;">
+                            Initializing...
+                        </div>
+                    </div>
+                    ''').classes('w-full h-full')
+
+            # === CENTER PANEL ===
+            with ui.column().classes('items-center gap-4 h-full').style('width: 45%;'):
+                # === BACKGROUND VIDEO PLAYER ===
+                background_container = ui.card().classes('p-0 overflow-hidden').style('width: 100%; aspect-ratio: 16/9; background: black;')
+                with background_container:
+                    ui.html('''
+                    <div id="background-video-container" style="width: 100%; height: 100%; position: relative;">
+                        <video id="backgroundVideo" autoplay muted loop
+                            style="width: 100%; height: 100%; object-fit: cover;">
+                            <source src="" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    ''').classes('w-full h-full')
+
+                # === CHAT LOG (SCROLLABLE) ===
+                chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-auto rounded-lg').style('background: #f0f0f0;')
+                with chat_log:
+                    ui.label('Ready to chat with Darwin').classes('text-lg text-center w-full').style('color: #6b7280;')
+
+                # === TEXT INPUT & BUTTON ===
+                with ui.column().classes('items-center gap-4 w-full'):
+                    prompt_input = ui.textarea(
+                        label='Your question for Darwin', 
+                        placeholder='Ask Charles Darwin anything...'
+                    ).props('outlined').classes('w-full').style('min-height: 120px; font-size: 16px;')
+
+                    def submit_prompt():
+                        user_text = prompt_input.value
+                        if user_text and user_text.strip():
+                            # Notify video manager about user input
+                            if video_manager:
+                                video_manager.prepare_for_user_input()
+                            
+                            # Trigger the main response callback
+                            trigger_response_callback(user_text)
+                            prompt_input.value = ""
+                        else:
+                            ui.notify("Please enter a question first", color="warning")
+
+                    ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full text-lg py-3 px-6 rounded-lg').style('background-color: #2563eb; color: white;')
+
+            # === RIGHT SIDEBAR ===
+            with ui.column().classes('h-full bg-gray-100 border-l border-gray-300').style('width: 250px;'):
+                # Sidebar Header
+                with ui.row().classes('w-full items-center justify-between p-3 border-b border-gray-300'):
+                    ui.label('Menu').classes('font-semibold text-gray-700')
+                    ui.button(icon='menu', on_click=lambda: ui.notify('Sidebar toggle placeholder')).props('flat').classes('text-gray-600')
+
+                # Sidebar Content
+                with ui.column().classes('w-full p-3 gap-3'):
+                    # Main Page Button
+                    ui.button('🏠 Main Page', on_click=lambda: ui.navigate.to('/')).classes('w-full justify-start bg-blue-100 text-blue-800 py-2 px-3 rounded')
+                    
+                    # Settings Button
+                    ui.button('⚙️ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start bg-gray-200 text-gray-700 py-2 px-3 rounded')
+                    
+                    # Video Controls Section
+                    ui.separator()
+                    ui.label('Video Controls').classes('font-medium text-gray-600 text-sm mt-4')
+                    
+                    # Video status display
+                    video_status_label = ui.label('Status: Initializing...').classes('text-xs text-gray-500')
+                    state_label = ui.label('State: Unknown').classes('text-xs text-gray-500')
+                    mode_label = ui.label('Mode: Unknown').classes('text-xs text-gray-500')
+                    
+                    # Spacer
+                    ui.space()
+                    
+                    # Quick Info
+                    ui.label('Quick Info').classes('font-medium text-gray-600 text-sm mt-4')
+                    config = load_config()
+                    ui.label(f"RAG: {'On' if config.get('useRAG') else 'Off'}").classes('text-xs text-gray-500')
+                    ui.label(f"Max Words: {config.get('maxWords', 50)}").classes('text-xs text-gray-500')
+                    ui.label(f"CUDA: {'On' if config.get('useCuda') else 'Off'}").classes('text-xs text-gray-500')
+
+        # === VOICE SELECTION SECTION ===
+        ui.separator().classes('w-full')
+        
+        with ui.row().classes('w-full p-4 bg-gray-50 border-t border-gray-200 items-center justify-center gap-8'):
+            ui.label('Voice Selection').classes('text-lg font-semibold text-gray-700')
+            
+            # Get available voices
             available_voices = get_available_voices()
             current_voice = available_voices[0] if available_voices else 'en_GB-semaine-medium'
             
             voice_dropdown = ui.select(
                 options=available_voices,
                 value=current_voice,
-                label='Voice Model'
-            ).classes('w-full mb-6')
+                label='Choose Voice Model'
+            ).classes('min-w-64')
             
-            def apply_voice_settings():
+            def on_voice_change():
                 selected_voice = voice_dropdown.value
-                ui.notify(f'Voice set to: {selected_voice}', type='positive')
+                ui.notify(f'Voice changed to: {selected_voice}', type='info')
+                if voice_change_callback:
+                    voice_change_callback(selected_voice)
             
-            ui.button('Apply Settings', on_click=apply_voice_settings).classes('w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-lg mt-6')
-
-def build_ui(trigger_response_callback, voice_change_callback=None):
-    """Build the UI with enhanced no-controls video player."""
-    
-    # Enhanced CSS with video styling
-    ui.add_head_html('''
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 0;
-        }
-        
-        .main-layout {
-            display: flex;
-            height: 100vh;
-            padding: 20px;
-            gap: 20px;
-            box-sizing: border-box;
-        }
-        
-        .video-section {
-            flex: 1;
-            background: black;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .chat-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        
-        .chat-messages {
-            flex: 1;
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            overflow-y: auto;
-            min-height: 400px;
-        }
-        
-        .input-area {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-        }
-        
-        .settings-bar {
-            background: rgba(30, 41, 59, 0.9);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: white;
-        }
-        
-        .message-item {
-            margin: 10px 0;
-            padding: 12px 16px;
-            border-radius: 18px;
-            max-width: 70%;
-            word-wrap: break-word;
-            display: block;
-        }
-        
-        .user-message {
-            background: #3b82f6;
-            color: white;
-            margin-left: auto;
-            margin-right: 0;
-            text-align: right;
-            width: fit-content;
-            max-width: 70%;
-        }
-        
-        .darwin-message {
-            background: #10b981;
-            color: white;
-            margin-right: auto;
-            margin-left: 0;
-            width: fit-content;
-            max-width: 70%;
-        }
-        
-        .system-message {
-            background: #f1f5f9;
-            color: #374151;
-            text-align: center;
-            margin: 0 auto;
-            width: fit-content;
-        }
-        
-        /* Enhanced video styling - no controls, no interaction */
-        #mainVideo {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain !important;
-            pointer-events: none !important;
-            user-select: none !important;
-            outline: none !important;
-            border: none !important;
-            background: black;
-        }
-        
-        #mainVideo::-webkit-media-controls {
-            display: none !important;
-        }
-        
-        #mainVideo::-webkit-media-controls-panel {
-            display: none !important;
-        }
-        
-        #mainVideo::-webkit-media-controls-play-button {
-            display: none !important;
-        }
-        
-        #mainVideo::-webkit-media-controls-timeline {
-            display: none !important;
-        }
-        
-        #mainVideo::-webkit-media-controls-current-time-display {
-            display: none !important;
-        }
-        
-        #mainVideo::-webkit-media-controls-time-remaining-display {
-            display: none !important;
-        }
-        
-        #mainVideo::-webkit-media-controls-mute-button {
-            display: none !important;
-        }
-        
-        #mainVideo::-webkit-media-controls-volume-slider {
-            display: none !important;
-        }
-        
-        #mainVideo::-webkit-media-controls-fullscreen-button {
-            display: none !important;
-        }
-        
-        /* Input text styling - make text black */
-        .q-field__native, .q-field__input, textarea {
-            color: #000000 !important;
-        }
-        
-        .q-field__label {
-            color: #6b7280 !important;
-        }
-        
-        /* Volume slider styling */
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-        }
-        
-        .volume-slider {
-            flex: 1;
-            max-width: 120px;
-            height: 4px;
-            background: #64748b;
-            border-radius: 2px;
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-        
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #3b82f6;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        
-        .volume-slider::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #3b82f6;
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
-        }
-        
-        /* Disable text selection on video area */
-        .video-section {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-    </style>
-    ''')
-    
-    with ui.element('div').classes('main-layout'):
-        
-        # LEFT SIDE - Enhanced Video Player (No Controls)
-        with ui.element('div').classes('video-section'):
-            ui.html('''
-            <video id="mainVideo" 
-                   autoplay 
-                   muted="false"
-                   playsinline 
-                   disablepictureinpicture
-                   style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">
-                <source src="" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-            ''')
-
-        # RIGHT SIDE - Chat Interface (unchanged)
-        with ui.element('div').classes('chat-section'):
+            voice_dropdown.on('update:model-value', on_voice_change)
             
-            # Chat Messages Area
-            chat_container = ui.element('div').classes('chat-messages')
-            with chat_container:
-                ui.element('div').classes('message-item system-message').add_slot('default', 'Ready to chat with Darwin')
-            
-            # Input Area
-            with ui.element('div').classes('input-area'):
-                prompt_input = ui.textarea(
-                    label='Your question for Darwin', 
-                    placeholder='Ask Charles Darwin anything...'
-                ).classes('w-full mb-4').style('min-height: 100px;')
+            # Voice info
+            ui.label(f'Available voices: {len(available_voices)}').classes('text-sm text-gray-500')
 
-                def submit_prompt():
-                    user_text = prompt_input.value
-                    if user_text and user_text.strip():
-                        trigger_response_callback(user_text.strip())
-                        prompt_input.value = ""
-                    else:
-                        ui.notify("Please enter a question first", color="warning")
-
-                ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg')
-
-            # Settings Bar
-            with ui.element('div').classes('settings-bar'):
-                with ui.element('div').classes('volume-control'):
-                    ui.html('<i class="fas fa-volume-up" style="color: white; font-size: 16px;"></i>')
-                    ui.html('<input type="range" class="volume-slider" min="0" max="100" value="75">')
-                    ui.label('75%').style('color: white; font-size: 14px; min-width: 30px;')
-                
-                ui.button(icon='settings', on_click=lambda: ui.navigate.to('/settings')).props('flat').style('color: white;')
-
-    # Enhanced JavaScript for video control
+    # Add enhanced JavaScript with video management
     ui.add_body_html('''
     <script>
-        // Global video control functions
-        window.loadVideo = function(videoId, source) {
-            const video = document.getElementById(videoId);
+    let videoManager = {
+        currentVideo: null,
+        statusDisplay: null,
+        isReady: false
+    };
+
+    // Video ended handler - communicates with Python backend
+    function handleVideoEnded() {
+        console.log('[VIDEO] Video ended, requesting next clip');
+        if (window.videoEndedCallback) {
+            window.videoEndedCallback();
+        }
+    }
+
+    // Update video source
+    function updateMainVideo(videoUrl) {
+        const video = document.getElementById('mainVideo');
+        const statusDiv = document.getElementById('video-status');
+        
+        if (video && videoUrl) {
+            console.log('[VIDEO] Loading new video:', videoUrl);
+            
+            if (statusDiv) {
+                statusDiv.textContent = 'Loading...';
+            }
+            
+            video.src = videoUrl;
+            video.load();
+            
+            video.onloadstart = function() {
+                if (statusDiv) statusDiv.textContent = 'Loading...';
+            };
+            
+            video.oncanplay = function() {
+                if (statusDiv) statusDiv.textContent = 'Ready';
+                console.log('[VIDEO] Video ready to play');
+            };
+            
+            video.onplay = function() {
+                if (statusDiv) statusDiv.textContent = 'Playing';
+                console.log('[VIDEO] Video started playing');
+            };
+            
+            video.onerror = function(e) {
+                console.error('[VIDEO] Error loading video:', e);
+                if (statusDiv) statusDiv.textContent = 'Error';
+            };
+        }
+    }
+
+    // Update video status display
+    function updateVideoStatus(status) {
+        const elements = {
+            'video-status': `Status: ${status.is_playing ? 'Playing' : 'Stopped'}`,
+            'state-display': `State: ${status.current_state}`,
+            'mode-display': `Mode: ${status.current_mode}`
+        };
+        
+        Object.entries(elements).forEach(([id, text]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = text;
+        });
+    }
+
+    // Update status displays in sidebar
+    function updateSidebarStatus(status) {
+        // This would update the sidebar labels - implementation depends on NiceGUI structure
+        console.log('[UI] Status update:', status);
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', function() {
+        console.log('[UI] Darwin Chat UI with video management loaded');
+        videoManager.isReady = true;
+        
+        // Set up global functions for Python callback
+        window.updateMainVideo = updateMainVideo;
+        window.updateVideoStatus = updateVideoStatus;
+        window.updateSidebarStatus = updateSidebarStatus;
+        
+        // Function to load background videos
+        window.loadBackgroundVideo = function(source) {
+            const video = document.getElementById('backgroundVideo');
             if (video && source) {
                 video.src = source;
                 video.load();
             }
         };
         
-        // Enhanced video setup
-        document.addEventListener('DOMContentLoaded', function() {
-            const video = document.getElementById('mainVideo');
-            if (video) {
-                // Comprehensive control disabling
-                video.removeAttribute('controls');
-                video.setAttribute('autoplay', 'true');
-                video.setAttribute('playsinline', 'true');
-                video.setAttribute('disablepictureinpicture', 'true');
-                
-                // Disable all possible interaction methods
-                video.addEventListener('click', function(e) { e.preventDefault(); });
-                video.addEventListener('dblclick', function(e) { e.preventDefault(); });
-                video.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-                video.addEventListener('keydown', function(e) { e.preventDefault(); });
-                video.addEventListener('keyup', function(e) { e.preventDefault(); });
-                video.addEventListener('keypress', function(e) { e.preventDefault(); });
-                
-                // Prevent focus
-                video.addEventListener('focus', function() { this.blur(); });
-                
-                console.log('Video player fully configured: no controls, autoplay enabled');
-            }
-        });
-        
-        // Global keyboard event prevention for video control
-        document.addEventListener('keydown', function(e) {
-            // Prevent spacebar, arrow keys, and other media keys from controlling video
-            const preventKeys = ['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter'];
-            if (preventKeys.includes(e.code)) {
-                const video = document.getElementById('mainVideo');
-                if (video && document.activeElement !== document.querySelector('textarea') && 
-                    document.activeElement !== document.querySelector('input')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-            }
-        }, true);
-        
-        console.log('Global video control prevention enabled');
+        console.log('[UI] Video management system ready');
+    });
     </script>
     ''')
 
-    return chat_container
+    # Return necessary references for main.py
+    return {
+        'chat_log': chat_log,
+        'set_video_manager': set_video_manager,
+        'video_status_label': video_status_label if 'video_status_label' in locals() else None,
+        'state_label': state_label if 'state_label' in locals() else None,
+        'mode_label': mode_label if 'mode_label' in locals() else None
+    }

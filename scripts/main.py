@@ -1,424 +1,507 @@
-# main.py - Clean main application with simple workflow
+# main.py - Clean main application with proper video event handling
 
 import sys
 import os
 import threading
 import time
-import queue
 
 # Set project directory (one folder above scripts)
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
+
+from positional_lipsync import generate_lipsync_video
+
 from nicegui import ui, app
-from enhanced_ui import build_ui
+from ui import build_ui
 from LLM_Groq import generate_darwin_response
-from enhanced_tts_piper import generate_complete_audio, set_voice_model
-from node_video_system import NodeVideoSystem
-from test_lipsync_integration import generate_lipsync_with_integration, setup_lipsync_environment
+from TTS_Piper import generate_and_stream_audio, set_voice_model
+from video_manager import VideoManager
 from colorama import Fore, Style, init
 
-# Initialize colorama
+# Initialize colorama for colored terminal output
 init(autoreset=True)
 
-# Global variables
-chat_container = None
+# Global references for UI elements and systems
+chat_log = None
+video_manager = None
+main_video_element = None
 is_first_message = True
-node_system = NodeVideoSystem("Darwin")
-ui_update_queue = queue.Queue()
-is_processing_response = False
+current_voice = "en_GB-semaine-medium"
 
-def add_message_to_chat(text: str, message_type: str):
-    """Add message to chat - thread-safe"""
-    def add_message():
-        global chat_container
-        
-        css_classes = {
-            'user': 'message-item user-message',
-            'darwin': 'message-item darwin-message',
-            'system': 'message-item system-message'
-        }
-        
-        css_class = css_classes.get(message_type, 'message-item system-message')
-        
-        with chat_container:
-            message_element = ui.element('div').classes(css_class)
-            message_element.add_slot('default', text)
-        
-        # Scroll to bottom
-        ui.run_javascript('''
-            const chatContainer = document.querySelector('.chat-messages');
-            if (chatContainer) {
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-        ''')
+def handle_voice_change(voice_name: str):
+    """Handle voice model change."""
+    global current_voice
+    current_voice = voice_name
     
-    ui_update_queue.put(('add_message', add_message))
+    voice_path = os.path.join(PROJECT_DIR, "Piper_Voices", f"{voice_name}.onnx")
+    
+    if os.path.exists(voice_path):
+        print(f"{Fore.CYAN}[MAIN] Voice changed to: {voice_name}{Style.RESET_ALL}")
+        set_voice_model(voice_path)
+        ui.notify(f'Voice successfully changed to {voice_name}', type='positive')
+    else:
+        print(f"{Fore.RED}[MAIN] Voice model not found: {voice_path}{Style.RESET_ALL}")
+        ui.notify(f'Voice model not found: {voice_name}', type='negative')
 
-def update_video_player(video_path: str):
-    """Update video player - thread-safe with better autoplay"""
-    print(f"{Fore.BLUE}[VIDEO] Loading: {os.path.basename(video_path)}{Style.RESET_ALL}")
+def video_ui_callback(video_url: str):
+    """Callback to update the main video in the UI"""
+    global main_video_element
     
-    def video_update():
-        # Convert to web-accessible path
-        if video_path.startswith(os.path.join(PROJECT_DIR, "tempstream")):
-            # Tempstream file
-            filename = os.path.basename(video_path)
-            video_url = f'/tempstream/{filename}'
-        else:
-            # Avatar file
-            relative_path = os.path.relpath(video_path, os.path.join(PROJECT_DIR, 'avatars'))
-            video_url = f'/avatars/{relative_path.replace(os.sep, "/")}'
-        
-        print(f"{Fore.CYAN}[VIDEO] URL: {video_url}{Style.RESET_ALL}")
-        
-        ui.run_javascript(f'''
-            console.log('Loading video: {video_url}');
-            
-            const video = document.getElementById('mainVideo');
-            if (video) {{
-                // Remove all existing event listeners to avoid conflicts
-                video.replaceWith(video.cloneNode(true));
-                const newVideo = document.getElementById('mainVideo');
-                
-                // Set up fresh event listeners
-                newVideo.addEventListener('loadeddata', function() {{
-                    console.log('Video loaded, attempting to play...');
-                    this.currentTime = 0;  // Start from beginning
-                    this.play().then(() => {{
-                        console.log('✓ Video playing successfully');
-                    }}).catch(e => {{
-                        console.error('✗ Play failed:', e);
-                        // Force play after brief delay
-                        setTimeout(() => {{
-                            this.play().catch(e2 => console.error('Retry play failed:', e2));
-                        }}, 100);
-                    }});
-                }});
-                
-                newVideo.addEventListener('error', function(e) {{
-                    console.error('✗ Video error:', this.error);
-                }});
-                
-                newVideo.addEventListener('playing', function() {{
-                    console.log('✓ Video is now playing');
-                }});
-                
-                newVideo.addEventListener('ended', function() {{
-                    console.log('✓ Video ended');
-                }});
-                
-                // Ensure video properties
-                newVideo.autoplay = true;
-                newVideo.muted = false;
-                newVideo.controls = false;
-                newVideo.playsInline = true;
-                
-                // Set source and load
-                newVideo.src = '{video_url}';
-                newVideo.load();
-                
-                // Force immediate play attempt
-                setTimeout(() => {{
-                    newVideo.play().catch(e => console.log('Initial play attempt:', e));
-                }}, 50);
-                
-            }} else {{
-                console.error('✗ Video element not found');
-            }}
-        ''')
+    print(f"{Fore.GREEN}[UI] Updating video: {video_url}{Style.RESET_ALL}")
     
-    ui_update_queue.put(('video_update', video_update))
+    if main_video_element:
+        # Update the video source directly
+        main_video_element.props(f'src="{video_url}"')
+        print(f"{Fore.BLUE}[UI] Video element updated with new source{Style.RESET_ALL}")
+    else:
+        print(f"{Fore.RED}[UI] Video element not available{Style.RESET_ALL}")
 
-def process_ui_updates():
-    """Process queued UI updates"""
-    try:
-        while True:
-            try:
-                update_type, update_func = ui_update_queue.get_nowait()
-                update_func()
-                ui_update_queue.task_done()
-            except queue.Empty:
-                break
-    except Exception as e:
-        print(f"{Fore.RED}[UI] Error processing updates: {e}{Style.RESET_ALL}")
+def video_ended_callback():
+    """Called when a video ends"""
+    global video_manager
+    if video_manager:
+        print(f"{Fore.BLUE}[MAIN] Video ended - requesting next clip{Style.RESET_ALL}")
+        video_manager.on_video_ended()
 
 def handle_user_input(user_text: str):
-    """Handle user input with simple sequential workflow"""
-    global chat_container, is_first_message, is_processing_response
+    """Enhanced user input handler with video and lip-sync integration - NO DUPLICATE TTS."""
+    global chat_log, is_first_message, current_voice, video_manager
 
-    # Prevent multiple simultaneous responses
-    if is_processing_response:
-        print(f"{Fore.YELLOW}[MAIN] Already processing response, ignoring input{Style.RESET_ALL}")
-        return
-
-    # Clear initial message
+    # On the very first input, clear the initial "Ready to chat" message
     if is_first_message:
-        def clear_chat():
-            chat_container.clear()
-        ui_update_queue.put(('clear_chat', clear_chat))
+        chat_log.clear()
         is_first_message = False
 
     try:
-        print(f"{Fore.CYAN}[MAIN] User: {user_text}{Style.RESET_ALL}")
-        is_processing_response = True
+        print(f"[MAIN] User asked: {user_text}")
 
-        # Add user message
-        add_message_to_chat(user_text, 'user')
+        # Add the user's question to the chat log
+        with chat_log:
+            ui.chat_message(text=user_text, name='You', sent=True)
 
-        # Interrupt idle system
-        node_system.interrupt_for_response()
-
-        # Generate LLM response
-        print(f"{Fore.YELLOW}[MAIN] Generating response...{Style.RESET_ALL}")
+        # Notify video manager about user input
+        if video_manager:
+            video_manager.prepare_for_user_input()
+        
+        # Generate response using the LLM
+        print(f"{Fore.CYAN}[MAIN] Generating LLM response...{Style.RESET_ALL}")
         response = generate_darwin_response(user_text)
-        print(f"{Fore.GREEN}[MAIN] Response: {response}{Style.RESET_ALL}")
+        print(f"[MAIN] Darwin responded: {response}")
 
-        # Add response to chat
-        add_message_to_chat(response, 'darwin')
+        # Add Darwin's response to the chat log
+        with chat_log:
+            ui.chat_message(text=response, name='Darwin', sent=False)
 
-        # Start response processing in background
-        def process_response():
-            global is_processing_response
+        # Start lip-sync generation if video manager is available
+        # The positional lipsync system will handle TTS generation internally
+        if video_manager:
+            def lipsync_complete_callback():
+                print(f"{Fore.GREEN}[MAIN] Lip-sync playback completed{Style.RESET_ALL}")
             
-            try:
-                # Step 1: Return to main if needed
-                print(f"{Fore.CYAN}[WORKFLOW] Step 1: Returning to main{Style.RESET_ALL}")
-                return_videos = node_system.return_to_main_path()
-                
-                for video_path in return_videos:
-                    if os.path.exists(video_path):
-                        print(f"{Fore.BLUE}[WORKFLOW] Return video: {os.path.basename(video_path)}{Style.RESET_ALL}")
-                        update_video_player(video_path)
-                        duration = node_system.get_video_duration(video_path)
-                        time.sleep(duration + 0.5)
-                
-                # Step 2: Generate lipsync
-                print(f"{Fore.CYAN}[WORKFLOW] Step 2: Generating lipsync{Style.RESET_ALL}")
-                success, lipsync_path = generate_lipsync_with_integration(response)
-                
-                if success and lipsync_path and os.path.exists(lipsync_path):
-                    # Step 3: Play lipsync
-                    print(f"{Fore.CYAN}[WORKFLOW] Step 3: Playing lipsync{Style.RESET_ALL}")
-                    update_video_player(lipsync_path)
-                    duration = node_system.get_video_duration(lipsync_path)
-                    
-                    print(f"{Fore.MAGENTA}[WORKFLOW] Waiting {duration + 0.5:.2f}s for lipsync to complete{Style.RESET_ALL}")
-                    time.sleep(duration + 0.5)
-                    
-                    print(f"{Fore.GREEN}[WORKFLOW] Lipsync complete{Style.RESET_ALL}")
-                else:
-                    print(f"{Fore.RED}[WORKFLOW] Lipsync failed{Style.RESET_ALL}")
-                
-                # Step 4: Resume idle (ONLY after lipsync is completely done)
-                print(f"{Fore.CYAN}[WORKFLOW] Step 4: Resuming idle{Style.RESET_ALL}")
-                is_processing_response = False
-                
-                # Small delay to ensure clean transition
-                time.sleep(0.5)
-                node_system.start_idle_playing(update_video_player)
-                
-            except Exception as e:
-                print(f"{Fore.RED}[WORKFLOW] Error: {e}{Style.RESET_ALL}")
-                is_processing_response = False
-                node_system.start_idle_playing(update_video_player)
+            print(f"{Fore.CYAN}[MAIN] Starting positional lipsync (includes TTS generation){Style.RESET_ALL}")
+            video_manager.start_lipsync_generation(response, lipsync_complete_callback)
+        else:
+            print(f"{Fore.YELLOW}[MAIN] Video manager not available, generating standalone TTS{Style.RESET_ALL}")
+            
+            # Only generate TTS if no video manager (fallback)
+            def tts_thread():
+                try:
+                    print(f"{Fore.MAGENTA}[MAIN] Fallback TTS generation with voice: {current_voice}...{Style.RESET_ALL}")
+                    audio_file = generate_and_stream_audio(response)
+                    if audio_file:
+                        print(f"{Fore.GREEN}[MAIN] Fallback TTS completed successfully.{Style.RESET_ALL}")
+                    else:
+                        print(f"{Fore.RED}[MAIN] Fallback TTS generation failed.{Style.RESET_ALL}")
+                except Exception as e:
+                    print(f"{Fore.RED}[MAIN] Fallback TTS Error: {e}{Style.RESET_ALL}")
 
-        # Start background processing
-        response_thread = threading.Thread(target=process_response, daemon=True)
-        response_thread.start()
+            # Start fallback TTS in background thread
+            tts_worker = threading.Thread(target=tts_thread, daemon=True)
+            tts_worker.start()
 
     except Exception as e:
-        print(f"{Fore.RED}[MAIN] Error handling input: {e}{Style.RESET_ALL}")
-        add_message_to_chat('Sorry, Darwin is having trouble.', 'system')
-        is_processing_response = False
-        node_system.start_idle_playing(update_video_player)
+        print(f"[ERROR] Failed to generate response: {e}")
+        error_message = 'Sorry, Darwin is having trouble responding right now.'
 
-def start_idle_system():
-    """Start the idle video system only if not processing"""
-    if not is_processing_response:
-        print(f"{Fore.GREEN}[MAIN] Starting idle system{Style.RESET_ALL}")
-        node_system.start_idle_playing(update_video_player)
-    else:
-        print(f"{Fore.YELLOW}[MAIN] Skipping idle start - response in progress{Style.RESET_ALL}")
+        # Add an error message to the chat log
+        with chat_log:
+            ui.chat_message(text=error_message, name='System', sent=False)
+
+        ui.notify("Error: Could not generate response", type='negative')
+
+def setup_video_system():
+    """Initialize the video management system"""
+    global video_manager
+    
+    print(f"{Fore.CYAN}[MAIN] Initializing video management system...{Style.RESET_ALL}")
+    
+    try:
+        video_manager = VideoManager(video_ui_callback)
+        print(f"{Fore.GREEN}[MAIN] Video management system initialized successfully{Style.RESET_ALL}")
+        return True
+        
+    except Exception as e:
+        print(f"{Fore.RED}[MAIN] Failed to initialize video system: {e}{Style.RESET_ALL}")
+        return False
+
+def update_status_displays():
+    """Periodically update video status displays"""
+    global video_manager
+    
+    while video_manager and video_manager.is_playing:
+        try:
+            if video_manager:
+                status = video_manager.get_status()
+                
+                # Simple status update without complex JavaScript
+                print(f"[STATUS] State: {status['current_state']} | Mode: {status['current_mode']} | Queue: {status['queue_size']}")
+                
+            time.sleep(3)  # Update every 3 seconds
+            
+        except Exception as e:
+            print(f"{Fore.RED}[STATUS] Error updating status: {e}{Style.RESET_ALL}")
+            break
 
 @ui.page('/')
 def index():
-    """Main page"""
-    global chat_container
+    """Main page with clean video integration"""
+    global chat_log, video_manager, main_video_element
 
-    ui.page_title('Darwin Chat - Clean Version')
+    # Set page title and styling
+    ui.page_title('Chat with Charles Darwin - Enhanced Video')
+
+    # Add custom CSS for better styling
+    ui.add_head_html('''
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+        }
+        .nicegui-content {
+            background: transparent !important;
+        }
+        .q-message-text--sent .q-message-text-content {
+            color: black !important;
+            background-color: #e0f2fe !important;
+        }
+        .q-message-text--received .q-message-text-content {
+            color: black !important;
+            background-color: #f1f5f9 !important;
+        }
+        
+        /* Enhanced video styling */
+        .main-video-container {
+            border: 2px solid #4f46e5;
+            border-radius: 8px;
+            overflow: hidden;
+            background: black;
+        }
+        
+        .video-status {
+            font-family: monospace;
+            font-size: 11px;
+        }
+        
+        /* Sidebar styling */
+        .sidebar-button {
+            transition: all 0.2s ease;
+        }
+        .sidebar-button:hover {
+            transform: translateX(2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .voice-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-top: 2px solid #cbd5e0;
+        }
+    </style>
+    ''')
 
     # Header
-    with ui.row().classes('w-full justify-between items-center p-4'):
-        ui.label('Chat with Charles Darwin').classes('text-4xl font-bold text-white')
-        
-        # Status
-        status_label = ui.label('Initializing...').classes('text-sm text-white bg-blue-600 px-3 py-1 rounded')
-        
-        def update_status():
-            if is_processing_response:
-                status_label.text = "Processing..."
-                status_label.classes(remove='bg-green-600 bg-red-600', add='bg-blue-600')
-            elif node_system.is_playing and not node_system.is_interrupted:
-                video_name = os.path.basename(node_system.current_video_path) if node_system.current_video_path else "Loading"
-                status_label.text = f"Playing: {video_name}"
-                status_label.classes(remove='bg-blue-600 bg-red-600', add='bg-green-600')
-            else:
-                status_label.text = "Ready"
-                status_label.classes(remove='bg-green-600 bg-blue-600', add='bg-red-600')
-        
-        def timer_function():
-            process_ui_updates()
-            update_status()
-        
-        ui.timer(0.5, timer_function)
+    with ui.row().classes('w-full justify-center p-4'):
+        ui.label('Chat with Charles Darwin - Enhanced Video').classes('text-4xl font-bold text-white')
 
-    # Build main UI
-    chat_container = build_ui(handle_user_input)
-    
-    # Configure video player with enhanced autoplay
-    ui.run_javascript('''
-        setTimeout(function() {
-            console.log('Configuring video player for autoplay...');
+    with ui.column().classes('w-full h-screen gap-0'):
+        # === MAIN CONTENT ROW ===
+        with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4'):
             
-            const video = document.getElementById('mainVideo');
-            if (video) {
-                // Force unmute and autoplay
-                video.muted = false;
-                video.autoplay = true;
-                video.playsInline = true;
+            # === LEFT VIDEO PLAYER (MAIN AVATAR) ===
+            with ui.column().classes('items-start shrink-0').style('width: 35%; height: 100%;'):
+                with ui.card().classes('p-0 main-video-container').style('width: 100%; aspect-ratio: 2/3;'):
+                    
+                    # Create the main video element with proper event handling
+                    main_video_element = ui.video(
+                        src='',  # Will be set by video manager
+                        autoplay=True,
+                        muted=True,
+                        controls=False
+                    ).classes('w-full h-full').style('object-fit: contain;')
+                    
+                    # Set up the video ended event handler
+                    main_video_element.on('ended', video_ended_callback)
+                    
+                    # Status overlay
+                    with ui.element('div').style('position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 10;'):
+                        ui.label('Initializing...').classes('video-status')
+
+            # === CENTER PANEL ===
+            with ui.column().classes('items-center gap-4 h-full').style('width: 45%;'):
+                # === BACKGROUND VIDEO PLAYER ===
+                with ui.card().classes('p-0 overflow-hidden').style('width: 100%; aspect-ratio: 16/9; background: black;'):
+                    ui.video(
+                        src='',  # Can be set to a background video
+                        autoplay=True,
+                        muted=True,
+                        loop=True,
+                        controls=False
+                    ).classes('w-full h-full').style('object-fit: cover;')
+
+                # === CHAT LOG (SCROLLABLE) ===
+                chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-auto rounded-lg').style('background: #f0f0f0;')
+                with chat_log:
+                    ui.label('Ready to chat with Darwin').classes('text-lg text-center w-full').style('color: #6b7280;')
+
+                # === TEXT INPUT & BUTTON ===
+                with ui.column().classes('items-center gap-4 w-full'):
+                    prompt_input = ui.textarea(
+                        label='Your question for Darwin', 
+                        placeholder='Ask Charles Darwin anything...'
+                    ).props('outlined').classes('w-full').style('min-height: 120px; font-size: 16px;')
+
+                    def submit_prompt():
+                        user_text = prompt_input.value
+                        if user_text and user_text.strip():
+                            handle_user_input(user_text)
+                            prompt_input.value = ""
+                        else:
+                            ui.notify("Please enter a question first", color="warning")
+
+                    ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full text-lg py-3 px-6 rounded-lg').style('background-color: #2563eb; color: white;')
+
+            # === RIGHT SIDEBAR ===
+            with ui.column().classes('h-full bg-gray-100 border-l border-gray-300').style('width: 250px;'):
+                # Sidebar Header
+                with ui.row().classes('w-full items-center justify-between p-3 border-b border-gray-300'):
+                    ui.label('Menu').classes('font-semibold text-gray-700')
+
+                # Sidebar Content
+                with ui.column().classes('w-full p-3 gap-3'):
+                    # Settings Button
+                    ui.button('âš™ï¸ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start bg-gray-200 text-gray-700 py-2 px-3 rounded')
+                    
+                    # Video Status Section
+                    ui.separator()
+                    ui.label('Video Status').classes('font-medium text-gray-600 text-sm mt-4')
+                    
+                    status_label = ui.label('Status: Initializing...').classes('text-xs text-gray-500')
+                    state_label = ui.label('State: Unknown').classes('text-xs text-gray-500')
+                    mode_label = ui.label('Mode: Unknown').classes('text-xs text-gray-500')
+                    
+                    # Quick Info
+                    ui.separator()
+                    ui.label('Configuration').classes('font-medium text-gray-600 text-sm mt-4')
+                    
+                    # Load config for display
+                    import json
+                    try:
+                        config_file = os.path.join(PROJECT_DIR, "config.json")
+                        with open(config_file, 'r') as f:
+                            config = json.load(f)
+                    except:
+                        config = {'useRAG': False, 'maxWords': 50, 'useCuda': True}
+                    
+                    ui.label(f"RAG: {'On' if config.get('useRAG') else 'Off'}").classes('text-xs text-gray-500')
+                    ui.label(f"Max Words: {config.get('maxWords', 50)}").classes('text-xs text-gray-500')
+                    ui.label(f"CUDA: {'On' if config.get('useCuda') else 'Off'}").classes('text-xs text-gray-500')
+
+        # === VOICE SELECTION SECTION ===
+        ui.separator().classes('w-full')
+        
+        with ui.row().classes('w-full p-4 bg-gray-50 border-t border-gray-200 items-center justify-center gap-8'):
+            ui.label('Voice Selection').classes('text-lg font-semibold text-gray-700')
+            
+            # Get available voices
+            def get_available_voices():
+                voices_dir = os.path.join(PROJECT_DIR, "Piper_Voices")
+                voices = []
                 
-                // Add aggressive autoplay enforcement
-                function forcePlay() {
-                    if (video.paused && video.readyState >= 2) {
-                        video.play().then(() => {
-                            console.log('✓ Forced play successful');
-                        }).catch(e => {
-                            console.log('Force play failed:', e);
-                            // Try again in 500ms
-                            setTimeout(forcePlay, 500);
-                        });
-                    }
-                }
+                if os.path.exists(voices_dir):
+                    for file in os.listdir(voices_dir):
+                        if file.endswith('.onnx'):
+                            voice_name = file.replace('.onnx', '')
+                            voices.append(voice_name)
                 
-                // Set up autoplay triggers
-                video.addEventListener('loadstart', forcePlay);
-                video.addEventListener('loadeddata', forcePlay);
-                video.addEventListener('canplay', forcePlay);
-                video.addEventListener('canplaythrough', forcePlay);
-                
-                // Prevent pausing
-                video.addEventListener('pause', function() {
-                    console.log('Video paused - forcing resume');
-                    setTimeout(() => {
-                        this.play().catch(e => console.log('Resume failed:', e));
-                    }, 100);
-                });
-                
-                console.log('✓ Enhanced autoplay system configured');
-            } else {
-                console.error('✗ Video element not found');
-            }
-        }, 1000);
-    ''')
+                return sorted(voices) if voices else ['en_GB-semaine-medium']
+            
+            available_voices = get_available_voices()
+            current_voice_default = available_voices[0] if available_voices else 'en_GB-semaine-medium'
+            
+            voice_dropdown = ui.select(
+                options=available_voices,
+                value=current_voice_default,
+                label='Choose Voice Model'
+            ).classes('min-w-64')
+            
+            def on_voice_change():
+                selected_voice = voice_dropdown.value
+                ui.notify(f'Voice changed to: {selected_voice}', type='info')
+                handle_voice_change(selected_voice)
+            
+            voice_dropdown.on('update:model-value', on_voice_change)
+            
+            # Voice info
+            ui.label(f'Available voices: {len(available_voices)}').classes('text-sm text-gray-500')
     
-    # Start idle system after longer delay to ensure video is ready
-    ui.timer(3.0, start_idle_system, once=True)
+    # Initialize video system after UI is built
+    def delayed_init():
+        time.sleep(0.5)  # Small delay to ensure UI is fully loaded
+        success = setup_video_system()
+        if success and video_manager:
+            # Start status update thread
+            status_thread = threading.Thread(target=update_status_displays, daemon=True)
+            status_thread.start()
+            
+            print(f"{Fore.GREEN}[MAIN] Video system fully integrated{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.RED}[MAIN] Running without video system{Style.RESET_ALL}")
+    
+    # Initialize video system in a separate thread
+    init_thread = threading.Thread(target=delayed_init, daemon=True)
+    init_thread.start()
 
 def check_dependencies():
-    """Check all required files and directories"""
+    """Enhanced dependency check including video system"""
     print(f"{Fore.CYAN}[MAIN] Checking dependencies...{Style.RESET_ALL}")
     
-    # Check script files
+    # Check if required Python files exist
     scripts_dir = os.path.dirname(__file__)
-    required_files = ['LLM_Groq.py', 'enhanced_tts_piper.py', 'enhanced_ui.py', 'node_video_system.py', 'test_lipsync_integration.py']
-    
+    required_files = ['LLM_Groq.py', 'TTS_Piper.py', 'video_manager.py', 'lipsync.py']
     for file in required_files:
         file_path = os.path.join(scripts_dir, file)
         if not os.path.exists(file_path):
-            print(f"{Fore.RED}[ERROR] Missing: {file_path}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[ERROR] Required file not found: {file_path}{Style.RESET_ALL}")
             return False
 
-    # Check directories
-    avatar_dir = os.path.join(PROJECT_DIR, "avatars", "Darwin")
-    nodes_dir = os.path.join(avatar_dir, "Nodes")
-    
-    if not os.path.exists(nodes_dir):
-        print(f"{Fore.RED}[ERROR] Nodes directory not found: {nodes_dir}{Style.RESET_ALL}")
+    # Check video nodes directory
+    nodes_path = os.path.join(PROJECT_DIR, "avatars", "Darwin", "Nodes")
+    if not os.path.exists(nodes_path):
+        print(f"{Fore.RED}[ERROR] Video nodes directory not found: {nodes_path}{Style.RESET_ALL}")
         return False
+    
+    # Count video files
+    video_count = 0
+    for root, dirs, files in os.walk(nodes_path):
+        video_count += len([f for f in files if f.lower().endswith('.mp4')])
+    
+    if video_count == 0:
+        print(f"{Fore.RED}[ERROR] No video files found in nodes directory{Style.RESET_ALL}")
+        return False
+    
+    print(f"{Fore.GREEN}[MAIN] Found {video_count} video files in nodes directory{Style.RESET_ALL}")
 
     # Check config files
     config_path = os.path.join(PROJECT_DIR, 'config.json')
     api_key_path = os.path.join(PROJECT_DIR, 'groq_api_key.txt')
     
-    if not os.path.exists(config_path):
-        print(f"{Fore.RED}[ERROR] Config not found: {config_path}{Style.RESET_ALL}")
-        return False
+    for path, name in [(config_path, 'config.json'), (api_key_path, 'groq_api_key.txt')]:
+        if not os.path.exists(path):
+            print(f"{Fore.RED}[ERROR] {name} not found at: {path}{Style.RESET_ALL}")
+            return False
 
-    if not os.path.exists(api_key_path):
-        print(f"{Fore.RED}[ERROR] API key not found: {api_key_path}{Style.RESET_ALL}")
-        return False
-
-    # Check voice models
+    # Check Piper voices
     voices_dir = os.path.join(PROJECT_DIR, 'Piper_Voices')
     if not os.path.exists(voices_dir):
-        print(f"{Fore.RED}[ERROR] Voices directory not found: {voices_dir}{Style.RESET_ALL}")
+        print(f"{Fore.RED}[ERROR] Piper_Voices directory not found: {voices_dir}{Style.RESET_ALL}")
         return False
     
     voice_files = [f for f in os.listdir(voices_dir) if f.endswith('.onnx')]
     if not voice_files:
-        print(f"{Fore.RED}[ERROR] No voice models found{Style.RESET_ALL}")
+        print(f"{Fore.RED}[ERROR] No voice models (.onnx files) found in: {voices_dir}{Style.RESET_ALL}")
+        return False
+    
+    print(f"{Fore.GREEN}[MAIN] Found {len(voice_files)} voice model(s){Style.RESET_ALL}")
+
+    # Test TTS system
+    try:
+        print(f"{Fore.CYAN}[MAIN] Testing TTS system...{Style.RESET_ALL}")
+        from TTS_Piper import test_tts_system
+        if not test_tts_system():
+            print(f"{Fore.RED}[ERROR] TTS system test failed{Style.RESET_ALL}")
+            return False
+        print(f"{Fore.GREEN}[MAIN] TTS system test passed{Style.RESET_ALL}")
+    except Exception as e:
+        print(f"{Fore.RED}[ERROR] TTS system test error: {e}{Style.RESET_ALL}")
         return False
 
-    print(f"{Fore.GREEN}[MAIN] All dependencies verified{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}[MAIN] All dependencies verified successfully{Style.RESET_ALL}")
     return True
 
+def cleanup():
+    """Cleanup function called on shutdown"""
+    global video_manager
+    
+    print(f"{Fore.YELLOW}[MAIN] Cleaning up...{Style.RESET_ALL}")
+    
+    if video_manager:
+        video_manager.stop()
+    
+    print(f"{Fore.GREEN}[MAIN] Cleanup completed{Style.RESET_ALL}")
+
 def main():
-    """Main function"""
-    print(f"{Fore.GREEN}{'=' * 60}")
-    print(f"{Fore.YELLOW}Darwin Chat - Clean Version")
-    print(f"{Fore.YELLOW}Workflow: Idle → Response → Lipsync → Idle")
-    print(f"{Fore.GREEN}{'=' * 60}{Style.RESET_ALL}")
+    """Enhanced main function with video system"""
+    print(f"{Fore.GREEN}{'=' * 70}")
+    print(f"{Fore.YELLOW}Starting Enhanced Darwin Chat with Video & TTS")
+    print(f"{Fore.GREEN}{'=' * 70}{Style.RESET_ALL}")
+    print(f"[MAIN] Project directory: {PROJECT_DIR}")
 
+    # Check all dependencies
     if not check_dependencies():
-        print(f"{Fore.RED}[FATAL] Dependencies check failed{Style.RESET_ALL}")
+        print(f"{Fore.RED}[FATAL] Dependency check failed. Please fix the issues above.{Style.RESET_ALL}")
         return
 
-    # Setup directories
-    temp_dir = os.path.join(PROJECT_DIR, "tempstream")
-    os.makedirs(temp_dir, exist_ok=True)
+    # Ensure temp directories exist
+    temp_dirs = [
+        os.path.join(PROJECT_DIR, "tempstream"),
+        os.path.join(PROJECT_DIR, "temp_lipsync")
+    ]
+    
+    for temp_dir in temp_dirs:
+        os.makedirs(temp_dir, exist_ok=True)
+        print(f"[MAIN] Temp directory ready: {temp_dir}")
 
-    # Configure static file serving
+    # Set up static file serving for videos
+    avatars_dir = os.path.join(PROJECT_DIR, "avatars")
+    lipsync_dir = os.path.join(PROJECT_DIR, "temp_lipsync")
+    
+    if os.path.exists(avatars_dir):
+        app.add_static_files('/avatars', avatars_dir)
+        print(f"[MAIN] Serving avatars from: {avatars_dir}")
+    
+    if os.path.exists(lipsync_dir):
+        app.add_static_files('/temp_lipsync', lipsync_dir)
+        print(f"[MAIN] Serving lip-sync from: {lipsync_dir}")
+
+    print(f"{Fore.GREEN}[MAIN] All systems ready. Starting enhanced web interface with video...{Style.RESET_ALL}")
+
     try:
-        app.add_static_files('/avatars', os.path.join(PROJECT_DIR, 'avatars'))
-        app.add_static_files('/tempstream', temp_dir)
-        print(f"{Fore.GREEN}[MAIN] Static files configured{Style.RESET_ALL}")
+        # Configure and run NiceGUI
+        ui.run(
+            title='Enhanced Darwin Chat with Video & TTS',
+            port=8080,
+            show=True,
+            reload=False,
+            dark=None,
+            storage_secret='darwin_chat_secret_key'
+        )
+        
+    except KeyboardInterrupt:
+        print(f"\n{Fore.YELLOW}[MAIN] Interrupted by user{Style.RESET_ALL}")
     except Exception as e:
-        print(f"{Fore.RED}[MAIN] Static files failed: {e}{Style.RESET_ALL}")
-        return
-
-    # Test systems
-    try:
-        from enhanced_tts_piper import test_tts_system
-        if not test_tts_system():
-            print(f"{Fore.RED}[MAIN] TTS test failed{Style.RESET_ALL}")
-            return
-        print(f"{Fore.GREEN}[MAIN] TTS system ready{Style.RESET_ALL}")
-    except Exception as e:
-        print(f"{Fore.RED}[MAIN] TTS test error: {e}{Style.RESET_ALL}")
-        return
-
-    if not setup_lipsync_environment():
-        print(f"{Fore.RED}[MAIN] Lipsync setup failed{Style.RESET_ALL}")
-        return
-
-    print(f"{Fore.GREEN}[MAIN] All systems ready{Style.RESET_ALL}")
-
-    ui.run(
-        title='Darwin Chat - Clean',
-        port=8080,
-        show=True,
-        reload=False
-    )
+        print(f"{Fore.RED}[MAIN] Error running application: {e}{Style.RESET_ALL}")
+    finally:
+        cleanup()
 
 if __name__ == '__main__':
     main()

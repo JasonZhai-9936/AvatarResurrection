@@ -1,11 +1,10 @@
-# TTS_Piper.py - Enhanced with dynamic voice model switching and global slowdown ratio
+# TTS_Piper.py - Enhanced with dynamic voice model switching
 """
-Streaming Text-to-Speech using Piper TTS with real-time playback, voice switching, and global speed control.
+Streaming Text-to-Speech using Piper TTS with real-time playback and voice switching.
 
 The main functions for external use are:
     generate_and_stream_audio(text: str, output_filename: str = None) -> str
     set_voice_model(voice_path: str) -> None
-    set_slowdown_ratio(ratio: float) -> None
     
     bool use_cuda is set in config, can be changed live
 """
@@ -25,19 +24,12 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 init(autoreset=True)
 
 # Default voice model path - UPDATED
-DEFAULT_VOICE_PATH = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-northern_english_male-medium")
-
-#en_GB-northern_english_male-medium
-#en_GB-semaine-medium.onnx
+DEFAULT_VOICE_PATH = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
 
 # Global voice instance and path for reuse
 _voice_instance = None
 _current_voice_path = None
 _voice_load_lock = threading.Lock()
-
-# Global slowdown ratio (1.0 = normal speed, 2.0 = half speed, 0.5 = double speed)
-_global_slowdown_ratio = 1.7
-_slowdown_lock = threading.Lock()
 
 def load_config():
     """Load TTS settings from config.json in the project root."""
@@ -47,40 +39,11 @@ def load_config():
             config = json.load(f)
             return {
                 'use_cuda': config.get("useCuda", True),
-                'max_words': config.get("maxWords", 50),
-                'slowdown_ratio': config.get("slowdownRatio", 1.0)
+                'max_words': config.get("maxWords", 50)
             }
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"{Fore.RED}[TTS CONFIG] config.json not found or invalid. Using defaults.{Style.RESET_ALL}")
-        return {'use_cuda': True, 'max_words': 50, 'slowdown_ratio': 1.0}
-
-def set_slowdown_ratio(ratio: float):
-    """
-    Set the global slowdown ratio for all TTS output.
-    
-    Args:
-        ratio: Speed multiplier (1.0 = normal, 2.0 = half speed, 0.5 = double speed)
-    """
-    global _global_slowdown_ratio
-    
-    if ratio <= 0:
-        print(f"{Fore.RED}[TTS] Invalid slowdown ratio: {ratio}. Must be greater than 0.{Style.RESET_ALL}")
-        return
-    
-    with _slowdown_lock:
-        _global_slowdown_ratio = ratio
-        speed_desc = "normal speed"
-        if ratio > 1.0:
-            speed_desc = f"{ratio:.1f}x slower"
-        elif ratio < 1.0:
-            speed_desc = f"{1/ratio:.1f}x faster"
-        
-        print(f"{Fore.CYAN}[TTS] Global slowdown ratio set to {ratio:.2f} ({speed_desc}){Style.RESET_ALL}")
-
-def get_slowdown_ratio():
-    """Get the current global slowdown ratio."""
-    with _slowdown_lock:
-        return _global_slowdown_ratio
+        return {'use_cuda': True, 'max_words': 50}
 
 def set_voice_model(voice_path: str):
     """Set a new voice model path and reset the voice instance."""
@@ -94,7 +57,7 @@ def set_voice_model(voice_path: str):
 
 def get_voice_instance(voice_path: str = None):
     """Get or create a voice instance (thread-safe singleton)."""
-    global _voice_instance, _current_voice_path, _global_slowdown_ratio
+    global _voice_instance, _current_voice_path
     
     # Use provided path or default
     if voice_path is None:
@@ -107,11 +70,6 @@ def get_voice_instance(voice_path: str = None):
             if _voice_instance is None or _current_voice_path != voice_path:
                 config = load_config()
                 use_cuda = config['use_cuda']
-                
-                # Initialize global slowdown ratio from config if not set
-                if _global_slowdown_ratio == 1.0 and config['slowdown_ratio'] != 1.0:
-                    _global_slowdown_ratio = config['slowdown_ratio']
-                    print(f"{Fore.CYAN}[TTS] Loaded slowdown ratio from config: {_global_slowdown_ratio}{Style.RESET_ALL}")
                 
                 print(f"{Fore.CYAN}[TTS] Loading Piper voice model: {os.path.basename(voice_path)}...{Style.RESET_ALL}")
                 print(f"{Fore.CYAN}[TTS] Using CUDA: {use_cuda}{Style.RESET_ALL}")
@@ -153,7 +111,7 @@ def get_available_voices():
 
 def generate_and_stream_audio(text: str, output_filename: str = None, voice_path: str = None) -> str:
     """
-    Generate and stream audio from text using Piper TTS with global slowdown ratio applied.
+    Generate and stream audio from text using Piper TTS.
     
     Args:
         text: Text to convert to speech
@@ -179,21 +137,17 @@ def generate_and_stream_audio(text: str, output_filename: str = None, voice_path
         # Get voice instance (with optional specific voice)
         voice = get_voice_instance(voice_path)
         
-        # Get current slowdown ratio
-        slowdown_ratio = get_slowdown_ratio()
-        
-        # Configure synthesis with slowdown ratio applied to length_scale
+        # Configure synthesis
         syn_config = SynthesisConfig(
             volume=1.0,
-            length_scale=slowdown_ratio,  # Apply slowdown ratio here
+            length_scale=1.2,  # Normal speed
             noise_scale=1.0,
             noise_w_scale=1.0,
             normalize_audio=True
         )
         
         current_voice_name = os.path.basename(_current_voice_path or "unknown")
-        speed_info = f" (slowdown: {slowdown_ratio:.2f}x)" if slowdown_ratio != 1.0 else ""
-        print(f"{Fore.BLUE}[TTS] Starting streaming synthesis and playback with {current_voice_name}{speed_info}...{Style.RESET_ALL}")
+        print(f"{Fore.BLUE}[TTS] Starting streaming synthesis and playback with {current_voice_name}...{Style.RESET_ALL}")
         print(f"{Fore.BLUE}[TTS] Text: {text[:50]}{'...' if len(text) > 50 else ''}{Style.RESET_ALL}")
         
         stream_start = time.time()
@@ -203,15 +157,11 @@ def generate_and_stream_audio(text: str, output_filename: str = None, voice_path
         # Stream synthesis with real-time playback
         for i, chunk in enumerate(voice.synthesize(text, syn_config=syn_config), start=1):
             elapsed = time.time() - stream_start
-            
-            # Calculate actual duration considering the slowdown ratio is already applied in synthesis
-            base_duration = len(chunk.audio_int16_bytes) / (
+            duration = len(chunk.audio_int16_bytes) / (
                 chunk.sample_rate * chunk.sample_channels * chunk.sample_width
             )
-            # The duration is already adjusted by the synthesis, so we use it as-is
-            actual_duration = base_duration
             
-            print(f"{Fore.MAGENTA}[TTS] Chunk {i}: ready at {elapsed:.2f}s, duration {actual_duration:.2f}s{Style.RESET_ALL}")
+            print(f"{Fore.MAGENTA}[TTS] Chunk {i}: ready at {elapsed:.2f}s, duration {duration:.2f}s{Style.RESET_ALL}")
             
             # Store chunk for file writing
             audio_chunks.append(chunk)
@@ -236,7 +186,7 @@ def generate_and_stream_audio(text: str, output_filename: str = None, voice_path
             except Exception as e:
                 print(f"{Fore.RED}[TTS] Error playing chunk {i}: {e}{Style.RESET_ALL}")
             
-            playback_time += actual_duration  # Schedule next chunk
+            playback_time += duration  # Schedule next chunk
         
         # Write complete audio to file
         if audio_chunks:
@@ -298,10 +248,6 @@ def test_tts_system():
         temp_dir = ensure_temp_directory()
         print(f"{Fore.GREEN}[TTS TEST] Temp directory ready: {temp_dir}{Style.RESET_ALL}")
         
-        # Display current slowdown ratio
-        current_ratio = get_slowdown_ratio()
-        print(f"{Fore.GREEN}[TTS TEST] Current slowdown ratio: {current_ratio:.2f}{Style.RESET_ALL}")
-        
         print(f"{Fore.GREEN}[TTS TEST] All TTS components verified successfully.{Style.RESET_ALL}")
         return True
         
@@ -320,7 +266,7 @@ def list_available_voices():
 
 if __name__ == "__main__":
     print(f"{Fore.GREEN}{'=' * 50}")
-    print(f"{Fore.YELLOW}Enhanced Piper TTS with Voice Switching and Speed Control")
+    print(f"{Fore.YELLOW}Enhanced Piper TTS with Voice Switching")
     print(f"{Fore.GREEN}{'=' * 50}{Style.RESET_ALL}")
     
     # List available voices
@@ -332,22 +278,14 @@ if __name__ == "__main__":
     if success:
         print(f"\n{Fore.GREEN}TTS system is working correctly!{Style.RESET_ALL}")
         
-        # Interactive test with voice selection and speed control
-        print(f"\n{Fore.CYAN}Interactive TTS Test with Voice Selection and Speed Control (Ctrl+C to exit):{Style.RESET_ALL}")
+        # Interactive test with voice selection
+        print(f"\n{Fore.CYAN}Interactive TTS Test with Voice Selection (Ctrl+C to exit):{Style.RESET_ALL}")
         current_voice_idx = 0
         
         while True:
             try:
-                current_ratio = get_slowdown_ratio()
-                speed_desc = "normal"
-                if current_ratio > 1.0:
-                    speed_desc = f"{current_ratio:.1f}x slower"
-                elif current_ratio < 1.0:
-                    speed_desc = f"{1/current_ratio:.1f}x faster"
-                
                 print(f"\n{Fore.MAGENTA}Current voice: {os.path.basename(available_voices[current_voice_idx]).replace('.onnx', '')}{Style.RESET_ALL}")
-                print(f"{Fore.MAGENTA}Current speed: {speed_desc} (ratio: {current_ratio:.2f}){Style.RESET_ALL}")
-                print(f"{Fore.CYAN}Commands: 'v' to change voice, 's' to change speed, or enter text to convert to speech{Style.RESET_ALL}")
+                print(f"{Fore.CYAN}Commands: 'v' to change voice, or enter text to convert to speech{Style.RESET_ALL}")
                 
                 user_input = input(f"\n{Fore.CYAN}Enter text or command: {Style.RESET_ALL}")
                 
@@ -374,25 +312,6 @@ if __name__ == "__main__":
                             print(f"{Fore.RED}Invalid choice. Please select 1-{len(available_voices)}{Style.RESET_ALL}")
                     except ValueError:
                         print(f"{Fore.RED}Invalid input. Please enter a number.{Style.RESET_ALL}")
-                
-                elif user_input.lower() == 's':
-                    # Speed control
-                    print(f"\n{Fore.YELLOW}Speed Control:{Style.RESET_ALL}")
-                    print(f"  Current ratio: {current_ratio:.2f}")
-                    print(f"  1.0 = normal speed")
-                    print(f"  2.0 = half speed (slower)")
-                    print(f"  0.5 = double speed (faster)")
-                    
-                    try:
-                        new_ratio = input(f"\n{Fore.CYAN}Enter new slowdown ratio (0.1-5.0): {Style.RESET_ALL}")
-                        ratio_value = float(new_ratio)
-                        if 0.1 <= ratio_value <= 5.0:
-                            set_slowdown_ratio(ratio_value)
-                        else:
-                            print(f"{Fore.RED}Invalid ratio. Please enter a value between 0.1 and 5.0{Style.RESET_ALL}")
-                    except ValueError:
-                        print(f"{Fore.RED}Invalid input. Please enter a decimal number.{Style.RESET_ALL}")
-                
                 else:
                     # TTS generation
                     selected_voice = available_voices[current_voice_idx]
