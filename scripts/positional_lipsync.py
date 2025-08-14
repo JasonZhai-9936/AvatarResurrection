@@ -108,7 +108,7 @@ class PositionalLipSyncSystem:
         self._print_status()
 
     def _check_ffmpeg(self) -> bool:
-        """Check if FFmpeg is available"""
+        """Check if FFmpeg is available with GPU acceleration detection"""
         ffmpeg_paths = [
             'ffmpeg', 'ffmpeg.exe',
             r'C:\ffmpeg\bin\ffmpeg.exe',
@@ -121,6 +121,15 @@ class PositionalLipSyncSystem:
                 if result.returncode == 0:
                     self.ffmpeg_path = path
                     self.ffprobe_path = path.replace('ffmpeg', 'ffprobe')
+                    
+                    # Check for hardware acceleration
+                    if 'nvenc' in result.stdout.lower():
+                        self.has_nvidia_gpu = True
+                        print(f"{Fore.GREEN}[POSLIPSYNC] NVIDIA GPU acceleration available{Style.RESET_ALL}")
+                    else:
+                        self.has_nvidia_gpu = False
+                        print(f"{Fore.YELLOW}[POSLIPSYNC] No GPU acceleration detected{Style.RESET_ALL}")
+                    
                     return True
             except:
                 continue
@@ -273,33 +282,46 @@ class PositionalLipSyncSystem:
         return selected_clip
 
     def extract_audio_segment(self, input_audio: str, start_time: float, end_time: float, output_path: str):
-        """Extract audio segment using ffmpeg"""
+        """Extract audio segment using ffmpeg with fast seeking"""
         duration = end_time - start_time
         
         # Create output directory if it doesn't exist
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
+        # Use faster audio extraction - seek BEFORE input
         cmd = [
             self.ffmpeg_path, '-y',
+            '-ss', str(start_time),  # Seek BEFORE input for faster processing
             '-i', input_audio,
-            '-ss', str(start_time),
             '-t', str(duration),
-            '-acodec', 'pcm_s16le',  # Use uncompressed audio for better compatibility
-            '-ar', '44100',          # Standard sample rate
-            '-ac', '2',              # Stereo
+            '-acodec', 'copy',  # Use copy instead of re-encoding when possible
+            '-avoid_negative_ts', 'make_zero',
             output_path
         ]
         
         try:
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=30)
-            print(f"{Fore.GREEN}[POSLIPSYNC] Extracted audio segment: {os.path.basename(output_path)}{Style.RESET_ALL}")
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=15)
+            print(f"{Fore.GREEN}[POSLIPSYNC] Fast extracted: {os.path.basename(output_path)}{Style.RESET_ALL}")
             return True
         except subprocess.CalledProcessError as e:
-            print(f"{Fore.RED}[POSLIPSYNC] Audio extraction error: {e.stderr}{Style.RESET_ALL}")
-            return False
-        except Exception as e:
-            print(f"{Fore.RED}[POSLIPSYNC] Audio extraction failed: {e}{Style.RESET_ALL}")
-            return False
+            # Fallback to slower but more compatible method
+            print(f"{Fore.YELLOW}[POSLIPSYNC] Fast extraction failed, using fallback{Style.RESET_ALL}")
+            cmd = [
+                self.ffmpeg_path, '-y',
+                '-i', input_audio,
+                '-ss', str(start_time),
+                '-t', str(duration),
+                '-acodec', 'pcm_s16le',
+                '-ar', '44100', '-ac', '2',
+                output_path
+            ]
+            try:
+                result = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=20)
+                print(f"{Fore.GREEN}[POSLIPSYNC] Fallback extracted: {os.path.basename(output_path)}{Style.RESET_ALL}")
+                return True
+            except Exception as e2:
+                print(f"{Fore.RED}[POSLIPSYNC] Audio extraction failed: {e2}{Style.RESET_ALL}")
+                return False
 
     def get_video_duration(self, video_path: str) -> float:
         """Get video duration using ffprobe"""

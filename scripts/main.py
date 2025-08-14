@@ -1,4 +1,4 @@
-# main.py - Clean main application with proper video event handling
+# main.py - Complete main application with proper video event handling and no duplicate TTS
 
 import sys
 import os
@@ -8,14 +8,11 @@ import time
 # Set project directory (one folder above scripts)
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
-
-from positional_lipsync import generate_lipsync_video
-
 from nicegui import ui, app
-from ui import build_ui
 from LLM_Groq import generate_darwin_response
 from TTS_Piper import generate_and_stream_audio, set_voice_model
 from video_manager import VideoManager
+from positional_lipsync import generate_lipsync_video  # Using the new Sora-based system
 from colorama import Fore, Style, init
 
 # Initialize colorama for colored terminal output
@@ -98,7 +95,7 @@ def handle_user_input(user_text: str):
             def lipsync_complete_callback():
                 print(f"{Fore.GREEN}[MAIN] Lip-sync playback completed{Style.RESET_ALL}")
             
-            print(f"{Fore.CYAN}[MAIN] Starting positional lipsync (includes TTS generation){Style.RESET_ALL}")
+            print(f"{Fore.CYAN}[MAIN] Starting Sora lipsync (includes TTS generation){Style.RESET_ALL}")
             video_manager.start_lipsync_generation(response, lipsync_complete_callback)
         else:
             print(f"{Fore.YELLOW}[MAIN] Video manager not available, generating standalone TTS{Style.RESET_ALL}")
@@ -164,13 +161,13 @@ def update_status_displays():
 
 @ui.page('/')
 def index():
-    """Main page with clean video integration"""
+    """Main page with clean video integration and volume slider"""
     global chat_log, video_manager, main_video_element
 
     # Set page title and styling
     ui.page_title('Chat with Charles Darwin - Enhanced Video')
 
-    # Add custom CSS for better styling
+    # Add the final corrected CSS
     ui.add_head_html('''
     <style>
         body {
@@ -178,46 +175,71 @@ def index():
             margin: 0;
             padding: 0;
         }
+        
         .nicegui-content {
             background: transparent !important;
         }
-        .q-message-text--sent .q-message-text-content {
-            color: black !important;
-            background-color: #e0f2fe !important;
-        }
-        .q-message-text--received .q-message-text-content {
-            color: black !important;
-            background-color: #f1f5f9 !important;
+
+        /* Styles the outer bubble for SENT messages (User) */
+        .q-message--sent .q-message-text {
+            background-color: #3b82f6 !important; /* Blue */
+            color: white !important;
+            border-radius: 18px !important;
+            padding: 10px 16px !important;
+            max-width: 80%;
+            margin-left: auto; /* Aligns bubble to the right */
+            margin-right: 0;
         }
         
-        /* Enhanced video styling */
-        .main-video-container {
-            border: 2px solid #4f46e5;
+        /* Styles the outer bubble for RECEIVED messages (Darwin) */
+        .q-message--received .q-message-text {
+            background-color: #10b981 !important; /* Green */
+            color: white !important;
+            border-radius: 18px !important;
+            padding: 10px 16px !important;
+            max-width: 80%;
+            margin-right: auto; /* Aligns bubble to the left */
+            margin-left: 0;
+        }
+
+        /* This rule for inner content ensures no highlighting */
+        .q-message-text-content,
+        .q-message-text-content * {
+            text-shadow: none !important;
+            box-shadow: none !important;
+            font-weight: normal !important;
+            font-style: normal !important;
+            background: transparent !important;
+        }
+        
+        /* Styles the name labels ('You', 'Darwin') */
+        .q-message-name {
+            color: black !important;
+            font-weight: 600 !important; /* semi-bold */
+        }
+        
+        /* Make text input black */
+        .q-field__native,
+        .q-field__input,
+        textarea {
+            color: #1f2937 !important;
+            background-color: white !important;
+        }
+        
+        .q-field__label {
+            color: #6b7280 !important;
+        }
+        
+        /* Volume slider styling */
+        .volume-slider {
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 8px;
-            overflow: hidden;
-            background: black;
-        }
-        
-        .video-status {
-            font-family: monospace;
-            font-size: 11px;
-        }
-        
-        /* Sidebar styling */
-        .sidebar-button {
-            transition: all 0.2s ease;
-        }
-        .sidebar-button:hover {
-            transform: translateX(2px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .voice-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            border-top: 2px solid #cbd5e0;
+            padding: 12px 16px;
+            margin: 8px 0;
         }
     </style>
     ''')
+
 
     # Header
     with ui.row().classes('w-full justify-center p-4'):
@@ -235,7 +257,7 @@ def index():
                     main_video_element = ui.video(
                         src='',  # Will be set by video manager
                         autoplay=True,
-                        muted=True,
+                        muted=True,  # START MUTED for autoplay policy, unmute when needed
                         controls=False
                     ).classes('w-full h-full').style('object-fit: contain;')
                     
@@ -244,7 +266,15 @@ def index():
                     
                     # Status overlay
                     with ui.element('div').style('position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 10;'):
-                        ui.label('Initializing...').classes('video-status')
+                        status_label = ui.label('Initializing...').classes('video-status')
+
+                # Add Volume Slider below video
+                with ui.card().classes('volume-slider w-full mt-2'):
+                    ui.label('🔊 Volume').classes('text-sm font-medium text-gray-700 mb-2')
+                    volume_slider = ui.slider(
+                        min=0, max=100, value=75, step=5
+                    ).props('label-always').classes('w-full')
+                    ui.label('Adjust Darwin\'s voice volume').classes('text-xs text-gray-500 mt-1')
 
             # === CENTER PANEL ===
             with ui.column().classes('items-center gap-4 h-full').style('width: 45%;'):
@@ -253,7 +283,7 @@ def index():
                     ui.video(
                         src='',  # Can be set to a background video
                         autoplay=True,
-                        muted=True,
+                        muted=True,  # Background video can stay muted
                         loop=True,
                         controls=False
                     ).classes('w-full h-full').style('object-fit: cover;')
@@ -289,13 +319,12 @@ def index():
                 # Sidebar Content
                 with ui.column().classes('w-full p-3 gap-3'):
                     # Settings Button
-                    ui.button('âš™ï¸ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start bg-gray-200 text-gray-700 py-2 px-3 rounded')
+                    ui.button('⚙️ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start bg-gray-200 text-gray-700 py-2 px-3 rounded')
                     
                     # Video Status Section
                     ui.separator()
                     ui.label('Video Status').classes('font-medium text-gray-600 text-sm mt-4')
                     
-                    status_label = ui.label('Status: Initializing...').classes('text-xs text-gray-500')
                     state_label = ui.label('State: Unknown').classes('text-xs text-gray-500')
                     mode_label = ui.label('Mode: Unknown').classes('text-xs text-gray-500')
                     
@@ -354,6 +383,114 @@ def index():
             # Voice info
             ui.label(f'Available voices: {len(available_voices)}').classes('text-sm text-gray-500')
     
+    # Add enhanced JavaScript with video management and smart audio control
+    ui.add_body_html('''
+    <script>
+    let videoManager = {
+        currentVideo: null,
+        statusDisplay: null,
+        isReady: false,
+        isLipsyncVideo: false
+    };
+
+    // Update video source and handle audio intelligently
+    function updateMainVideo(videoUrl) {
+        const video = document.querySelector('video[autoplay]:not([loop])');
+        
+        if (video && videoUrl) {
+            console.log('[VIDEO] Loading new video:', videoUrl);
+            
+            // Check if this is a lipsync video (contains temp_lipsync in path)
+            videoManager.isLipsyncVideo = videoUrl.includes('temp_lipsync') || videoUrl.includes('lipsync');
+            
+            if (videoManager.isLipsyncVideo) {
+                console.log('[VIDEO] Lipsync video detected - will unmute');
+                video.muted = false;
+                video.volume = 1.0;
+            } else {
+                console.log('[VIDEO] Regular video - staying muted');
+                video.muted = true;
+                video.volume = 0.0;
+            }
+            
+            video.src = videoUrl;
+            video.load();
+            
+            video.onloadstart = function() {
+                if (videoManager.isLipsyncVideo) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                }
+            };
+            
+            video.oncanplay = function() {
+                if (videoManager.isLipsyncVideo) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                    console.log('[VIDEO] Lipsync video ready to play (unmuted)');
+                } else {
+                    console.log('[VIDEO] Regular video ready to play (muted)');
+                }
+            };
+            
+            video.onplay = function() {
+                if (videoManager.isLipsyncVideo) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                    console.log('[VIDEO] Lipsync video started playing (unmuted)');
+                } else {
+                    console.log('[VIDEO] Regular video started playing (muted)');
+                }
+            };
+            
+            video.onerror = function(e) {
+                console.error('[VIDEO] Error loading video:', e);
+            };
+        }
+    }
+
+    // Smart unmute function - only unmute lipsync videos
+    function ensureCorrectAudioState() {
+        const videos = document.querySelectorAll('video');
+        videos.forEach(video => {
+            if (!video.hasAttribute('loop')) {  // Don't touch background videos
+                // Check current video source
+                const isLipsync = video.src && (video.src.includes('temp_lipsync') || video.src.includes('lipsync'));
+                
+                if (isLipsync) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                } else {
+                    video.muted = true;
+                    video.volume = 0.0;
+                }
+            }
+        });
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', function() {
+        console.log('[UI] Darwin Chat UI with video management loaded');
+        videoManager.isReady = true;
+        
+        // Set correct audio state
+        ensureCorrectAudioState();
+        
+        // Set up global functions for Python callback
+        window.updateMainVideo = updateMainVideo;
+        window.ensureCorrectAudioState = ensureCorrectAudioState;
+        
+        // Periodically ensure correct audio state
+        setInterval(ensureCorrectAudioState, 2000);
+        
+        console.log('[UI] Video management system ready (smart audio control)');
+    });
+    
+    // Also check audio state when user interacts
+    document.addEventListener('click', ensureCorrectAudioState);
+    </script>
+    ''')
+    
     # Initialize video system after UI is built
     def delayed_init():
         time.sleep(0.5)  # Small delay to ensure UI is fully loaded
@@ -371,13 +508,109 @@ def index():
     init_thread = threading.Thread(target=delayed_init, daemon=True)
     init_thread.start()
 
+@ui.page('/settings')
+def settings_page():
+    """Settings page for configuration options."""
+    import json
+    
+    def load_config():
+        """Load settings from config.json in the project root."""
+        try:
+            config_file = os.path.join(PROJECT_DIR, "config.json")
+            with open(config_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {'useRAG': False, 'useCuda': True, 'maxWords': 50}
+
+    def save_config(config):
+        """Save settings to config.json in the project root."""
+        try:
+            config_file = os.path.join(PROJECT_DIR, "config.json")
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+            return True
+        except Exception as e:
+            print(f"Error saving config: {e}")
+            return False
+    
+    config = load_config()
+    
+    # Page styling
+    ui.add_head_html('''
+        <style>
+            body {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 0;
+            }
+            .settings-card {
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            }
+        </style>
+        ''')
+    
+    with ui.column().classes('w-full max-w-2xl mx-auto p-8 gap-6'):
+        # Header
+        with ui.row().classes('w-full items-center justify-between'):
+            ui.label('Settings').classes('text-3xl font-bold text-white')
+            ui.button('← Back to Chat', on_click=lambda: ui.navigate.to('/')).classes('bg-blue-600 text-white px-4 py-2 rounded-lg')
+        
+        # Settings Card
+        with ui.card().classes('p-6 w-full').classes('settings-card'):
+            ui.label('Configuration Options').classes('text-xl font-semibold mb-4')
+            
+            # RAG Setting
+            with ui.row().classes('w-full items-center justify-between mb-4'):
+                with ui.column():
+                    ui.label('Enable RAG Search').classes('font-medium')
+                    ui.label('Use Retrieval-Augmented Generation for enhanced responses').classes('text-sm text-gray-600')
+                rag_switch = ui.switch(value=config.get('useRAG', False))
+            
+            ui.separator()
+            
+            # CUDA Setting
+            with ui.row().classes('w-full items-center justify-between mb-4'):
+                with ui.column():
+                    ui.label('Use CUDA Acceleration').classes('font-medium')
+                    ui.label('Enable GPU acceleration for faster TTS processing').classes('text-sm text-gray-600')
+                cuda_switch = ui.switch(value=config.get('useCuda', True))
+            
+            ui.separator()
+            
+            # Max Words Setting
+            with ui.column().classes('w-full mb-4'):
+                ui.label('Maximum Words per Response').classes('font-medium mb-2')
+                max_words_slider = ui.slider(
+                    min=10, max=200, step=10, value=config.get('maxWords', 50)
+                ).props('label-always')
+                ui.label('Controls the length of Darwin\'s responses').classes('text-sm text-gray-600')
+            
+            ui.separator()
+            
+            # Save Button
+            def save_settings():
+                new_config = {
+                    'useRAG': rag_switch.value,
+                    'useCuda': cuda_switch.value,
+                    'maxWords': int(max_words_slider.value)
+                }
+                
+                if save_config(new_config):
+                    ui.notify('Settings saved successfully!', type='positive')
+                else:
+                    ui.notify('Failed to save settings', type='negative')
+            
+            ui.button('Save Settings', on_click=save_settings).classes('w-full bg-green-600 text-white py-3 rounded-lg mt-4')
+
 def check_dependencies():
     """Enhanced dependency check including video system"""
     print(f"{Fore.CYAN}[MAIN] Checking dependencies...{Style.RESET_ALL}")
     
     # Check if required Python files exist
     scripts_dir = os.path.dirname(__file__)
-    required_files = ['LLM_Groq.py', 'TTS_Piper.py', 'video_manager.py', 'lipsync.py']
+    required_files = ['LLM_Groq.py', 'TTS_Piper.py', 'video_manager.py', 'positional_lipsync.py']
     for file in required_files:
         file_path = os.path.join(scripts_dir, file)
         if not os.path.exists(file_path):
@@ -400,6 +633,15 @@ def check_dependencies():
         return False
     
     print(f"{Fore.GREEN}[MAIN] Found {video_count} video files in nodes directory{Style.RESET_ALL}")
+
+    # Check Sora clips directory
+    sora_clips_path = os.path.join(PROJECT_DIR, "avatars", "Darwin", "sora", "all")
+    if not os.path.exists(sora_clips_path):
+        print(f"{Fore.YELLOW}[WARNING] Sora clips directory not found: {sora_clips_path}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}[WARNING] Positional lipsync may not work properly{Style.RESET_ALL}")
+    else:
+        sora_count = len([f for f in os.listdir(sora_clips_path) if f.lower().endswith('.mp4')])
+        print(f"{Fore.GREEN}[MAIN] Found {sora_count} Sora lipsync clips{Style.RESET_ALL}")
 
     # Check config files
     config_path = os.path.join(PROJECT_DIR, 'config.json')
