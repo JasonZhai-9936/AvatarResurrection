@@ -1,4 +1,4 @@
-# node_video_system.py - Enhanced with multiple duration detection methods
+# node_video_system_fixed.py - Fixed version with proper threading
 
 import os
 import json
@@ -67,10 +67,10 @@ class NodeVideoSystem:
         """Get all available video files for a specific transition"""
         # Map node IDs to directory names
         node_mapping = {
-        "node_1": "main",
-        "node_2": "newspaper",
-        "node_3": "phone"       
-    }
+            "node_1": "main",
+            "node_2": "newspaper",
+            "node_3": "phone"       
+        }
         
         from_name = node_mapping.get(from_node, from_node.replace("node_", ""))
         to_name = node_mapping.get(to_node, to_node.replace("node_", ""))
@@ -301,8 +301,12 @@ class NodeVideoSystem:
                     
                     self.current_video_path = video_path
                     
+                    # Call the callback - it should handle UI threading itself
                     if self.video_ready_callback:
-                        self.video_ready_callback(video_path)
+                        try:
+                            self.video_ready_callback(video_path)
+                        except Exception as e:
+                            print(f"{Fore.RED}[NODE_SYSTEM] Error calling video callback: {e}{Style.RESET_ALL}")
                     
                     # Get duration and wait
                     duration = self.get_video_duration(video_path)
@@ -320,11 +324,19 @@ class NodeVideoSystem:
                     
                 else:
                     print(f"{Fore.RED}[NODE_SYSTEM] No video available, waiting...{Style.RESET_ALL}")
-                    time.sleep(2)
+                    # Simple sleep without UI interaction
+                    for _ in range(20):  # 2 seconds in 0.1s chunks
+                        if self.is_interrupted:
+                            return
+                        time.sleep(0.1)
                     
             except Exception as e:
                 print(f"{Fore.RED}[NODE_SYSTEM] Error in video loop: {e}{Style.RESET_ALL}")
-                time.sleep(1)
+                # Wait a bit before retrying
+                for _ in range(10):  # 1 second in 0.1s chunks
+                    if self.is_interrupted:
+                        return
+                    time.sleep(0.1)
 
     def interrupt_for_response(self):
         """Interrupt idle playing for user response"""

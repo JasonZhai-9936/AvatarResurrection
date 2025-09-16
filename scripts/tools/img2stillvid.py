@@ -1,49 +1,28 @@
-import os
 import subprocess
 
-FFMPEG_PATH = r"C:\ffmpeg\bin\ffmpeg.exe"  # Adjust if needed
+FFMPEG_PATH = r"C:\ffmpeg\bin\ffmpeg.exe"
 
-def split_video_auto(input_file, time_split="00:02:16"):
+def img_to_video(image_path, output_path, duration=5, fps=30):
     """
-    Split a video into two clips at the given time (default 2 min 16 sec),
-    automatically naming the outputs based on the original filename.
+    Convert an image to a still video. Ensures even dimensions for yuv420p.
     """
-    print("Using ffmpeg at:", FFMPEG_PATH)
+    # Force even width/height, keep aspect ratio; then set fps
+    vf = f"scale=trunc(iw/2)*2:trunc(ih/2)*2,fps={fps}"
 
-    # Extract base name and extension
-    base, ext = os.path.splitext(input_file)
-    output_part1 = f"{base}_part1{ext}"
-    output_part2 = f"{base}_part2{ext}"
-
-    # First part: from start to time_split
-    cmd1 = [
+    cmd = [
         FFMPEG_PATH,
-        "-y",
-        "-i", input_file,
-        "-t", time_split,
-        "-c", "copy",
-        output_part1
+        "-y",                 # overwrite
+        "-loop", "1",         # loop the single frame
+        "-i", image_path,
+        "-t", str(duration),  # duration
+        "-vf", vf,
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        output_path,
     ]
+    print("Running:", " ".join(cmd))
+    subprocess.run(cmd, check=True)
 
-    # Second part: from time_split to end
-    cmd2 = [
-        FFMPEG_PATH,
-        "-y",
-        "-i", input_file,
-        "-ss", time_split,
-        "-c", "copy",
-        output_part2
-    ]
-
-    print("Running:", " ".join(cmd1))
-    subprocess.run(cmd1, check=True)
-
-    print("Running:", " ".join(cmd2))
-    subprocess.run(cmd2, check=True)
-
-    print(f"Saved clips:\n - {output_part1}\n - {output_part2}")
-
-
-# Example usage
-input_video = r"C:\Users\Jason\Desktop\Important\Projects\AvatarResurrection\scripts\tools\sora1.mp4"
-split_video_auto(input_video)
+# Example:
+img_to_video("main2.png", "main2.mp4", duration=5, fps=30)

@@ -112,7 +112,7 @@ class VectorSearch:
 
 class MultiRAGQueryAgent:
     def __init__(self):
-        self.llm = ChatGroq(model_name="llama3-70b-8192", api_key=os.getenv("GROQ_API_KEY"))
+        self.llm = ChatGroq(model_name="llama-3.1-8b-instant", api_key=os.getenv("GROQ_API_KEY"))
 
         self.general_darwin_search = VectorSearch(index_path=os.path.join(PROJECT_DIR, "faiss_index_file", "wiki"))
         self.writings_darwin_search = VectorSearch(index_path=os.path.join(PROJECT_DIR, "faiss_index_file", "Darwin"))
@@ -293,7 +293,7 @@ class MultiRAGQueryAgent:
 
 class DarwinLLM:
     def __init__(self):
-        self.model = ChatGroq(model_name="llama3-70b-8192", api_key=os.getenv("GROQ_API_KEY"))
+        self.model = ChatGroq(model_name="llama-3.1-8b-instant", api_key=os.getenv("GROQ_API_KEY"))
 
     def generate_response(self, messages):
         langchain_messages = []

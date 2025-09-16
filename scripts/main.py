@@ -1,4 +1,4 @@
-# main.py - Complete main application with proper video event handling and no duplicate TTS
+# main.py - Complete main application with compact layout (no background video)
 
 import sys
 import os
@@ -9,6 +9,7 @@ import time
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 from nicegui import ui, app
+from fastapi import Request
 from LLM_Groq import generate_darwin_response
 from TTS_Piper import generate_and_stream_audio, set_voice_model
 from video_manager import VideoManager
@@ -161,45 +162,55 @@ def update_status_displays():
 
 @ui.page('/')
 def index():
-    """Main page with clean video integration and volume slider"""
+    """Main page with compact layout (no background video player)"""
     global chat_log, video_manager, main_video_element
 
     # Set page title and styling
-    ui.page_title('Chat with Charles Darwin - Enhanced Video')
+    ui.page_title('Chat with Charles Darwin - Compact Layout')
 
-    # Add the final corrected CSS
+    # Modern tech theme CSS
     ui.add_head_html('''
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1a1a2e;
             margin: 0;
             padding: 0;
+            color: #e2e8f0;
         }
         
         .nicegui-content {
             background: transparent !important;
         }
 
+        /* Card styling for modern look */
+        .q-card {
+            background: rgba(30, 41, 59, 0.8) !important;
+            border: 1px solid rgba(100, 116, 139, 0.2) !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
         /* Styles the outer bubble for SENT messages (User) */
         .q-message--sent .q-message-text {
-            background-color: #3b82f6 !important; /* Blue */
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
             color: white !important;
             border-radius: 18px !important;
-            padding: 10px 16px !important;
+            padding: 12px 18px !important;
             max-width: 80%;
-            margin-left: auto; /* Aligns bubble to the right */
+            margin-left: auto;
             margin-right: 0;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3) !important;
         }
         
         /* Styles the outer bubble for RECEIVED messages (Darwin) */
         .q-message--received .q-message-text {
-            background-color: #10b981 !important; /* Green */
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
             color: white !important;
             border-radius: 18px !important;
-            padding: 10px 16px !important;
+            padding: 12px 18px !important;
             max-width: 80%;
-            margin-right: auto; /* Aligns bubble to the left */
+            margin-right: auto;
             margin-left: 0;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
         }
 
         /* This rule for inner content ensures no highlighting */
@@ -214,174 +225,228 @@ def index():
         
         /* Styles the name labels ('You', 'Darwin') */
         .q-message-name {
-            color: black !important;
-            font-weight: 600 !important; /* semi-bold */
+            color: #94a3b8 !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
         }
         
-        /* Make text input black */
+        /* Modern text input styling */
         .q-field__native,
         .q-field__input,
         textarea {
-            color: #1f2937 !important;
-            background-color: white !important;
+            color: #e2e8f0 !important;
+            background-color: rgba(30, 41, 59, 0.8) !important;
+            border-radius: 8px !important;
         }
         
         .q-field__label {
-            color: #6b7280 !important;
+            color: #94a3b8 !important;
+        }
+        
+        .q-field--outlined .q-field__control {
+            background: rgba(30, 41, 59, 0.6) !important;
+            border: 1px solid rgba(100, 116, 139, 0.3) !important;
+            border-radius: 8px !important;
+        }
+        
+        .q-field--outlined.q-field--focused .q-field__control {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+        }
+        
+        /* Button styling */
+        .q-btn {
+            text-transform: none !important;
+            font-weight: 500 !important;
         }
         
         /* Volume slider styling */
         .volume-slider {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin: 8px 0;
+            background: rgba(30, 41, 59, 0.8) !important;
+            border: 1px solid rgba(100, 116, 139, 0.2) !important;
+            border-radius: 12px !important;
+            padding: 16px !important;
+            margin: 8px 0 !important;
+            backdrop-filter: blur(10px) !important;
+        }
+        
+        .volume-slider .q-slider__track {
+            background: rgba(100, 116, 139, 0.3) !important;
+        }
+        
+        .volume-slider .q-slider__track-container--h .q-slider__selection {
+            background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%) !important;
+        }
+        
+        /* Sidebar styling */
+        .q-separator {
+            background: rgba(100, 116, 139, 0.3) !important;
+        }
+        
+        /* Chat log area */
+        .chat-area {
+            background: rgba(15, 23, 42, 0.6) !important;
+            border: 1px solid rgba(100, 116, 139, 0.2) !important;
+            backdrop-filter: blur(5px) !important;
+        }
+        
+        /* Scrollbar styling for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.7);
+        }
+        
+        /* Selection styling */
+        ::selection {
+            background: rgba(59, 130, 246, 0.3) !important;
+            color: #e2e8f0 !important;
         }
     </style>
     ''')
 
+    # Header with modern styling
+    with ui.row().classes('w-full justify-center p-6'):
+        ui.label('Chat with Charles Darwin').classes('text-4xl font-bold').style('color: #f1f5f9; text-shadow: 0 2px 10px rgba(0,0,0,0.3);')
 
-    # Header
-    with ui.row().classes('w-full justify-center p-4'):
-        ui.label('Chat with Charles Darwin - Enhanced Video').classes('text-4xl font-bold text-white')
-
-    with ui.column().classes('w-full h-screen gap-0'):
-        # === MAIN CONTENT ROW ===
-        with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4'):
-            
-            # === LEFT VIDEO PLAYER (MAIN AVATAR) ===
-            with ui.column().classes('items-start shrink-0').style('width: 35%; height: 100%;'):
-                with ui.card().classes('p-0 main-video-container').style('width: 100%; aspect-ratio: 2/3;'):
-                    
-                    # Create the main video element with proper event handling
-                    main_video_element = ui.video(
-                        src='',  # Will be set by video manager
-                        autoplay=True,
-                        muted=True,  # START MUTED for autoplay policy, unmute when needed
-                        controls=False
-                    ).classes('w-full h-full').style('object-fit: contain;')
-                    
-                    # Set up the video ended event handler
-                    main_video_element.on('ended', video_ended_callback)
-                    
-                    # Status overlay
-                    with ui.element('div').style('position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 10;'):
-                        status_label = ui.label('Initializing...').classes('video-status')
-
-                # Add Volume Slider below video
-                with ui.card().classes('volume-slider w-full mt-2'):
-                    ui.label('🔊 Volume').classes('text-sm font-medium text-gray-700 mb-2')
-                    volume_slider = ui.slider(
-                        min=0, max=100, value=75, step=5
-                    ).props('label-always').classes('w-full')
-                    ui.label('Adjust Darwin\'s voice volume').classes('text-xs text-gray-500 mt-1')
-
-            # === CENTER PANEL ===
-            with ui.column().classes('items-center gap-4 h-full').style('width: 45%;'):
-                # === BACKGROUND VIDEO PLAYER ===
-                with ui.card().classes('p-0 overflow-hidden').style('width: 100%; aspect-ratio: 16/9; background: black;'):
-                    ui.video(
-                        src='',  # Can be set to a background video
-                        autoplay=True,
-                        muted=True,  # Background video can stay muted
-                        loop=True,
-                        controls=False
-                    ).classes('w-full h-full').style('object-fit: cover;')
-
-                # === CHAT LOG (SCROLLABLE) ===
-                chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-auto rounded-lg').style('background: #f0f0f0;')
-                with chat_log:
-                    ui.label('Ready to chat with Darwin').classes('text-lg text-center w-full').style('color: #6b7280;')
-
-                # === TEXT INPUT & BUTTON ===
-                with ui.column().classes('items-center gap-4 w-full'):
-                    prompt_input = ui.textarea(
-                        label='Your question for Darwin', 
-                        placeholder='Ask Charles Darwin anything...'
-                    ).props('outlined').classes('w-full').style('min-height: 120px; font-size: 16px;')
-
-                    def submit_prompt():
-                        user_text = prompt_input.value
-                        if user_text and user_text.strip():
-                            handle_user_input(user_text)
-                            prompt_input.value = ""
-                        else:
-                            ui.notify("Please enter a question first", color="warning")
-
-                    ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full text-lg py-3 px-6 rounded-lg').style('background-color: #2563eb; color: white;')
-
-            # === RIGHT SIDEBAR ===
-            with ui.column().classes('h-full bg-gray-100 border-l border-gray-300').style('width: 250px;'):
-                # Sidebar Header
-                with ui.row().classes('w-full items-center justify-between p-3 border-b border-gray-300'):
-                    ui.label('Menu').classes('font-semibold text-gray-700')
-
-                # Sidebar Content
-                with ui.column().classes('w-full p-3 gap-3'):
-                    # Settings Button
-                    ui.button('⚙️ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start bg-gray-200 text-gray-700 py-2 px-3 rounded')
-                    
-                    # Video Status Section
-                    ui.separator()
-                    ui.label('Video Status').classes('font-medium text-gray-600 text-sm mt-4')
-                    
-                    state_label = ui.label('State: Unknown').classes('text-xs text-gray-500')
-                    mode_label = ui.label('Mode: Unknown').classes('text-xs text-gray-500')
-                    
-                    # Quick Info
-                    ui.separator()
-                    ui.label('Configuration').classes('font-medium text-gray-600 text-sm mt-4')
-                    
-                    # Load config for display
-                    import json
-                    try:
-                        config_file = os.path.join(PROJECT_DIR, "config.json")
-                        with open(config_file, 'r') as f:
-                            config = json.load(f)
-                    except:
-                        config = {'useRAG': False, 'maxWords': 50, 'useCuda': True}
-                    
-                    ui.label(f"RAG: {'On' if config.get('useRAG') else 'Off'}").classes('text-xs text-gray-500')
-                    ui.label(f"Max Words: {config.get('maxWords', 50)}").classes('text-xs text-gray-500')
-                    ui.label(f"CUDA: {'On' if config.get('useCuda') else 'Off'}").classes('text-xs text-gray-500')
-
-        # === VOICE SELECTION SECTION ===
-        ui.separator().classes('w-full')
+    # === MAIN CONTENT ROW ===
+    with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4').style('height: calc(100vh - 180px);'):
         
-        with ui.row().classes('w-full p-4 bg-gray-50 border-t border-gray-200 items-center justify-center gap-8'):
-            ui.label('Voice Selection').classes('text-lg font-semibold text-gray-700')
-            
-            # Get available voices
-            def get_available_voices():
-                voices_dir = os.path.join(PROJECT_DIR, "Piper_Voices")
-                voices = []
+        # === LEFT VIDEO PLAYER (MAIN AVATAR) ===
+        with ui.column().classes('items-start shrink-0').style('width: 35%; height: 100%;'):
+            with ui.card().classes('p-0 main-video-container').style('width: 100%; aspect-ratio: 2/3; max-height: 80vh; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(100, 116, 139, 0.3);'):
                 
-                if os.path.exists(voices_dir):
-                    for file in os.listdir(voices_dir):
-                        if file.endswith('.onnx'):
-                            voice_name = file.replace('.onnx', '')
-                            voices.append(voice_name)
+                # Create the main video element with proper event handling
+                main_video_element = ui.video(
+                    src='',  # Will be set by video manager
+                    autoplay=True,
+                    muted=True,  # START MUTED for autoplay policy, unmute when needed
+                    controls=False
+                ).classes('w-full h-full').style('object-fit: contain;')
                 
-                return sorted(voices) if voices else ['en_GB-semaine-medium']
+                # Set up the video ended event handler using JavaScript
+                main_video_element.on('ended', video_ended_callback)
+                
+                # Status overlay with modern styling
+                with ui.element('div').style('position: absolute; top: 10px; left: 10px; background: rgba(15, 23, 42, 0.9); color: #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 12px; z-index: 10; border: 1px solid rgba(100, 116, 139, 0.3); backdrop-filter: blur(5px);'):
+                    status_label = ui.label('Initializing...').classes('video-status')
+
+            # Add Volume Slider below video with modern styling
+            with ui.card().classes('volume-slider w-full mt-3'):
+                ui.label('🔊 Volume').classes('text-sm font-medium mb-2').style('color: #e2e8f0;')
+                volume_slider = ui.slider(
+                    min=0, max=100, value=75, step=5
+                ).props('label-always').classes('w-full')
+                ui.label('Adjust Darwin\'s voice volume').classes('text-xs mt-1').style('color: #94a3b8;')
+
+        # === CENTER PANEL (CHAT + INPUT) ===
+        with ui.column().classes('items-center gap-4 h-full').style('width: 45%;'):
             
-            available_voices = get_available_voices()
-            current_voice_default = available_voices[0] if available_voices else 'en_GB-semaine-medium'
+            # === CHAT LOG (SCROLLABLE) ===
+            chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-auto rounded-lg chat-area').style('max-height: 60vh;')
+            with chat_log:
+                ui.label('Ready to chat with Darwin').classes('text-lg text-center w-full').style('color: #94a3b8;')
+
+            # === TEXT INPUT & BUTTON ===
+            with ui.column().classes('items-center gap-4 w-full'):
+                prompt_input = ui.textarea(
+                    placeholder='Ask Charles Darwin anything...'
+                ).props('outlined').classes('w-full').style('min-height: 100px; font-size: 16px;')
+
+                def submit_prompt():
+                    user_text = prompt_input.value
+                    if user_text and user_text.strip():
+                        handle_user_input(user_text)
+                        prompt_input.value = ""
+                    else:
+                        ui.notify("Please enter a question first", color="warning")
+
+                ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full text-lg py-3 px-6 rounded-lg').style('background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); transition: all 0.3s ease;')
+
+        # === RIGHT SIDEBAR ===
+        with ui.column().classes('h-full border-l').style('width: 250px; background: rgba(15, 23, 42, 0.8); border-color: rgba(100, 116, 139, 0.3); backdrop-filter: blur(10px);'):
+            # Sidebar Header
+            with ui.row().classes('w-full items-center justify-between p-4 border-b').style('border-color: rgba(100, 116, 139, 0.3);'):
+                ui.label('Menu').classes('font-semibold').style('color: #e2e8f0;')
+
+            # Sidebar Content
+            with ui.column().classes('w-full p-4 gap-4'):
+                # Settings Button
+                ui.button('⚙️ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start py-2 px-3 rounded-lg').style('background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);')
+                
+                # Video Status Section
+                ui.separator()
+                ui.label('Video Status').classes('font-medium text-sm mt-4').style('color: #94a3b8;')
+                
+                state_label = ui.label('State: Unknown').classes('text-xs').style('color: #64748b;')
+                mode_label = ui.label('Mode: Unknown').classes('text-xs').style('color: #64748b;')
+                
+                # Quick Info
+                ui.separator()
+                ui.label('Configuration').classes('font-medium text-sm mt-4').style('color: #94a3b8;')
+                
+                # Load config for display
+                import json
+                try:
+                    config_file = os.path.join(PROJECT_DIR, "config.json")
+                    with open(config_file, 'r') as f:
+                        config = json.load(f)
+                except:
+                    config = {'useRAG': False, 'maxWords': 50, 'useCuda': True}
+                
+                ui.label(f"RAG: {'On' if config.get('useRAG') else 'Off'}").classes('text-xs').style('color: #64748b;')
+                ui.label(f"Max Words: {config.get('maxWords', 50)}").classes('text-xs').style('color: #64748b;')
+                ui.label(f"CUDA: {'On' if config.get('useCuda') else 'Off'}").classes('text-xs').style('color: #64748b;')
+
+    # === VOICE SELECTION SECTION (BOTTOM) ===
+    ui.separator().classes('w-full').style('background: rgba(100, 116, 139, 0.3);')
+    
+    with ui.row().classes('w-full p-4 border-t items-center justify-center gap-8').style('background: rgba(15, 23, 42, 0.6); border-color: rgba(100, 116, 139, 0.3); backdrop-filter: blur(5px);'):
+        ui.label('Voice Selection').classes('text-lg font-semibold').style('color: #e2e8f0;')
+        
+        # Get available voices
+        def get_available_voices():
+            voices_dir = os.path.join(PROJECT_DIR, "Piper_Voices")
+            voices = []
             
-            voice_dropdown = ui.select(
-                options=available_voices,
-                value=current_voice_default,
-                label='Choose Voice Model'
-            ).classes('min-w-64')
+            if os.path.exists(voices_dir):
+                for file in os.listdir(voices_dir):
+                    if file.endswith('.onnx'):
+                        voice_name = file.replace('.onnx', '')
+                        voices.append(voice_name)
             
-            def on_voice_change():
-                selected_voice = voice_dropdown.value
-                ui.notify(f'Voice changed to: {selected_voice}', type='info')
-                handle_voice_change(selected_voice)
-            
-            voice_dropdown.on('update:model-value', on_voice_change)
-            
-            # Voice info
-            ui.label(f'Available voices: {len(available_voices)}').classes('text-sm text-gray-500')
+            return sorted(voices) if voices else ['en_GB-semaine-medium']
+        
+        available_voices = get_available_voices()
+        current_voice_default = available_voices[0] if available_voices else 'en_GB-semaine-medium'
+        
+        voice_dropdown = ui.select(
+            options=available_voices,
+            value=current_voice_default,
+            label='Choose Voice Model'
+        ).classes('min-w-64')
+        
+        def on_voice_change():
+            selected_voice = voice_dropdown.value
+            ui.notify(f'Voice changed to: {selected_voice}', type='info')
+            handle_voice_change(selected_voice)
+        
+        voice_dropdown.on('update:model-value', on_voice_change)
+        
+        # Voice info
+        ui.label(f'Available voices: {len(available_voices)}').classes('text-sm').style('color: #94a3b8;')
     
     # Add enhanced JavaScript with video management and smart audio control
     ui.add_body_html('''
@@ -443,6 +508,15 @@ def index():
                 }
             };
             
+            // CRITICAL: Set up the ended event handler
+            video.onended = function() {
+                console.log('[VIDEO] Video ended - calling Python callback');
+                // Call the Python callback via HTTP
+                fetch('/trigger_video_ended', {method: 'POST'})
+                    .then(response => console.log('[VIDEO] Video ended callback sent'))
+                    .catch(error => console.error('[VIDEO] Video ended callback failed:', error));
+            };
+            
             video.onerror = function(e) {
                 console.error('[VIDEO] Error loading video:', e);
             };
@@ -470,7 +544,7 @@ def index():
 
     // Initialize when page loads
     window.addEventListener('load', function() {
-        console.log('[UI] Darwin Chat UI with video management loaded');
+        console.log('[UI] Darwin Chat UI with compact layout loaded');
         videoManager.isReady = true;
         
         // Set correct audio state
@@ -483,7 +557,8 @@ def index():
         // Periodically ensure correct audio state
         setInterval(ensureCorrectAudioState, 2000);
         
-        console.log('[UI] Video management system ready (smart audio control)');
+        console.log('[UI] Video management system ready (compact layout)');
+        console.log('[UI] Video ended callback ready via HTTP');
     });
     
     // Also check audio state when user interacts
@@ -500,7 +575,7 @@ def index():
             status_thread = threading.Thread(target=update_status_displays, daemon=True)
             status_thread.start()
             
-            print(f"{Fore.GREEN}[MAIN] Video system fully integrated{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}[MAIN] Video system fully integrated - HTTP callback ready{Style.RESET_ALL}")
         else:
             print(f"{Fore.RED}[MAIN] Running without video system{Style.RESET_ALL}")
     
@@ -604,6 +679,17 @@ def settings_page():
             
             ui.button('Save Settings', on_click=save_settings).classes('w-full bg-green-600 text-white py-3 rounded-lg mt-4')
 
+# Add HTTP endpoint for video ended callback
+@app.post("/trigger_video_ended")
+async def trigger_video_ended(request: Request):
+    """HTTP endpoint to handle video ended events from JavaScript"""
+    try:
+        video_ended_callback()
+        return {"status": "success"}
+    except Exception as e:
+        print(f"{Fore.RED}[MAIN] Error in video ended callback: {e}{Style.RESET_ALL}")
+        return {"status": "error", "message": str(e)}
+
 def check_dependencies():
     """Enhanced dependency check including video system"""
     print(f"{Fore.CYAN}[MAIN] Checking dependencies...{Style.RESET_ALL}")
@@ -694,7 +780,7 @@ def cleanup():
 def main():
     """Enhanced main function with video system"""
     print(f"{Fore.GREEN}{'=' * 70}")
-    print(f"{Fore.YELLOW}Starting Enhanced Darwin Chat with Video & TTS")
+    print(f"{Fore.YELLOW}Starting Enhanced Darwin Chat with Video & TTS - Compact Layout")
     print(f"{Fore.GREEN}{'=' * 70}{Style.RESET_ALL}")
     print(f"[MAIN] Project directory: {PROJECT_DIR}")
 
@@ -725,12 +811,12 @@ def main():
         app.add_static_files('/temp_lipsync', lipsync_dir)
         print(f"[MAIN] Serving lip-sync from: {lipsync_dir}")
 
-    print(f"{Fore.GREEN}[MAIN] All systems ready. Starting enhanced web interface with video...{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}[MAIN] All systems ready. Starting compact web interface...{Style.RESET_ALL}")
 
     try:
         # Configure and run NiceGUI
         ui.run(
-            title='Enhanced Darwin Chat with Video & TTS',
+            title='Enhanced Darwin Chat - Compact Layout',
             port=8080,
             show=True,
             reload=False,

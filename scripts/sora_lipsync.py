@@ -29,7 +29,7 @@ class LipSyncSystem:
         
         # Configuration settings
         self.config = {
-            'sentence_pause_duration': 0.25,  # seconds of pause between sentences
+            'sentence_pause_duration': 0.10,  # seconds of pause between sentences
             'idle_clip_name': 'idle.mp4',    # name of idle clip in clips folder
             'use_sentence_pauses': False       # enable/disable pauses between sentences
         }
@@ -795,7 +795,7 @@ class LipSyncSystem:
 # Usage example
 if __name__ == "__main__":
     # Paths
-    clips_folder = r"E:\Jason\Projects\AvatarResurrection\avatars\Darwin\sora\all"
+    clips_folder = r"C:\Users\Jason\Desktop\Important\Projects\AvatarResurrection\avatars\Darwin\sora\all"
     audio_file = r"C:\Users\Jason\Desktop\Important\Projects\AvatarResurrection\scripts\old\t5.wav"
     
     # Initialize system

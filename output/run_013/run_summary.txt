@@ -1,0 +1,63 @@
+=== LIP SYNC RUN SUMMARY ===
+
+Run folder: run_013
+Timestamp: 1755168839.0426426
+Input audio: t5.wav
+Final duration: 28.83s
+Sentences processed: 7
+Videos created: 7
+Pauses enabled: No
+
+==================================================
+
+SENTENCE BREAKDOWN:
+
+Sentence 1:
+  Text: 'WhenIfirststeppedaboardtheBeagle,'
+  Duration: 0.00s - 2.38s
+  Syllables: 9
+
+Sentence 2:
+  Text: 'Icouldscarcelyhaveimaginedthetransformationthatawaitedme.'
+  Duration: 2.68s - 6.62s
+  Syllables: 19
+
+Sentence 3:
+  Text: 'TheseaiscarriedastoshoresofunimaginablevarietyfromthewildwindsweptcoastsofTearadaleFuego,'
+  Duration: 6.84s - 14.68s
+  Syllables: 31
+
+Sentence 4:
+  Text: 'tothesummitaislesoftheGalapagos.'
+  Duration: 15.14s - 17.74s
+  Syllables: 12
+
+Sentence 5:
+  Text: 'Eachlandingwasanewcageinthegrandvolumeofnature,'
+  Duration: 18.28s - 22.46s
+  Syllables: 15
+
+Sentence 6:
+  Text: 'eachspecimen,'
+  Duration: 22.80s - 23.58s
+  Syllables: 4
+
+Sentence 7:
+  Text: 'acluetosomedeepertruth.'
+  Duration: 24.04s - 26.08s
+  Syllables: 8
+
+
+==================================================
+
+FILES CREATED:
+
+  sentence_1_synced.mp4
+  sentence_2_synced.mp4
+  sentence_3_synced.mp4
+  sentence_4_synced.mp4
+  sentence_5_synced.mp4
+  sentence_6_synced.mp4
+  sentence_7_synced.mp4
+  final_lipsynced_video.mp4
+  temp/ (folder with audio segments)
