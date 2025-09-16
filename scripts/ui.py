@@ -1,4 +1,4 @@
-# ui.py - Fixed UI with collapsible sidebar and voice selection
+# ui.py - Enhanced UI with dark theme and word synchronization support
 
 from nicegui import ui
 import os
@@ -46,18 +46,26 @@ def settings_page():
     """Settings page for configuration options."""
     config = load_config()
     
-    # Page styling
+    # Page styling - dark theme
     ui.add_head_html('''
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
             margin: 0;
             padding: 0;
+            color: #e2e8f0;
         }
         .settings-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(59, 130, 246, 0.2);
             border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .q-field__label {
+            color: #94a3b8 !important;
+        }
+        .q-slider__track-container {
+            background: #334155 !important;
         }
     </style>
     ''')
@@ -66,39 +74,39 @@ def settings_page():
         # Header
         with ui.row().classes('w-full items-center justify-between'):
             ui.label('Settings').classes('text-3xl font-bold text-white')
-            ui.button('← Back to Chat', on_click=lambda: ui.navigate.to('/')).classes('bg-blue-600 text-white px-4 py-2 rounded-lg')
+            ui.button('← Back to Chat', on_click=lambda: ui.navigate.to('/')).classes('bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700')
         
         # Settings Card
-        with ui.card().classes('settings-card p-6 w-full'):
-            ui.label('Configuration Options').classes('text-xl font-semibold mb-4')
+        with ui.card().classes('settings-card p-6 w-full').style('background: rgba(15, 23, 42, 0.95); color: #e2e8f0;'):
+            ui.label('Configuration Options').classes('text-xl font-semibold mb-4 text-blue-400')
             
             # RAG Setting
             with ui.row().classes('w-full items-center justify-between mb-4'):
                 with ui.column():
-                    ui.label('Enable RAG Search').classes('font-medium')
-                    ui.label('Use Retrieval-Augmented Generation for enhanced responses').classes('text-sm text-gray-600')
-                rag_switch = ui.switch(value=config.get('useRAG', False))
+                    ui.label('Enable RAG Search').classes('font-medium text-gray-200')
+                    ui.label('Use Retrieval-Augmented Generation for enhanced responses').classes('text-sm text-gray-400')
+                rag_switch = ui.switch(value=config.get('useRAG', False)).props('color="blue"')
             
-            ui.separator()
+            ui.separator().classes('bg-gray-700')
             
             # CUDA Setting
             with ui.row().classes('w-full items-center justify-between mb-4'):
                 with ui.column():
-                    ui.label('Use CUDA Acceleration').classes('font-medium')
-                    ui.label('Enable GPU acceleration for faster TTS processing').classes('text-sm text-gray-600')
-                cuda_switch = ui.switch(value=config.get('useCuda', True))
+                    ui.label('Use CUDA Acceleration').classes('font-medium text-gray-200')
+                    ui.label('Enable GPU acceleration for faster TTS processing').classes('text-sm text-gray-400')
+                cuda_switch = ui.switch(value=config.get('useCuda', True)).props('color="blue"')
             
-            ui.separator()
+            ui.separator().classes('bg-gray-700')
             
             # Max Words Setting
             with ui.column().classes('w-full mb-4'):
-                ui.label('Maximum Words per Response').classes('font-medium mb-2')
+                ui.label('Maximum Words per Response').classes('font-medium mb-2 text-gray-200')
                 max_words_slider = ui.slider(
                     min=10, max=200, step=10, value=config.get('maxWords', 50)
-                ).props('label-always')
-                ui.label('Controls the length of Darwin\'s responses').classes('text-sm text-gray-600')
+                ).props('label-always color="blue"')
+                ui.label('Controls the length of Darwin\'s responses').classes('text-sm text-gray-400')
             
-            ui.separator()
+            ui.separator().classes('bg-gray-700')
             
             # Save Button
             def save_settings():
@@ -113,23 +121,146 @@ def settings_page():
                 else:
                     ui.notify('Failed to save settings', type='negative')
             
-            ui.button('Save Settings', on_click=save_settings).classes('w-full bg-green-600 text-white py-3 rounded-lg mt-4')
+            ui.button('Save Settings', on_click=save_settings).classes('w-full bg-blue-600 text-white py-3 rounded-lg mt-4 hover:bg-blue-700')
 
 def build_ui(trigger_response_callback, voice_change_callback=None):
-    """Build the main UI with enhanced sidebar and voice selection."""
+    """Build the main UI with dark theme and word synchronization."""
     
-    with ui.column().classes('w-full h-screen gap-0'):
+    # Apply dark theme styles
+    ui.add_head_html('''
+    <style>
+        body {
+            background: #0a0f1c;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Dark theme for inputs and textareas */
+        .q-field--outlined .q-field__control {
+            background: rgba(15, 23, 42, 0.8) !important;
+            border-color: rgba(59, 130, 246, 0.3) !important;
+        }
+        
+        .q-field--outlined .q-field__control:hover {
+            border-color: rgba(59, 130, 246, 0.5) !important;
+        }
+        
+        .q-field--outlined.q-field--focused .q-field__control {
+            border-color: #3b82f6 !important;
+        }
+        
+        .q-field__label {
+            color: #94a3b8 !important;
+        }
+        
+        .q-field__native {
+            color: #e2e8f0 !important;
+        }
+        
+        /* Chat message styling */
+        .user-message {
+            background: linear-gradient(135deg, #1e3a5f, #2563eb);
+            color: white;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            max-width: 70%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .darwin-message {
+            background: rgba(30, 41, 59, 0.9);
+            color: #e2e8f0;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            max-width: 70%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Word animation for synchronized display */
+        @keyframes fadeInWord {
+            from { 
+                opacity: 0; 
+                transform: translateY(5px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
+        }
+        
+        .word-sync {
+            display: inline-block;
+            animation: fadeInWord 0.3s ease-in-out;
+            margin-right: 0.25em;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.7);
+        }
+        
+        /* Card backgrounds */
+        .q-card {
+            background: rgba(15, 23, 42, 0.95) !important;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Button styling */
+        .primary-button {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .primary-button:hover {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+    ''')
+    
+    # Global reference to video manager (will be set by main.py)
+    video_manager = None
+    
+    def set_video_manager(manager):
+        nonlocal video_manager
+        video_manager = manager
+    
+    with ui.column().classes('w-full h-screen gap-0').style('background: #0a0f1c;'):
         # === MAIN CONTENT ROW ===
         with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4'):
             
-            # === LEFT VIDEO PLAYER ===
-            with ui.column().classes('items-start shrink-0').style('width: 35%; height: 100%;'):
-                video_container = ui.card().classes('p-0 overflow-hidden').style('width: 100%; aspect-ratio: 2/3; background: black;')
+            # === LEFT VIDEO PLAYER (MAIN AVATAR) ===
+            with ui.column().classes('items-start shrink-0').style('width: 35%; height: auto;'):
+                video_container = ui.card().classes('p-0 overflow-hidden').style('width: 100%; aspect-ratio: 3/2; background: #000; border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);')
                 with video_container:
                     ui.html('''
                     <div id="main-video-container" style="width: 100%; height: 100%; position: relative;">
-                        <video id="mainVideo" autoplay playsinline controls 
-                            style="width: 100%; height: 100%; object-fit: contain;">
+                        <video id="mainVideo" autoplay muted playsinline 
+                            style="width: 100%; height: 100%; object-fit: contain;"
+                            onended="handleVideoEnded()">
                             <source src="" type="video/mp4">
                             Your browser does not support the video tag.
                         </video>
@@ -138,71 +269,73 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
 
             # === CENTER PANEL ===
             with ui.column().classes('items-center gap-4 h-full').style('width: 45%;'):
-                # === BACKGROUND VIDEO PLAYER ===
-                background_container = ui.card().classes('p-0 overflow-hidden').style('width: 100%; aspect-ratio: 16/9; background: black;')
-                with background_container:
-                    ui.html('''
-                    <div id="background-video-container" style="width: 100%; height: 100%; position: relative;">
-                        <video id="backgroundVideo" autoplay muted loop
-                            style="width: 100%; height: 100%; object-fit: cover;">
-                            <source src="" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                    </div>
-                    ''').classes('w-full h-full')
-
                 # === CHAT LOG (SCROLLABLE) ===
-                chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-auto rounded-lg').style('background: #f0f0f0;')
+                chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-auto rounded-lg').style('background: rgba(15, 23, 42, 0.6); max-height: 60vh; border: 1px solid rgba(59, 130, 246, 0.1);')
                 with chat_log:
-                    ui.label('Ready to chat with Darwin').classes('text-lg text-center w-full').style('color: #6b7280;')
+                    with ui.row().classes('w-full justify-center'):
+                        ui.label('Ready to chat with Darwin').classes('text-lg text-center').style('color: #64748b;')
 
                 # === TEXT INPUT & BUTTON ===
                 with ui.column().classes('items-center gap-4 w-full'):
                     prompt_input = ui.textarea(
                         label='Your question for Darwin', 
                         placeholder='Ask Charles Darwin anything...'
-                    ).props('outlined').classes('w-full').style('min-height: 120px; font-size: 16px;')
+                    ).props('outlined dark').classes('w-full').style('min-height: 120px; font-size: 16px;')
 
                     def submit_prompt():
                         user_text = prompt_input.value
                         if user_text and user_text.strip():
+                            # Notify video manager about user input
+                            if video_manager:
+                                video_manager.prepare_for_user_input()
+                            
+                            # Trigger the main response callback
                             trigger_response_callback(user_text)
                             prompt_input.value = ""
                         else:
                             ui.notify("Please enter a question first", color="warning")
 
-                    ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full text-lg py-3 px-6 rounded-lg').style('background-color: #2563eb; color: white;')
+                    ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full text-lg py-3 px-6 rounded-lg primary-button').style('font-weight: 600;')
 
             # === RIGHT SIDEBAR ===
-            with ui.column().classes('h-full bg-gray-100 border-l border-gray-300').style('width: 250px;'):
+            with ui.column().classes('h-full').style('width: 250px; background: rgba(15, 23, 42, 0.95); border-left: 1px solid rgba(59, 130, 246, 0.1);'):
                 # Sidebar Header
-                with ui.row().classes('w-full items-center justify-between p-3 border-b border-gray-300'):
-                    ui.label('Menu').classes('font-semibold text-gray-700')
-                    ui.button(icon='menu', on_click=lambda: ui.notify('Sidebar toggle placeholder')).props('flat').classes('text-gray-600')
+                with ui.row().classes('w-full items-center justify-between p-3').style('border-bottom: 1px solid rgba(59, 130, 246, 0.1);'):
+                    ui.label('Menu').classes('font-semibold').style('color: #e2e8f0;')
+                    ui.button(icon='menu', on_click=lambda: ui.notify('Sidebar toggle placeholder')).props('flat').style('color: #94a3b8;')
 
                 # Sidebar Content
                 with ui.column().classes('w-full p-3 gap-3'):
                     # Main Page Button
-                    ui.button('🏠 Main Page', on_click=lambda: ui.navigate.to('/')).classes('w-full justify-start bg-blue-100 text-blue-800 py-2 px-3 rounded')
+                    ui.button('🏠 Main Page', on_click=lambda: ui.navigate.to('/')).classes('w-full justify-start py-2 px-3 rounded').style('background: rgba(59, 130, 246, 0.1); color: #60a5fa;')
                     
                     # Settings Button
-                    ui.button('⚙️ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start bg-gray-200 text-gray-700 py-2 px-3 rounded')
+                    ui.button('⚙️ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start py-2 px-3 rounded').style('background: rgba(30, 41, 59, 0.5); color: #94a3b8;')
+                    
+                    # Video Controls Section
+                    ui.separator().style('background: rgba(59, 130, 246, 0.1);')
+                    ui.label('System Status').classes('font-medium text-sm mt-4').style('color: #64748b;')
+                    
+                    # Video status display
+                    video_status_label = ui.label('Status: Ready').classes('text-xs').style('color: #475569;')
+                    state_label = ui.label('State: Idle').classes('text-xs').style('color: #475569;')
+                    mode_label = ui.label('Mode: Waiting').classes('text-xs').style('color: #475569;')
                     
                     # Spacer
                     ui.space()
                     
                     # Quick Info
-                    ui.label('Quick Info').classes('font-medium text-gray-600 text-sm mt-4')
+                    ui.label('Configuration').classes('font-medium text-sm mt-4').style('color: #64748b;')
                     config = load_config()
-                    ui.label(f"RAG: {'On' if config.get('useRAG') else 'Off'}").classes('text-xs text-gray-500')
-                    ui.label(f"Max Words: {config.get('maxWords', 50)}").classes('text-xs text-gray-500')
-                    ui.label(f"CUDA: {'On' if config.get('useCuda') else 'Off'}").classes('text-xs text-gray-500')
+                    ui.label(f"RAG: {'On' if config.get('useRAG') else 'Off'}").classes('text-xs').style('color: #475569;')
+                    ui.label(f"Max Words: {config.get('maxWords', 50)}").classes('text-xs').style('color: #475569;')
+                    ui.label(f"CUDA: {'On' if config.get('useCuda') else 'Off'}").classes('text-xs').style('color: #475569;')
 
         # === VOICE SELECTION SECTION ===
-        ui.separator().classes('w-full')
+        ui.separator().style('background: rgba(59, 130, 246, 0.1);')
         
-        with ui.row().classes('w-full p-4 bg-gray-50 border-t border-gray-200 items-center justify-center gap-8'):
-            ui.label('Voice Selection').classes('text-lg font-semibold text-gray-700')
+        with ui.row().classes('w-full p-4 items-center justify-center gap-8').style('background: rgba(15, 23, 42, 0.8); border-top: 1px solid rgba(59, 130, 246, 0.1);'):
+            ui.label('Voice Selection').classes('text-lg font-semibold').style('color: #e2e8f0;')
             
             # Get available voices
             available_voices = get_available_voices()
@@ -212,7 +345,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
                 options=available_voices,
                 value=current_voice,
                 label='Choose Voice Model'
-            ).classes('min-w-64')
+            ).props('dark outlined').classes('min-w-64')
             
             def on_voice_change():
                 selected_voice = voice_dropdown.value
@@ -223,29 +356,135 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
             voice_dropdown.on('update:model-value', on_voice_change)
             
             # Voice info
-            ui.label(f'Available voices: {len(available_voices)}').classes('text-sm text-gray-500')
+            ui.label(f'Available voices: {len(available_voices)}').classes('text-sm').style('color: #64748b;')
 
-    # Add enhanced JavaScript
+    # Add enhanced JavaScript with video management and word synchronization
     ui.add_body_html('''
     <script>
-    window.addEventListener('load', function() {
-        console.log('Darwin Chat UI loaded');
+    let videoManager = {
+        currentVideo: null,
+        isReady: false,
+        wordSyncTimers: []
+    };
+
+    // Video ended handler - communicates with Python backend
+    function handleVideoEnded() {
+        console.log('[VIDEO] Video ended, requesting next clip');
+        // Clear any word sync timers
+        clearWordSyncTimers();
+        if (window.videoEndedCallback) {
+            window.videoEndedCallback();
+        }
+    }
+
+    // Clear all word sync timers
+    function clearWordSyncTimers() {
+        videoManager.wordSyncTimers.forEach(timer => clearTimeout(timer));
+        videoManager.wordSyncTimers = [];
+    }
+
+    // Update video source
+    function updateMainVideo(videoUrl) {
+        const video = document.getElementById('mainVideo');
         
-        // Function to update status display
-        window.updateStatus = function(message) {
-            console.log('Status update:', message);
-        };
+        if (video && videoUrl) {
+            console.log('[VIDEO] Loading new video:', videoUrl);
+            
+            video.src = videoUrl;
+            video.load();
+            
+            video.oncanplay = function() {
+                console.log('[VIDEO] Video ready to play');
+            };
+            
+            video.onplay = function() {
+                console.log('[VIDEO] Video started playing');
+            };
+            
+            video.onerror = function(e) {
+                console.error('[VIDEO] Error loading video:', e);
+            };
+        }
+    }
+
+    // Word-by-word display function with enhanced animation
+    function displayWordsProgressive(containerId, words, delayMs) {
+        console.log(`[WORD-SYNC] Starting word display: ${words.length} words, ${delayMs}ms delay`);
         
-        // Function to load videos
-        window.loadVideo = function(videoId, source) {
-            const video = document.getElementById(videoId);
-            if (video && source) {
-                video.src = source;
-                video.load();
+        // Clear any existing timers
+        clearWordSyncTimers();
+        
+        const container = document.querySelector(`[data-darwin-response-id="${containerId}"]`);
+        if (!container) {
+            console.error('Could not find response container:', containerId);
+            return;
+        }
+        
+        container.innerHTML = '';
+        let currentIndex = 0;
+        
+        function addNextWord() {
+            if (currentIndex < words.length) {
+                // Create span for word with animation
+                const wordSpan = document.createElement('span');
+                wordSpan.textContent = words[currentIndex];
+                wordSpan.className = 'word-sync';
+                wordSpan.style.opacity = '0';
+                
+                // Add space before word (except for first word)
+                if (currentIndex > 0) {
+                    container.appendChild(document.createTextNode(' '));
+                }
+                
+                container.appendChild(wordSpan);
+                
+                // Trigger animation
+                setTimeout(() => {
+                    wordSpan.style.opacity = '1';
+                }, 10);
+                
+                currentIndex++;
+                
+                // Schedule next word
+                if (currentIndex < words.length) {
+                    const timer = setTimeout(addNextWord, delayMs);
+                    videoManager.wordSyncTimers.push(timer);
+                }
             }
-        };
+        }
+        
+        // Start the word display with a small initial delay
+        const initialTimer = setTimeout(() => {
+            addNextWord();
+        }, 200);
+        videoManager.wordSyncTimers.push(initialTimer);
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', function() {
+        console.log('[UI] Darwin Chat UI with word sync loaded');
+        videoManager.isReady = true;
+        
+        // Set up global functions for Python callback
+        window.updateMainVideo = updateMainVideo;
+        window.displayWordsProgressive = displayWordsProgressive;
+        window.clearWordSyncTimers = clearWordSyncTimers;
+        
+        console.log('[UI] Video and word sync system ready');
+    });
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        clearWordSyncTimers();
     });
     </script>
     ''')
 
-    return chat_log
+    # Return necessary references for main.py
+    return {
+        'chat_log': chat_log,
+        'set_video_manager': set_video_manager,
+        'video_status_label': video_status_label if 'video_status_label' in locals() else None,
+        'state_label': state_label if 'state_label' in locals() else None,
+        'mode_label': mode_label if 'mode_label' in locals() else None
+    }

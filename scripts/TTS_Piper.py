@@ -140,7 +140,7 @@ def generate_and_stream_audio(text: str, output_filename: str = None, voice_path
         # Configure synthesis
         syn_config = SynthesisConfig(
             volume=1.0,
-            length_scale=1.0,  # Normal speed
+            length_scale=1.2,  # Normal speed
             noise_scale=1.0,
             noise_w_scale=1.0,
             normalize_audio=True

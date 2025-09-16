@@ -23,3 +23,7 @@ simpleaudio
 # === ONNX runtime (CPU) ===
 # Default: CPU version only. For GPU support, see requirements-gpu.txt
 onnxruntime
+
+docker>=6.0.0
+asyncio
+pathlib

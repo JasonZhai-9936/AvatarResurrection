@@ -1,0 +1,3253 @@
+{
+  "success": [
+    {
+      "clip_name": "1syl_s0_e0",
+      "example_word": "the",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s0_e0.wav",
+      "all_examples": [
+        "the",
+        "a",
+        "uh"
+      ]
+    },
+    {
+      "clip_name": "1syl_s0_e1",
+      "example_word": "up",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s0_e1.wav",
+      "all_examples": [
+        "up",
+        "us",
+        "of"
+      ]
+    },
+    {
+      "clip_name": "1syl_s0_e2",
+      "example_word": "oh",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s0_e2.wav",
+      "all_examples": [
+        "oh",
+        "awe",
+        "owe"
+      ]
+    },
+    {
+      "clip_name": "1syl_s0_e3",
+      "example_word": "I",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s0_e3.wav",
+      "all_examples": [
+        "I",
+        "eye",
+        "aye"
+      ]
+    },
+    {
+      "clip_name": "1syl_s0_e4",
+      "example_word": "am",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s0_e4.wav",
+      "all_examples": [
+        "am",
+        "um"
+      ]
+    },
+    {
+      "clip_name": "1syl_s0_e5",
+      "example_word": "of",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s0_e5.wav",
+      "all_examples": [
+        "of",
+        "have"
+      ]
+    },
+    {
+      "clip_name": "1syl_s0_e6",
+      "example_word": "at",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s0_e6.wav",
+      "all_examples": [
+        "at",
+        "it",
+        "and"
+      ]
+    },
+    {
+      "clip_name": "1syl_s0_e7",
+      "example_word": "ah",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s0_e7.wav",
+      "all_examples": [
+        "ah",
+        "huh"
+      ]
+    },
+    {
+      "clip_name": "1syl_s1_e0",
+      "example_word": "are",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s1_e0.wav",
+      "all_examples": [
+        "are",
+        "her"
+      ]
+    },
+    {
+      "clip_name": "1syl_s1_e1",
+      "example_word": "cat",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s1_e1.wav",
+      "all_examples": [
+        "cat",
+        "hat",
+        "bat"
+      ]
+    },
+    {
+      "clip_name": "1syl_s1_e2",
+      "example_word": "how",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s1_e2.wav",
+      "all_examples": [
+        "how",
+        "now",
+        "cow"
+      ]
+    },
+    {
+      "clip_name": "1syl_s1_e3",
+      "example_word": "my",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s1_e3.wav",
+      "all_examples": [
+        "my",
+        "by",
+        "hi"
+      ]
+    },
+    {
+      "clip_name": "1syl_s1_e4",
+      "example_word": "ham",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s1_e4.wav",
+      "all_examples": [
+        "ham",
+        "jam",
+        "ram"
+      ]
+    },
+    {
+      "clip_name": "1syl_s1_e5",
+      "example_word": "half",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s1_e5.wav",
+      "all_examples": [
+        "half",
+        "laugh"
+      ]
+    },
+    {
+      "clip_name": "1syl_s1_e6",
+      "example_word": "hand",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s1_e6.wav",
+      "all_examples": [
+        "hand",
+        "land",
+        "sand"
+      ]
+    },
+    {
+      "clip_name": "1syl_s1_e7",
+      "example_word": "ask",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s1_e7.wav",
+      "all_examples": [
+        "ask",
+        "hang"
+      ]
+    },
+    {
+      "clip_name": "1syl_s2_e0",
+      "example_word": "or",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s2_e0.wav",
+      "all_examples": [
+        "or",
+        "for",
+        "more"
+      ]
+    },
+    {
+      "clip_name": "1syl_s2_e1",
+      "example_word": "was",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s2_e1.wav",
+      "all_examples": [
+        "was",
+        "what"
+      ]
+    },
+    {
+      "clip_name": "1syl_s2_e2",
+      "example_word": "too",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s2_e2.wav",
+      "all_examples": [
+        "too",
+        "do",
+        "you"
+      ]
+    },
+    {
+      "clip_name": "1syl_s2_e3",
+      "example_word": "boy",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s2_e3.wav",
+      "all_examples": [
+        "boy",
+        "toy",
+        "joy"
+      ]
+    },
+    {
+      "clip_name": "1syl_s2_e4",
+      "example_word": "room",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s2_e4.wav",
+      "all_examples": [
+        "room",
+        "boom",
+        "zoom"
+      ]
+    },
+    {
+      "clip_name": "1syl_s2_e5",
+      "example_word": "love",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s2_e5.wav",
+      "all_examples": [
+        "love",
+        "dove"
+      ]
+    },
+    {
+      "clip_name": "1syl_s2_e6",
+      "example_word": "out",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s2_e6.wav",
+      "all_examples": [
+        "out",
+        "old",
+        "word"
+      ]
+    },
+    {
+      "clip_name": "1syl_s2_e7",
+      "example_word": "oak",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s2_e7.wav",
+      "all_examples": [
+        "oak",
+        "work",
+        "walk"
+      ]
+    },
+    {
+      "clip_name": "1syl_s3_e0",
+      "example_word": "if",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s3_e0.wav",
+      "all_examples": [
+        "if",
+        "in",
+        "is"
+      ]
+    },
+    {
+      "clip_name": "1syl_s3_e1",
+      "example_word": "eat",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s3_e1.wav",
+      "all_examples": [
+        "eat",
+        "each"
+      ]
+    },
+    {
+      "clip_name": "1syl_s3_e2",
+      "example_word": "new",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s3_e2.wav",
+      "all_examples": [
+        "new",
+        "few"
+      ]
+    },
+    {
+      "clip_name": "1syl_s3_e3",
+      "example_word": "see",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s3_e3.wav",
+      "all_examples": [
+        "see",
+        "be",
+        "me"
+      ]
+    },
+    {
+      "clip_name": "1syl_s3_e4",
+      "example_word": "seem",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s3_e4.wav",
+      "all_examples": [
+        "seem",
+        "beam",
+        "team"
+      ]
+    },
+    {
+      "clip_name": "1syl_s3_e5",
+      "example_word": "live",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s3_e5.wav",
+      "all_examples": [
+        "live",
+        "give"
+      ]
+    },
+    {
+      "clip_name": "1syl_s3_e6",
+      "example_word": "it",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s3_e6.wav",
+      "all_examples": [
+        "it",
+        "sit",
+        "hit"
+      ]
+    },
+    {
+      "clip_name": "1syl_s3_e7",
+      "example_word": "ink",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s3_e7.wav",
+      "all_examples": [
+        "ink",
+        "think"
+      ]
+    },
+    {
+      "clip_name": "1syl_s4_e0",
+      "example_word": "per",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s4_e0.wav",
+      "all_examples": [
+        "per"
+      ]
+    },
+    {
+      "clip_name": "1syl_s4_e1",
+      "example_word": "pat",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s4_e1.wav",
+      "all_examples": [
+        "pat",
+        "bat",
+        "mat"
+      ]
+    },
+    {
+      "clip_name": "1syl_s4_e2",
+      "example_word": "put",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s4_e2.wav",
+      "all_examples": [
+        "put",
+        "book",
+        "look"
+      ]
+    },
+    {
+      "clip_name": "1syl_s4_e3",
+      "example_word": "bee",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s4_e3.wav",
+      "all_examples": [
+        "bee",
+        "pee"
+      ]
+    },
+    {
+      "clip_name": "1syl_s4_e4",
+      "example_word": "bomb",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s4_e4.wav",
+      "all_examples": [
+        "bomb",
+        "mom",
+        "pop"
+      ]
+    },
+    {
+      "clip_name": "1syl_s4_e5",
+      "example_word": "proof",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s4_e5.wav",
+      "all_examples": [
+        "proof"
+      ]
+    },
+    {
+      "clip_name": "1syl_s4_e6",
+      "example_word": "put",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s4_e6.wav",
+      "all_examples": [
+        "put",
+        "pet",
+        "pot"
+      ]
+    },
+    {
+      "clip_name": "1syl_s4_e7",
+      "example_word": "pick",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s4_e7.wav",
+      "all_examples": [
+        "pick",
+        "pack",
+        "poke"
+      ]
+    },
+    {
+      "clip_name": "1syl_s5_e0",
+      "example_word": "fur",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s5_e0.wav",
+      "all_examples": [
+        "fur",
+        "far"
+      ]
+    },
+    {
+      "clip_name": "1syl_s5_e1",
+      "example_word": "fat",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s5_e1.wav",
+      "all_examples": [
+        "fat",
+        "fast",
+        "van"
+      ]
+    },
+    {
+      "clip_name": "1syl_s5_e2",
+      "example_word": "few",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s5_e2.wav",
+      "all_examples": [
+        "few",
+        "view",
+        "vow"
+      ]
+    },
+    {
+      "clip_name": "1syl_s5_e3",
+      "example_word": "fee",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s5_e3.wav",
+      "all_examples": [
+        "fee",
+        "free",
+        "flee"
+      ]
+    },
+    {
+      "clip_name": "1syl_s5_e4",
+      "example_word": "from",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s5_e4.wav",
+      "all_examples": [
+        "from",
+        "foam"
+      ]
+    },
+    {
+      "clip_name": "1syl_s5_e5",
+      "example_word": "five",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s5_e5.wav",
+      "all_examples": [
+        "five"
+      ]
+    },
+    {
+      "clip_name": "1syl_s5_e6",
+      "example_word": "fit",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s5_e6.wav",
+      "all_examples": [
+        "fit",
+        "foot"
+      ]
+    },
+    {
+      "clip_name": "1syl_s5_e7",
+      "example_word": "fake",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s5_e7.wav",
+      "all_examples": [
+        "fake",
+        "folk",
+        "funk"
+      ]
+    },
+    {
+      "clip_name": "1syl_s6_e0",
+      "example_word": "there",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s6_e0.wav",
+      "all_examples": [
+        "there",
+        "sure"
+      ]
+    },
+    {
+      "clip_name": "1syl_s6_e1",
+      "example_word": "that",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s6_e1.wav",
+      "all_examples": [
+        "that",
+        "than",
+        "ran"
+      ]
+    },
+    {
+      "clip_name": "1syl_s6_e2",
+      "example_word": "true",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s6_e2.wav",
+      "all_examples": [
+        "true",
+        "through"
+      ]
+    },
+    {
+      "clip_name": "1syl_s6_e3",
+      "example_word": "tree",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s6_e3.wav",
+      "all_examples": [
+        "tree",
+        "three",
+        "knee"
+      ]
+    },
+    {
+      "clip_name": "1syl_s6_e4",
+      "example_word": "time",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s6_e4.wav",
+      "all_examples": [
+        "time",
+        "some",
+        "come"
+      ]
+    },
+    {
+      "clip_name": "1syl_s6_e5",
+      "example_word": "save",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s6_e5.wav",
+      "all_examples": [
+        "save",
+        "leave"
+      ]
+    },
+    {
+      "clip_name": "1syl_s6_e6",
+      "example_word": "that",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s6_e6.wav",
+      "all_examples": [
+        "that",
+        "this",
+        "then"
+      ]
+    },
+    {
+      "clip_name": "1syl_s6_e7",
+      "example_word": "think",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s6_e7.wav",
+      "all_examples": [
+        "think",
+        "thank",
+        "thing"
+      ]
+    },
+    {
+      "clip_name": "1syl_s7_e0",
+      "example_word": "where",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s7_e0.wav",
+      "all_examples": [
+        "where",
+        "were"
+      ]
+    },
+    {
+      "clip_name": "1syl_s7_e1",
+      "example_word": "what",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s7_e1.wav",
+      "all_examples": [
+        "what",
+        "had",
+        "gas"
+      ]
+    },
+    {
+      "clip_name": "1syl_s7_e2",
+      "example_word": "who",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s7_e2.wav",
+      "all_examples": [
+        "who",
+        "go",
+        "know"
+      ]
+    },
+    {
+      "clip_name": "1syl_s7_e3",
+      "example_word": "he",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s7_e3.wav",
+      "all_examples": [
+        "he",
+        "key",
+        "way"
+      ]
+    },
+    {
+      "clip_name": "1syl_s7_e4",
+      "example_word": "game",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s7_e4.wav",
+      "all_examples": [
+        "game",
+        "home",
+        "came"
+      ]
+    },
+    {
+      "clip_name": "1syl_s7_e5",
+      "example_word": "have",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s7_e5.wav",
+      "all_examples": [
+        "have",
+        "wave",
+        "gave"
+      ]
+    },
+    {
+      "clip_name": "1syl_s7_e6",
+      "example_word": "get",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s7_e6.wav",
+      "all_examples": [
+        "get",
+        "got",
+        "good"
+      ]
+    },
+    {
+      "clip_name": "1syl_s7_e7",
+      "example_word": "young",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\1syl_s7_e7.wav",
+      "all_examples": [
+        "young",
+        "hang",
+        "king"
+      ]
+    },
+    {
+      "clip_name": "2syl_s0_e0",
+      "example_word": "another",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s0_e0.wav",
+      "all_examples": [
+        "another",
+        "other",
+        "under"
+      ]
+    },
+    {
+      "clip_name": "2syl_s0_e1",
+      "example_word": "upon",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s0_e1.wav",
+      "all_examples": [
+        "upon",
+        "about",
+        "again"
+      ]
+    },
+    {
+      "clip_name": "2syl_s0_e2",
+      "example_word": "into",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s0_e2.wav",
+      "all_examples": [
+        "into",
+        "unto"
+      ]
+    },
+    {
+      "clip_name": "2syl_s0_e3",
+      "example_word": "only",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s0_e3.wav",
+      "all_examples": [
+        "only",
+        "any"
+      ]
+    },
+    {
+      "clip_name": "2syl_s0_e4",
+      "example_word": "awesome",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s0_e4.wav",
+      "all_examples": [
+        "awesome",
+        "autumn"
+      ]
+    },
+    {
+      "clip_name": "2syl_s0_e5",
+      "example_word": "above",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s0_e5.wav",
+      "all_examples": [
+        "above",
+        "achieve"
+      ]
+    },
+    {
+      "clip_name": "2syl_s0_e6",
+      "example_word": "after",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s0_e6.wav",
+      "all_examples": [
+        "after",
+        "almost"
+      ]
+    },
+    {
+      "clip_name": "2syl_s0_e7",
+      "example_word": "along",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s0_e7.wav",
+      "all_examples": [
+        "along",
+        "among"
+      ]
+    },
+    {
+      "clip_name": "2syl_s1_e0",
+      "example_word": "answer",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s1_e0.wav",
+      "all_examples": [
+        "answer",
+        "rather"
+      ]
+    },
+    {
+      "clip_name": "2syl_s1_e1",
+      "example_word": "happy",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s1_e1.wav",
+      "all_examples": [
+        "happy",
+        "family"
+      ]
+    },
+    {
+      "clip_name": "2syl_s1_e2",
+      "example_word": "also",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s1_e2.wav",
+      "all_examples": [
+        "also",
+        "auto"
+      ]
+    },
+    {
+      "clip_name": "2syl_s1_e3",
+      "example_word": "many",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s1_e3.wav",
+      "all_examples": [
+        "many",
+        "carry"
+      ]
+    },
+    {
+      "clip_name": "2syl_s1_e4",
+      "example_word": "handsome",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s1_e4.wav",
+      "all_examples": [
+        "handsome"
+      ]
+    },
+    {
+      "clip_name": "2syl_s1_e5",
+      "example_word": "active",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s1_e5.wav",
+      "all_examples": [
+        "active",
+        "massive"
+      ]
+    },
+    {
+      "clip_name": "2syl_s1_e6",
+      "example_word": "acted",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s1_e6.wav",
+      "all_examples": [
+        "acted",
+        "added"
+      ]
+    },
+    {
+      "clip_name": "2syl_s1_e7",
+      "example_word": "asking",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s1_e7.wav",
+      "all_examples": [
+        "asking",
+        "laughing"
+      ]
+    },
+    {
+      "clip_name": "2syl_s2_e0",
+      "example_word": "over",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s2_e0.wav",
+      "all_examples": [
+        "over",
+        "older",
+        "order"
+      ]
+    },
+    {
+      "clip_name": "2syl_s2_e1",
+      "example_word": "open",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s2_e1.wav",
+      "all_examples": [
+        "open",
+        "ocean"
+      ]
+    },
+    {
+      "clip_name": "2syl_s2_e2",
+      "example_word": "outdoor",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s2_e2.wav",
+      "all_examples": [
+        "outdoor"
+      ]
+    },
+    {
+      "clip_name": "2syl_s2_e3",
+      "example_word": "okay",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s2_e3.wav",
+      "all_examples": [
+        "okay",
+        "away"
+      ]
+    },
+    {
+      "clip_name": "2syl_s2_e4",
+      "example_word": "broken",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s2_e4.wav",
+      "all_examples": [
+        "broken",
+        "hoping"
+      ]
+    },
+    {
+      "clip_name": "2syl_s2_e5",
+      "example_word": "observe",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s2_e5.wav",
+      "all_examples": [
+        "observe"
+      ]
+    },
+    {
+      "clip_name": "2syl_s2_e6",
+      "example_word": "other",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s2_e6.wav",
+      "all_examples": [
+        "other",
+        "mother",
+        "brother"
+      ]
+    },
+    {
+      "clip_name": "2syl_s2_e7",
+      "example_word": "working",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s2_e7.wav",
+      "all_examples": [
+        "working",
+        "walking"
+      ]
+    },
+    {
+      "clip_name": "2syl_s3_e0",
+      "example_word": "inner",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s3_e0.wav",
+      "all_examples": [
+        "inner",
+        "enter",
+        "either"
+      ]
+    },
+    {
+      "clip_name": "2syl_s3_e1",
+      "example_word": "indeed",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s3_e1.wav",
+      "all_examples": [
+        "indeed",
+        "instead"
+      ]
+    },
+    {
+      "clip_name": "2syl_s3_e2",
+      "example_word": "issue",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s3_e2.wav",
+      "all_examples": [
+        "issue"
+      ]
+    },
+    {
+      "clip_name": "2syl_s3_e3",
+      "example_word": "easy",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s3_e3.wav",
+      "all_examples": [
+        "easy",
+        "early"
+      ]
+    },
+    {
+      "clip_name": "2syl_s3_e4",
+      "example_word": "item",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s3_e4.wav",
+      "all_examples": [
+        "item",
+        "income"
+      ]
+    },
+    {
+      "clip_name": "2syl_s3_e5",
+      "example_word": "believe",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s3_e5.wav",
+      "all_examples": [
+        "believe",
+        "receive"
+      ]
+    },
+    {
+      "clip_name": "2syl_s3_e6",
+      "example_word": "inside",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s3_e6.wav",
+      "all_examples": [
+        "inside"
+      ]
+    },
+    {
+      "clip_name": "2syl_s3_e7",
+      "example_word": "evening",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s3_e7.wav",
+      "all_examples": [
+        "evening",
+        "feeling"
+      ]
+    },
+    {
+      "clip_name": "2syl_s4_e0",
+      "example_word": "paper",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s4_e0.wav",
+      "all_examples": [
+        "paper",
+        "proper"
+      ]
+    },
+    {
+      "clip_name": "2syl_s4_e1",
+      "example_word": "perhaps",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s4_e1.wav",
+      "all_examples": [
+        "perhaps",
+        "because"
+      ]
+    },
+    {
+      "clip_name": "2syl_s4_e2",
+      "example_word": "people",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s4_e2.wav",
+      "all_examples": [
+        "people",
+        "purpose"
+      ]
+    },
+    {
+      "clip_name": "2syl_s4_e3",
+      "example_word": "pretty",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s4_e3.wav",
+      "all_examples": [
+        "pretty",
+        "party"
+      ]
+    },
+    {
+      "clip_name": "2syl_s4_e4",
+      "example_word": "problem",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s4_e4.wav",
+      "all_examples": [
+        "problem",
+        "program"
+      ]
+    },
+    {
+      "clip_name": "2syl_s4_e5",
+      "example_word": "prove",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s4_e5.wav",
+      "all_examples": [
+        "prove",
+        "behave"
+      ]
+    },
+    {
+      "clip_name": "2syl_s4_e6",
+      "example_word": "present",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s4_e6.wav",
+      "all_examples": [
+        "present",
+        "moment"
+      ]
+    },
+    {
+      "clip_name": "2syl_s4_e7",
+      "example_word": "playing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s4_e7.wav",
+      "all_examples": [
+        "playing",
+        "making"
+      ]
+    },
+    {
+      "clip_name": "2syl_s5_e0",
+      "example_word": "further",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s5_e0.wav",
+      "all_examples": [
+        "further",
+        "future"
+      ]
+    },
+    {
+      "clip_name": "2syl_s5_e1",
+      "example_word": "final",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s5_e1.wav",
+      "all_examples": [
+        "final",
+        "female"
+      ]
+    },
+    {
+      "clip_name": "2syl_s5_e2",
+      "example_word": "follow",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s5_e2.wav",
+      "all_examples": [
+        "follow",
+        "photo"
+      ]
+    },
+    {
+      "clip_name": "2syl_s5_e3",
+      "example_word": "fifty",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s5_e3.wav",
+      "all_examples": [
+        "fifty",
+        "friendly"
+      ]
+    },
+    {
+      "clip_name": "2syl_s5_e4",
+      "example_word": "freedom",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s5_e4.wav",
+      "all_examples": [
+        "freedom"
+      ]
+    },
+    {
+      "clip_name": "2syl_s5_e5",
+      "example_word": "fifteen",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s5_e5.wav",
+      "all_examples": [
+        "fifteen",
+        "office"
+      ]
+    },
+    {
+      "clip_name": "2syl_s5_e6",
+      "example_word": "forest",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s5_e6.wav",
+      "all_examples": [
+        "forest",
+        "fastest"
+      ]
+    },
+    {
+      "clip_name": "2syl_s5_e7",
+      "example_word": "feeling",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s5_e7.wav",
+      "all_examples": [
+        "feeling",
+        "falling"
+      ]
+    },
+    {
+      "clip_name": "2syl_s6_e0",
+      "example_word": "teacher",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s6_e0.wav",
+      "all_examples": [
+        "teacher",
+        "neither"
+      ]
+    },
+    {
+      "clip_name": "2syl_s6_e1",
+      "example_word": "started",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s6_e1.wav",
+      "all_examples": [
+        "started",
+        "wanted"
+      ]
+    },
+    {
+      "clip_name": "2syl_s6_e2",
+      "example_word": "taken",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s6_e2.wav",
+      "all_examples": [
+        "taken",
+        "spoken"
+      ]
+    },
+    {
+      "clip_name": "2syl_s6_e3",
+      "example_word": "story",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s6_e3.wav",
+      "all_examples": [
+        "story",
+        "study"
+      ]
+    },
+    {
+      "clip_name": "2syl_s6_e4",
+      "example_word": "system",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s6_e4.wav",
+      "all_examples": [
+        "system",
+        "listen"
+      ]
+    },
+    {
+      "clip_name": "2syl_s6_e5",
+      "example_word": "native",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s6_e5.wav",
+      "all_examples": [
+        "native"
+      ]
+    },
+    {
+      "clip_name": "2syl_s6_e6",
+      "example_word": "student",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s6_e6.wav",
+      "all_examples": [
+        "student",
+        "different"
+      ]
+    },
+    {
+      "clip_name": "2syl_s6_e7",
+      "example_word": "trying",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s6_e7.wav",
+      "all_examples": [
+        "trying",
+        "talking"
+      ]
+    },
+    {
+      "clip_name": "2syl_s7_e0",
+      "example_word": "water",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s7_e0.wav",
+      "all_examples": [
+        "water",
+        "weather"
+      ]
+    },
+    {
+      "clip_name": "2syl_s7_e1",
+      "example_word": "wanted",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s7_e1.wav",
+      "all_examples": [
+        "wanted",
+        "walked"
+      ]
+    },
+    {
+      "clip_name": "2syl_s7_e2",
+      "example_word": "window",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s7_e2.wav",
+      "all_examples": [
+        "window",
+        "yellow",
+        "hello"
+      ]
+    },
+    {
+      "clip_name": "2syl_s7_e3",
+      "example_word": "working",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s7_e3.wav",
+      "all_examples": [
+        "working",
+        "walking"
+      ]
+    },
+    {
+      "clip_name": "2syl_s7_e4",
+      "example_word": "welcome",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s7_e4.wav",
+      "all_examples": [
+        "welcome"
+      ]
+    },
+    {
+      "clip_name": "2syl_s7_e5",
+      "example_word": "yourself",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s7_e5.wav",
+      "all_examples": [
+        "yourself",
+        "herself"
+      ]
+    },
+    {
+      "clip_name": "2syl_s7_e6",
+      "example_word": "without",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s7_e6.wav",
+      "all_examples": [
+        "without",
+        "within"
+      ]
+    },
+    {
+      "clip_name": "2syl_s7_e7",
+      "example_word": "thinking",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\2syl_s7_e7.wav",
+      "all_examples": [
+        "thinking"
+      ]
+    },
+    {
+      "clip_name": "3syl_s0_e0",
+      "example_word": "however",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s0_e0.wav",
+      "all_examples": [
+        "however",
+        "together"
+      ]
+    },
+    {
+      "clip_name": "3syl_s0_e1",
+      "example_word": "understand",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s0_e1.wav",
+      "all_examples": [
+        "understand",
+        "elephant"
+      ]
+    },
+    {
+      "clip_name": "3syl_s0_e2",
+      "example_word": "autograph",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s0_e2.wav",
+      "all_examples": [
+        "autograph"
+      ]
+    },
+    {
+      "clip_name": "3syl_s0_e3",
+      "example_word": "area",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s0_e3.wav",
+      "all_examples": [
+        "area",
+        "idea"
+      ]
+    },
+    {
+      "clip_name": "3syl_s0_e4",
+      "example_word": "umbrella",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s0_e4.wav",
+      "all_examples": [
+        "umbrella"
+      ]
+    },
+    {
+      "clip_name": "3syl_s0_e5",
+      "example_word": "objective",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s0_e5.wav",
+      "all_examples": [
+        "objective"
+      ]
+    },
+    {
+      "clip_name": "3syl_s0_e6",
+      "example_word": "afternoon",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s0_e6.wav",
+      "all_examples": [
+        "afternoon"
+      ]
+    },
+    {
+      "clip_name": "3syl_s0_e7",
+      "example_word": "anything",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s0_e7.wav",
+      "all_examples": [
+        "anything",
+        "everything"
+      ]
+    },
+    {
+      "clip_name": "3syl_s1_e0",
+      "example_word": "average",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s1_e0.wav",
+      "all_examples": [
+        "average",
+        "animal"
+      ]
+    },
+    {
+      "clip_name": "3syl_s1_e1",
+      "example_word": "natural",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s1_e1.wav",
+      "all_examples": [
+        "natural"
+      ]
+    },
+    {
+      "clip_name": "3syl_s1_e2",
+      "example_word": "although",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s1_e2.wav",
+      "all_examples": [
+        "although",
+        "already"
+      ]
+    },
+    {
+      "clip_name": "3syl_s1_e3",
+      "example_word": "actually",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s1_e3.wav",
+      "all_examples": [
+        "actually"
+      ]
+    },
+    {
+      "clip_name": "3syl_s1_e4",
+      "example_word": "amazing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s1_e4.wav",
+      "all_examples": [
+        "amazing"
+      ]
+    },
+    {
+      "clip_name": "3syl_s1_e5",
+      "example_word": "analyze",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s1_e5.wav",
+      "all_examples": [
+        "analyze",
+        "advertise"
+      ]
+    },
+    {
+      "clip_name": "3syl_s1_e6",
+      "example_word": "accident",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s1_e6.wav",
+      "all_examples": [
+        "accident"
+      ]
+    },
+    {
+      "clip_name": "3syl_s1_e7",
+      "example_word": "anything",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s1_e7.wav",
+      "all_examples": [
+        "anything"
+      ]
+    },
+    {
+      "clip_name": "3syl_s2_e0",
+      "example_word": "over",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s2_e0.wav",
+      "all_examples": [
+        "over"
+      ]
+    },
+    {
+      "clip_name": "3syl_s2_e1",
+      "example_word": "obvious",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s2_e1.wav",
+      "all_examples": [
+        "obvious",
+        "popular"
+      ]
+    },
+    {
+      "clip_name": "3syl_s2_e2",
+      "example_word": "overdo",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s2_e2.wav",
+      "all_examples": [
+        "overdo"
+      ]
+    },
+    {
+      "clip_name": "3syl_s2_e3",
+      "example_word": "usually",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s2_e3.wav",
+      "all_examples": [
+        "usually"
+      ]
+    },
+    {
+      "clip_name": "3syl_s2_e4",
+      "example_word": "opinion",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s2_e4.wav",
+      "all_examples": [
+        "opinion",
+        "opening"
+      ]
+    },
+    {
+      "clip_name": "3syl_s2_e5",
+      "example_word": "observe",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s2_e5.wav",
+      "all_examples": [
+        "observe"
+      ]
+    },
+    {
+      "clip_name": "3syl_s2_e6",
+      "example_word": "opposite",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s2_e6.wav",
+      "all_examples": [
+        "opposite",
+        "operating"
+      ]
+    },
+    {
+      "clip_name": "3syl_s2_e7",
+      "example_word": "offering",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s2_e7.wav",
+      "all_examples": [
+        "offering"
+      ]
+    },
+    {
+      "clip_name": "3syl_s3_e0",
+      "example_word": "easier",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s3_e0.wav",
+      "all_examples": [
+        "easier",
+        "earlier"
+      ]
+    },
+    {
+      "clip_name": "3syl_s3_e1",
+      "example_word": "interview",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s3_e1.wav",
+      "all_examples": [
+        "interview"
+      ]
+    },
+    {
+      "clip_name": "3syl_s3_e2",
+      "example_word": "easily",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s3_e2.wav",
+      "all_examples": [
+        "easily"
+      ]
+    },
+    {
+      "clip_name": "3syl_s3_e3",
+      "example_word": "really",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s3_e3.wav",
+      "all_examples": [
+        "really"
+      ]
+    },
+    {
+      "clip_name": "3syl_s3_e4",
+      "example_word": "economy",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s3_e4.wav",
+      "all_examples": [
+        "economy"
+      ]
+    },
+    {
+      "clip_name": "3syl_s3_e5",
+      "example_word": "easily",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s3_e5.wav",
+      "all_examples": [
+        "easily"
+      ]
+    },
+    {
+      "clip_name": "3syl_s3_e6",
+      "example_word": "investment",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s3_e6.wav",
+      "all_examples": [
+        "investment"
+      ]
+    },
+    {
+      "clip_name": "3syl_s3_e7",
+      "example_word": "everything",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s3_e7.wav",
+      "all_examples": [
+        "everything"
+      ]
+    },
+    {
+      "clip_name": "3syl_s4_e0",
+      "example_word": "probably",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s4_e0.wav",
+      "all_examples": [
+        "probably",
+        "property"
+      ]
+    },
+    {
+      "clip_name": "3syl_s4_e1",
+      "example_word": "particular",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s4_e1.wav",
+      "all_examples": [
+        "particular"
+      ]
+    },
+    {
+      "clip_name": "3syl_s4_e2",
+      "example_word": "beautiful",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s4_e2.wav",
+      "all_examples": [
+        "beautiful"
+      ]
+    },
+    {
+      "clip_name": "3syl_s4_e3",
+      "example_word": "policy",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s4_e3.wav",
+      "all_examples": [
+        "policy"
+      ]
+    },
+    {
+      "clip_name": "3syl_s4_e4",
+      "example_word": "program",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s4_e4.wav",
+      "all_examples": [
+        "program"
+      ]
+    },
+    {
+      "clip_name": "3syl_s4_e5",
+      "example_word": "probably",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s4_e5.wav",
+      "all_examples": [
+        "probably"
+      ]
+    },
+    {
+      "clip_name": "3syl_s4_e6",
+      "example_word": "president",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s4_e6.wav",
+      "all_examples": [
+        "president"
+      ]
+    },
+    {
+      "clip_name": "3syl_s4_e7",
+      "example_word": "planning",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s4_e7.wav",
+      "all_examples": [
+        "planning"
+      ]
+    },
+    {
+      "clip_name": "3syl_s5_e0",
+      "example_word": "forever",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s5_e0.wav",
+      "all_examples": [
+        "forever"
+      ]
+    },
+    {
+      "clip_name": "3syl_s5_e1",
+      "example_word": "fantastic",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s5_e1.wav",
+      "all_examples": [
+        "fantastic"
+      ]
+    },
+    {
+      "clip_name": "3syl_s5_e2",
+      "example_word": "following",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s5_e2.wav",
+      "all_examples": [
+        "following"
+      ]
+    },
+    {
+      "clip_name": "3syl_s5_e3",
+      "example_word": "family",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s5_e3.wav",
+      "all_examples": [
+        "family"
+      ]
+    },
+    {
+      "clip_name": "3syl_s5_e4",
+      "example_word": "freedom",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s5_e4.wav",
+      "all_examples": [
+        "freedom"
+      ]
+    },
+    {
+      "clip_name": "3syl_s5_e5",
+      "example_word": "fifteen",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s5_e5.wav",
+      "all_examples": [
+        "fifteen"
+      ]
+    },
+    {
+      "clip_name": "3syl_s5_e6",
+      "example_word": "festival",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s5_e6.wav",
+      "all_examples": [
+        "festival"
+      ]
+    },
+    {
+      "clip_name": "3syl_s5_e7",
+      "example_word": "finishing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s5_e7.wav",
+      "all_examples": [
+        "finishing"
+      ]
+    },
+    {
+      "clip_name": "3syl_s6_e0",
+      "example_word": "together",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s6_e0.wav",
+      "all_examples": [
+        "together"
+      ]
+    },
+    {
+      "clip_name": "3syl_s6_e1",
+      "example_word": "September",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s6_e1.wav",
+      "all_examples": [
+        "September"
+      ]
+    },
+    {
+      "clip_name": "3syl_s6_e2",
+      "example_word": "tomorrow",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s6_e2.wav",
+      "all_examples": [
+        "tomorrow"
+      ]
+    },
+    {
+      "clip_name": "3syl_s6_e3",
+      "example_word": "seriously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s6_e3.wav",
+      "all_examples": [
+        "seriously"
+      ]
+    },
+    {
+      "clip_name": "3syl_s6_e4",
+      "example_word": "tomorrow",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s6_e4.wav",
+      "all_examples": [
+        "tomorrow"
+      ]
+    },
+    {
+      "clip_name": "3syl_s6_e5",
+      "example_word": "sensitive",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s6_e5.wav",
+      "all_examples": [
+        "sensitive"
+      ]
+    },
+    {
+      "clip_name": "3syl_s6_e6",
+      "example_word": "telephone",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s6_e6.wav",
+      "all_examples": [
+        "telephone"
+      ]
+    },
+    {
+      "clip_name": "3syl_s6_e7",
+      "example_word": "something",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s6_e7.wav",
+      "all_examples": [
+        "something"
+      ]
+    },
+    {
+      "clip_name": "3syl_s7_e0",
+      "example_word": "whatever",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s7_e0.wav",
+      "all_examples": [
+        "whatever"
+      ]
+    },
+    {
+      "clip_name": "3syl_s7_e1",
+      "example_word": "wonderful",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s7_e1.wav",
+      "all_examples": [
+        "wonderful"
+      ]
+    },
+    {
+      "clip_name": "3syl_s7_e2",
+      "example_word": "whoever",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s7_e2.wav",
+      "all_examples": [
+        "whoever"
+      ]
+    },
+    {
+      "clip_name": "3syl_s7_e3",
+      "example_word": "willingly",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s7_e3.wav",
+      "all_examples": [
+        "willingly"
+      ]
+    },
+    {
+      "clip_name": "3syl_s7_e4",
+      "example_word": "welcome",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s7_e4.wav",
+      "all_examples": [
+        "welcome"
+      ]
+    },
+    {
+      "clip_name": "3syl_s7_e5",
+      "example_word": "whatever",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s7_e5.wav",
+      "all_examples": [
+        "whatever"
+      ]
+    },
+    {
+      "clip_name": "3syl_s7_e6",
+      "example_word": "wonderful",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s7_e6.wav",
+      "all_examples": [
+        "wonderful"
+      ]
+    },
+    {
+      "clip_name": "3syl_s7_e7",
+      "example_word": "washing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\3syl_s7_e7.wav",
+      "all_examples": [
+        "washing"
+      ]
+    },
+    {
+      "clip_name": "4syl_s0_e0",
+      "example_word": "America",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s0_e0.wav",
+      "all_examples": [
+        "America"
+      ]
+    },
+    {
+      "clip_name": "4syl_s0_e1",
+      "example_word": "American",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s0_e1.wav",
+      "all_examples": [
+        "American"
+      ]
+    },
+    {
+      "clip_name": "4syl_s0_e2",
+      "example_word": "umbrella",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s0_e2.wav",
+      "all_examples": [
+        "umbrella"
+      ]
+    },
+    {
+      "clip_name": "4syl_s0_e3",
+      "example_word": "understandably",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s0_e3.wav",
+      "all_examples": [
+        "understandably"
+      ]
+    },
+    {
+      "clip_name": "4syl_s0_e4",
+      "example_word": "umbrella",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s0_e4.wav",
+      "all_examples": [
+        "umbrella"
+      ]
+    },
+    {
+      "clip_name": "4syl_s0_e5",
+      "example_word": "unbelievable",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s0_e5.wav",
+      "all_examples": [
+        "unbelievable"
+      ]
+    },
+    {
+      "clip_name": "4syl_s0_e6",
+      "example_word": "understand",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s0_e6.wav",
+      "all_examples": [
+        "understand"
+      ]
+    },
+    {
+      "clip_name": "4syl_s0_e7",
+      "example_word": "understanding",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s0_e7.wav",
+      "all_examples": [
+        "understanding"
+      ]
+    },
+    {
+      "clip_name": "4syl_s1_e0",
+      "example_word": "actually",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s1_e0.wav",
+      "all_examples": [
+        "actually"
+      ]
+    },
+    {
+      "clip_name": "4syl_s1_e1",
+      "example_word": "absolutely",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s1_e1.wav",
+      "all_examples": [
+        "absolutely"
+      ]
+    },
+    {
+      "clip_name": "4syl_s1_e2",
+      "example_word": "Alabama",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s1_e2.wav",
+      "all_examples": [
+        "Alabama"
+      ]
+    },
+    {
+      "clip_name": "4syl_s1_e3",
+      "example_word": "activity",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s1_e3.wav",
+      "all_examples": [
+        "activity"
+      ]
+    },
+    {
+      "clip_name": "4syl_s1_e4",
+      "example_word": "Amsterdam",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s1_e4.wav",
+      "all_examples": [
+        "Amsterdam"
+      ]
+    },
+    {
+      "clip_name": "4syl_s1_e5",
+      "example_word": "alternative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s1_e5.wav",
+      "all_examples": [
+        "alternative"
+      ]
+    },
+    {
+      "clip_name": "4syl_s1_e6",
+      "example_word": "accidentally",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s1_e6.wav",
+      "all_examples": [
+        "accidentally"
+      ]
+    },
+    {
+      "clip_name": "4syl_s1_e7",
+      "example_word": "analyzing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s1_e7.wav",
+      "all_examples": [
+        "analyzing"
+      ]
+    },
+    {
+      "clip_name": "4syl_s2_e0",
+      "example_word": "obviously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s2_e0.wav",
+      "all_examples": [
+        "obviously"
+      ]
+    },
+    {
+      "clip_name": "4syl_s2_e1",
+      "example_word": "original",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s2_e1.wav",
+      "all_examples": [
+        "original"
+      ]
+    },
+    {
+      "clip_name": "4syl_s2_e2",
+      "example_word": "Ohio",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s2_e2.wav",
+      "all_examples": [
+        "Ohio"
+      ]
+    },
+    {
+      "clip_name": "4syl_s2_e3",
+      "example_word": "obviously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s2_e3.wav",
+      "all_examples": [
+        "obviously"
+      ]
+    },
+    {
+      "clip_name": "4syl_s2_e4",
+      "example_word": "Oklahoma",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s2_e4.wav",
+      "all_examples": [
+        "Oklahoma"
+      ]
+    },
+    {
+      "clip_name": "4syl_s2_e5",
+      "example_word": "objective",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s2_e5.wav",
+      "all_examples": [
+        "objective"
+      ]
+    },
+    {
+      "clip_name": "4syl_s2_e6",
+      "example_word": "operation",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s2_e6.wav",
+      "all_examples": [
+        "operation"
+      ]
+    },
+    {
+      "clip_name": "4syl_s2_e7",
+      "example_word": "organizing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s2_e7.wav",
+      "all_examples": [
+        "organizing"
+      ]
+    },
+    {
+      "clip_name": "4syl_s3_e0",
+      "example_word": "information",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s3_e0.wav",
+      "all_examples": [
+        "information"
+      ]
+    },
+    {
+      "clip_name": "4syl_s3_e1",
+      "example_word": "education",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s3_e1.wav",
+      "all_examples": [
+        "education"
+      ]
+    },
+    {
+      "clip_name": "4syl_s3_e2",
+      "example_word": "intimidate",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s3_e2.wav",
+      "all_examples": [
+        "intimidate"
+      ]
+    },
+    {
+      "clip_name": "4syl_s3_e3",
+      "example_word": "immediately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s3_e3.wav",
+      "all_examples": [
+        "immediately"
+      ]
+    },
+    {
+      "clip_name": "4syl_s3_e4",
+      "example_word": "intermediate",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s3_e4.wav",
+      "all_examples": [
+        "intermediate"
+      ]
+    },
+    {
+      "clip_name": "4syl_s3_e5",
+      "example_word": "initiative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s3_e5.wav",
+      "all_examples": [
+        "initiative"
+      ]
+    },
+    {
+      "clip_name": "4syl_s3_e6",
+      "example_word": "intelligent",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s3_e6.wav",
+      "all_examples": [
+        "intelligent"
+      ]
+    },
+    {
+      "clip_name": "4syl_s3_e7",
+      "example_word": "interesting",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s3_e7.wav",
+      "all_examples": [
+        "interesting"
+      ]
+    },
+    {
+      "clip_name": "4syl_s4_e0",
+      "example_word": "particularly",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s4_e0.wav",
+      "all_examples": [
+        "particularly"
+      ]
+    },
+    {
+      "clip_name": "4syl_s4_e1",
+      "example_word": "participation",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s4_e1.wav",
+      "all_examples": [
+        "participation"
+      ]
+    },
+    {
+      "clip_name": "4syl_s4_e2",
+      "example_word": "Philadelphia",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s4_e2.wav",
+      "all_examples": [
+        "Philadelphia"
+      ]
+    },
+    {
+      "clip_name": "4syl_s4_e3",
+      "example_word": "possibility",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s4_e3.wav",
+      "all_examples": [
+        "possibility"
+      ]
+    },
+    {
+      "clip_name": "4syl_s4_e4",
+      "example_word": "problem",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s4_e4.wav",
+      "all_examples": [
+        "problem"
+      ]
+    },
+    {
+      "clip_name": "4syl_s4_e5",
+      "example_word": "probability",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s4_e5.wav",
+      "all_examples": [
+        "probability"
+      ]
+    },
+    {
+      "clip_name": "4syl_s4_e6",
+      "example_word": "personality",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s4_e6.wav",
+      "all_examples": [
+        "personality"
+      ]
+    },
+    {
+      "clip_name": "4syl_s4_e7",
+      "example_word": "planning",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s4_e7.wav",
+      "all_examples": [
+        "planning"
+      ]
+    },
+    {
+      "clip_name": "4syl_s5_e0",
+      "example_word": "photographer",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s5_e0.wav",
+      "all_examples": [
+        "photographer"
+      ]
+    },
+    {
+      "clip_name": "4syl_s5_e1",
+      "example_word": "favorable",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s5_e1.wav",
+      "all_examples": [
+        "favorable"
+      ]
+    },
+    {
+      "clip_name": "4syl_s5_e2",
+      "example_word": "philosophy",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s5_e2.wav",
+      "all_examples": [
+        "philosophy"
+      ]
+    },
+    {
+      "clip_name": "4syl_s5_e3",
+      "example_word": "facility",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s5_e3.wav",
+      "all_examples": [
+        "facility"
+      ]
+    },
+    {
+      "clip_name": "4syl_s5_e4",
+      "example_word": "fundamental",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s5_e4.wav",
+      "all_examples": [
+        "fundamental"
+      ]
+    },
+    {
+      "clip_name": "4syl_s5_e5",
+      "example_word": "philosophy",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s5_e5.wav",
+      "all_examples": [
+        "philosophy"
+      ]
+    },
+    {
+      "clip_name": "4syl_s5_e6",
+      "example_word": "fantastic",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s5_e6.wav",
+      "all_examples": [
+        "fantastic"
+      ]
+    },
+    {
+      "clip_name": "4syl_s5_e7",
+      "example_word": "fascinating",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s5_e7.wav",
+      "all_examples": [
+        "fascinating"
+      ]
+    },
+    {
+      "clip_name": "4syl_s6_e0",
+      "example_word": "technology",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s6_e0.wav",
+      "all_examples": [
+        "technology"
+      ]
+    },
+    {
+      "clip_name": "4syl_s6_e1",
+      "example_word": "television",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s6_e1.wav",
+      "all_examples": [
+        "television"
+      ]
+    },
+    {
+      "clip_name": "4syl_s6_e2",
+      "example_word": "tornado",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s6_e2.wav",
+      "all_examples": [
+        "tornado"
+      ]
+    },
+    {
+      "clip_name": "4syl_s6_e3",
+      "example_word": "testimony",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s6_e3.wav",
+      "all_examples": [
+        "testimony"
+      ]
+    },
+    {
+      "clip_name": "4syl_s6_e4",
+      "example_word": "tomato",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s6_e4.wav",
+      "all_examples": [
+        "tomato"
+      ]
+    },
+    {
+      "clip_name": "4syl_s6_e5",
+      "example_word": "terrific",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s6_e5.wav",
+      "all_examples": [
+        "terrific"
+      ]
+    },
+    {
+      "clip_name": "4syl_s6_e6",
+      "example_word": "traditional",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s6_e6.wav",
+      "all_examples": [
+        "traditional"
+      ]
+    },
+    {
+      "clip_name": "4syl_s6_e7",
+      "example_word": "thanksgiving",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s6_e7.wav",
+      "all_examples": [
+        "thanksgiving"
+      ]
+    },
+    {
+      "clip_name": "4syl_s7_e0",
+      "example_word": "geography",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s7_e0.wav",
+      "all_examples": [
+        "geography"
+      ]
+    },
+    {
+      "clip_name": "4syl_s7_e1",
+      "example_word": "graduation",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s7_e1.wav",
+      "all_examples": [
+        "graduation"
+      ]
+    },
+    {
+      "clip_name": "4syl_s7_e2",
+      "example_word": "gymnasium",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s7_e2.wav",
+      "all_examples": [
+        "gymnasium"
+      ]
+    },
+    {
+      "clip_name": "4syl_s7_e3",
+      "example_word": "generosity",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s7_e3.wav",
+      "all_examples": [
+        "generosity"
+      ]
+    },
+    {
+      "clip_name": "4syl_s7_e4",
+      "example_word": "gymnasium",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s7_e4.wav",
+      "all_examples": [
+        "gymnasium"
+      ]
+    },
+    {
+      "clip_name": "4syl_s7_e5",
+      "example_word": "generative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s7_e5.wav",
+      "all_examples": [
+        "generative"
+      ]
+    },
+    {
+      "clip_name": "4syl_s7_e6",
+      "example_word": "government",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s7_e6.wav",
+      "all_examples": [
+        "government"
+      ]
+    },
+    {
+      "clip_name": "4syl_s7_e7",
+      "example_word": "going",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\4syl_s7_e7.wav",
+      "all_examples": [
+        "going"
+      ]
+    },
+    {
+      "clip_name": "5syl_s0_e0",
+      "example_word": "opportunity",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s0_e0.wav",
+      "all_examples": [
+        "opportunity"
+      ]
+    },
+    {
+      "clip_name": "5syl_s0_e1",
+      "example_word": "understanding",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s0_e1.wav",
+      "all_examples": [
+        "understanding"
+      ]
+    },
+    {
+      "clip_name": "5syl_s0_e2",
+      "example_word": "automobile",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s0_e2.wav",
+      "all_examples": [
+        "automobile"
+      ]
+    },
+    {
+      "clip_name": "5syl_s0_e3",
+      "example_word": "immediately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s0_e3.wav",
+      "all_examples": [
+        "immediately"
+      ]
+    },
+    {
+      "clip_name": "5syl_s0_e4",
+      "example_word": "ultimatum",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s0_e4.wav",
+      "all_examples": [
+        "ultimatum"
+      ]
+    },
+    {
+      "clip_name": "5syl_s0_e5",
+      "example_word": "unbelievable",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s0_e5.wav",
+      "all_examples": [
+        "unbelievable"
+      ]
+    },
+    {
+      "clip_name": "5syl_s0_e6",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s0_e6.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "5syl_s0_e7",
+      "example_word": "understanding",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s0_e7.wav",
+      "all_examples": [
+        "understanding"
+      ]
+    },
+    {
+      "clip_name": "5syl_s1_e0",
+      "example_word": "automatically",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s1_e0.wav",
+      "all_examples": [
+        "automatically"
+      ]
+    },
+    {
+      "clip_name": "5syl_s1_e1",
+      "example_word": "agricultural",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s1_e1.wav",
+      "all_examples": [
+        "agricultural"
+      ]
+    },
+    {
+      "clip_name": "5syl_s1_e2",
+      "example_word": "Australia",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s1_e2.wav",
+      "all_examples": [
+        "Australia"
+      ]
+    },
+    {
+      "clip_name": "5syl_s1_e3",
+      "example_word": "actually",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s1_e3.wav",
+      "all_examples": [
+        "actually"
+      ]
+    },
+    {
+      "clip_name": "5syl_s1_e4",
+      "example_word": "academically",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s1_e4.wav",
+      "all_examples": [
+        "academically"
+      ]
+    },
+    {
+      "clip_name": "5syl_s1_e5",
+      "example_word": "alternative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s1_e5.wav",
+      "all_examples": [
+        "alternative"
+      ]
+    },
+    {
+      "clip_name": "5syl_s1_e6",
+      "example_word": "accidentally",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s1_e6.wav",
+      "all_examples": [
+        "accidentally"
+      ]
+    },
+    {
+      "clip_name": "5syl_s1_e7",
+      "example_word": "analyzing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s1_e7.wav",
+      "all_examples": [
+        "analyzing"
+      ]
+    },
+    {
+      "clip_name": "5syl_s2_e0",
+      "example_word": "obviously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s2_e0.wav",
+      "all_examples": [
+        "obviously"
+      ]
+    },
+    {
+      "clip_name": "5syl_s2_e1",
+      "example_word": "organization",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s2_e1.wav",
+      "all_examples": [
+        "organization"
+      ]
+    },
+    {
+      "clip_name": "5syl_s2_e2",
+      "example_word": "outstanding",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s2_e2.wav",
+      "all_examples": [
+        "outstanding"
+      ]
+    },
+    {
+      "clip_name": "5syl_s2_e3",
+      "example_word": "obviously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s2_e3.wav",
+      "all_examples": [
+        "obviously"
+      ]
+    },
+    {
+      "clip_name": "5syl_s2_e4",
+      "example_word": "optimization",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s2_e4.wav",
+      "all_examples": [
+        "optimization"
+      ]
+    },
+    {
+      "clip_name": "5syl_s2_e5",
+      "example_word": "objective",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s2_e5.wav",
+      "all_examples": [
+        "objective"
+      ]
+    },
+    {
+      "clip_name": "5syl_s2_e6",
+      "example_word": "operation",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s2_e6.wav",
+      "all_examples": [
+        "operation"
+      ]
+    },
+    {
+      "clip_name": "5syl_s2_e7",
+      "example_word": "organizing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s2_e7.wav",
+      "all_examples": [
+        "organizing"
+      ]
+    },
+    {
+      "clip_name": "5syl_s3_e0",
+      "example_word": "immediately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s3_e0.wav",
+      "all_examples": [
+        "immediately"
+      ]
+    },
+    {
+      "clip_name": "5syl_s3_e1",
+      "example_word": "international",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s3_e1.wav",
+      "all_examples": [
+        "international"
+      ]
+    },
+    {
+      "clip_name": "5syl_s3_e2",
+      "example_word": "imagination",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s3_e2.wav",
+      "all_examples": [
+        "imagination"
+      ]
+    },
+    {
+      "clip_name": "5syl_s3_e3",
+      "example_word": "immediately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s3_e3.wav",
+      "all_examples": [
+        "immediately"
+      ]
+    },
+    {
+      "clip_name": "5syl_s3_e4",
+      "example_word": "intermediate",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s3_e4.wav",
+      "all_examples": [
+        "intermediate"
+      ]
+    },
+    {
+      "clip_name": "5syl_s3_e5",
+      "example_word": "initiative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s3_e5.wav",
+      "all_examples": [
+        "initiative"
+      ]
+    },
+    {
+      "clip_name": "5syl_s3_e6",
+      "example_word": "intelligent",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s3_e6.wav",
+      "all_examples": [
+        "intelligent"
+      ]
+    },
+    {
+      "clip_name": "5syl_s3_e7",
+      "example_word": "interesting",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s3_e7.wav",
+      "all_examples": [
+        "interesting"
+      ]
+    },
+    {
+      "clip_name": "5syl_s4_e0",
+      "example_word": "personality",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s4_e0.wav",
+      "all_examples": [
+        "personality"
+      ]
+    },
+    {
+      "clip_name": "5syl_s4_e1",
+      "example_word": "particularly",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s4_e1.wav",
+      "all_examples": [
+        "particularly"
+      ]
+    },
+    {
+      "clip_name": "5syl_s4_e2",
+      "example_word": "Philadelphia",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s4_e2.wav",
+      "all_examples": [
+        "Philadelphia"
+      ]
+    },
+    {
+      "clip_name": "5syl_s4_e3",
+      "example_word": "possibility",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s4_e3.wav",
+      "all_examples": [
+        "possibility"
+      ]
+    },
+    {
+      "clip_name": "5syl_s4_e4",
+      "example_word": "preliminary",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s4_e4.wav",
+      "all_examples": [
+        "preliminary"
+      ]
+    },
+    {
+      "clip_name": "5syl_s4_e5",
+      "example_word": "probability",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s4_e5.wav",
+      "all_examples": [
+        "probability"
+      ]
+    },
+    {
+      "clip_name": "5syl_s4_e6",
+      "example_word": "personality",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s4_e6.wav",
+      "all_examples": [
+        "personality"
+      ]
+    },
+    {
+      "clip_name": "5syl_s4_e7",
+      "example_word": "preparing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s4_e7.wav",
+      "all_examples": [
+        "preparing"
+      ]
+    },
+    {
+      "clip_name": "5syl_s5_e0",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s5_e0.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "5syl_s5_e1",
+      "example_word": "fundamentally",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s5_e1.wav",
+      "all_examples": [
+        "fundamentally"
+      ]
+    },
+    {
+      "clip_name": "5syl_s5_e2",
+      "example_word": "photography",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s5_e2.wav",
+      "all_examples": [
+        "photography"
+      ]
+    },
+    {
+      "clip_name": "5syl_s5_e3",
+      "example_word": "facility",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s5_e3.wav",
+      "all_examples": [
+        "facility"
+      ]
+    },
+    {
+      "clip_name": "5syl_s5_e4",
+      "example_word": "fundamental",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s5_e4.wav",
+      "all_examples": [
+        "fundamental"
+      ]
+    },
+    {
+      "clip_name": "5syl_s5_e5",
+      "example_word": "fifty",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s5_e5.wav",
+      "all_examples": [
+        "fifty"
+      ]
+    },
+    {
+      "clip_name": "5syl_s5_e6",
+      "example_word": "fortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s5_e6.wav",
+      "all_examples": [
+        "fortunately"
+      ]
+    },
+    {
+      "clip_name": "5syl_s5_e7",
+      "example_word": "fascinating",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s5_e7.wav",
+      "all_examples": [
+        "fascinating"
+      ]
+    },
+    {
+      "clip_name": "5syl_s6_e0",
+      "example_word": "especially",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s6_e0.wav",
+      "all_examples": [
+        "especially"
+      ]
+    },
+    {
+      "clip_name": "5syl_s6_e1",
+      "example_word": "educational",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s6_e1.wav",
+      "all_examples": [
+        "educational"
+      ]
+    },
+    {
+      "clip_name": "5syl_s6_e2",
+      "example_word": "traditional",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s6_e2.wav",
+      "all_examples": [
+        "traditional"
+      ]
+    },
+    {
+      "clip_name": "5syl_s6_e3",
+      "example_word": "testimony",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s6_e3.wav",
+      "all_examples": [
+        "testimony"
+      ]
+    },
+    {
+      "clip_name": "5syl_s6_e4",
+      "example_word": "television",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s6_e4.wav",
+      "all_examples": [
+        "television"
+      ]
+    },
+    {
+      "clip_name": "5syl_s6_e5",
+      "example_word": "sensitive",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s6_e5.wav",
+      "all_examples": [
+        "sensitive"
+      ]
+    },
+    {
+      "clip_name": "5syl_s6_e6",
+      "example_word": "traditional",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s6_e6.wav",
+      "all_examples": [
+        "traditional"
+      ]
+    },
+    {
+      "clip_name": "5syl_s6_e7",
+      "example_word": "thanksgiving",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s6_e7.wav",
+      "all_examples": [
+        "thanksgiving"
+      ]
+    },
+    {
+      "clip_name": "5syl_s7_e0",
+      "example_word": "geographical",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s7_e0.wav",
+      "all_examples": [
+        "geographical"
+      ]
+    },
+    {
+      "clip_name": "5syl_s7_e1",
+      "example_word": "graduation",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s7_e1.wav",
+      "all_examples": [
+        "graduation"
+      ]
+    },
+    {
+      "clip_name": "5syl_s7_e2",
+      "example_word": "gymnasium",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s7_e2.wav",
+      "all_examples": [
+        "gymnasium"
+      ]
+    },
+    {
+      "clip_name": "5syl_s7_e3",
+      "example_word": "generosity",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s7_e3.wav",
+      "all_examples": [
+        "generosity"
+      ]
+    },
+    {
+      "clip_name": "5syl_s7_e4",
+      "example_word": "graduation",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s7_e4.wav",
+      "all_examples": [
+        "graduation"
+      ]
+    },
+    {
+      "clip_name": "5syl_s7_e5",
+      "example_word": "generative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s7_e5.wav",
+      "all_examples": [
+        "generative"
+      ]
+    },
+    {
+      "clip_name": "5syl_s7_e6",
+      "example_word": "government",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s7_e6.wav",
+      "all_examples": [
+        "government"
+      ]
+    },
+    {
+      "clip_name": "5syl_s7_e7",
+      "example_word": "going",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\5syl_s7_e7.wav",
+      "all_examples": [
+        "going"
+      ]
+    },
+    {
+      "clip_name": "6syl_s0_e0",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s0_e0.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s0_e1",
+      "example_word": "understanding",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s0_e1.wav",
+      "all_examples": [
+        "understanding"
+      ]
+    },
+    {
+      "clip_name": "6syl_s0_e2",
+      "example_word": "automobile",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s0_e2.wav",
+      "all_examples": [
+        "automobile"
+      ]
+    },
+    {
+      "clip_name": "6syl_s0_e3",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s0_e3.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s0_e4",
+      "example_word": "ultimatum",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s0_e4.wav",
+      "all_examples": [
+        "ultimatum"
+      ]
+    },
+    {
+      "clip_name": "6syl_s0_e5",
+      "example_word": "unbelievable",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s0_e5.wav",
+      "all_examples": [
+        "unbelievable"
+      ]
+    },
+    {
+      "clip_name": "6syl_s0_e6",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s0_e6.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s0_e7",
+      "example_word": "understanding",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s0_e7.wav",
+      "all_examples": [
+        "understanding"
+      ]
+    },
+    {
+      "clip_name": "6syl_s1_e0",
+      "example_word": "automatically",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s1_e0.wav",
+      "all_examples": [
+        "automatically"
+      ]
+    },
+    {
+      "clip_name": "6syl_s1_e1",
+      "example_word": "agricultural",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s1_e1.wav",
+      "all_examples": [
+        "agricultural"
+      ]
+    },
+    {
+      "clip_name": "6syl_s1_e2",
+      "example_word": "automatically",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s1_e2.wav",
+      "all_examples": [
+        "automatically"
+      ]
+    },
+    {
+      "clip_name": "6syl_s1_e3",
+      "example_word": "actually",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s1_e3.wav",
+      "all_examples": [
+        "actually"
+      ]
+    },
+    {
+      "clip_name": "6syl_s1_e4",
+      "example_word": "academically",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s1_e4.wav",
+      "all_examples": [
+        "academically"
+      ]
+    },
+    {
+      "clip_name": "6syl_s1_e5",
+      "example_word": "alternative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s1_e5.wav",
+      "all_examples": [
+        "alternative"
+      ]
+    },
+    {
+      "clip_name": "6syl_s1_e6",
+      "example_word": "accidentally",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s1_e6.wav",
+      "all_examples": [
+        "accidentally"
+      ]
+    },
+    {
+      "clip_name": "6syl_s1_e7",
+      "example_word": "analyzing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s1_e7.wav",
+      "all_examples": [
+        "analyzing"
+      ]
+    },
+    {
+      "clip_name": "6syl_s2_e0",
+      "example_word": "obviously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s2_e0.wav",
+      "all_examples": [
+        "obviously"
+      ]
+    },
+    {
+      "clip_name": "6syl_s2_e1",
+      "example_word": "organization",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s2_e1.wav",
+      "all_examples": [
+        "organization"
+      ]
+    },
+    {
+      "clip_name": "6syl_s2_e2",
+      "example_word": "obviously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s2_e2.wav",
+      "all_examples": [
+        "obviously"
+      ]
+    },
+    {
+      "clip_name": "6syl_s2_e3",
+      "example_word": "obviously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s2_e3.wav",
+      "all_examples": [
+        "obviously"
+      ]
+    },
+    {
+      "clip_name": "6syl_s2_e4",
+      "example_word": "optimization",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s2_e4.wav",
+      "all_examples": [
+        "optimization"
+      ]
+    },
+    {
+      "clip_name": "6syl_s2_e5",
+      "example_word": "obviously",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s2_e5.wav",
+      "all_examples": [
+        "obviously"
+      ]
+    },
+    {
+      "clip_name": "6syl_s2_e6",
+      "example_word": "operation",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s2_e6.wav",
+      "all_examples": [
+        "operation"
+      ]
+    },
+    {
+      "clip_name": "6syl_s2_e7",
+      "example_word": "organizing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s2_e7.wav",
+      "all_examples": [
+        "organizing"
+      ]
+    },
+    {
+      "clip_name": "6syl_s3_e0",
+      "example_word": "immediately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s3_e0.wav",
+      "all_examples": [
+        "immediately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s3_e1",
+      "example_word": "international",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s3_e1.wav",
+      "all_examples": [
+        "international"
+      ]
+    },
+    {
+      "clip_name": "6syl_s3_e2",
+      "example_word": "imagination",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s3_e2.wav",
+      "all_examples": [
+        "imagination"
+      ]
+    },
+    {
+      "clip_name": "6syl_s3_e3",
+      "example_word": "immediately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s3_e3.wav",
+      "all_examples": [
+        "immediately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s3_e4",
+      "example_word": "intermediate",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s3_e4.wav",
+      "all_examples": [
+        "intermediate"
+      ]
+    },
+    {
+      "clip_name": "6syl_s3_e5",
+      "example_word": "initiative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s3_e5.wav",
+      "all_examples": [
+        "initiative"
+      ]
+    },
+    {
+      "clip_name": "6syl_s3_e6",
+      "example_word": "intelligent",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s3_e6.wav",
+      "all_examples": [
+        "intelligent"
+      ]
+    },
+    {
+      "clip_name": "6syl_s3_e7",
+      "example_word": "interesting",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s3_e7.wav",
+      "all_examples": [
+        "interesting"
+      ]
+    },
+    {
+      "clip_name": "6syl_s4_e0",
+      "example_word": "personality",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s4_e0.wav",
+      "all_examples": [
+        "personality"
+      ]
+    },
+    {
+      "clip_name": "6syl_s4_e1",
+      "example_word": "particularly",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s4_e1.wav",
+      "all_examples": [
+        "particularly"
+      ]
+    },
+    {
+      "clip_name": "6syl_s4_e2",
+      "example_word": "personality",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s4_e2.wav",
+      "all_examples": [
+        "personality"
+      ]
+    },
+    {
+      "clip_name": "6syl_s4_e3",
+      "example_word": "possibility",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s4_e3.wav",
+      "all_examples": [
+        "possibility"
+      ]
+    },
+    {
+      "clip_name": "6syl_s4_e4",
+      "example_word": "preliminary",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s4_e4.wav",
+      "all_examples": [
+        "preliminary"
+      ]
+    },
+    {
+      "clip_name": "6syl_s4_e5",
+      "example_word": "probability",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s4_e5.wav",
+      "all_examples": [
+        "probability"
+      ]
+    },
+    {
+      "clip_name": "6syl_s4_e6",
+      "example_word": "personality",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s4_e6.wav",
+      "all_examples": [
+        "personality"
+      ]
+    },
+    {
+      "clip_name": "6syl_s4_e7",
+      "example_word": "preparing",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s4_e7.wav",
+      "all_examples": [
+        "preparing"
+      ]
+    },
+    {
+      "clip_name": "6syl_s5_e0",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s5_e0.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s5_e1",
+      "example_word": "fundamentally",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s5_e1.wav",
+      "all_examples": [
+        "fundamentally"
+      ]
+    },
+    {
+      "clip_name": "6syl_s5_e2",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s5_e2.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s5_e3",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s5_e3.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s5_e4",
+      "example_word": "fundamental",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s5_e4.wav",
+      "all_examples": [
+        "fundamental"
+      ]
+    },
+    {
+      "clip_name": "6syl_s5_e5",
+      "example_word": "unfortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s5_e5.wav",
+      "all_examples": [
+        "unfortunately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s5_e6",
+      "example_word": "fortunately",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s5_e6.wav",
+      "all_examples": [
+        "fortunately"
+      ]
+    },
+    {
+      "clip_name": "6syl_s5_e7",
+      "example_word": "fascinating",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s5_e7.wav",
+      "all_examples": [
+        "fascinating"
+      ]
+    },
+    {
+      "clip_name": "6syl_s6_e0",
+      "example_word": "especially",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s6_e0.wav",
+      "all_examples": [
+        "especially"
+      ]
+    },
+    {
+      "clip_name": "6syl_s6_e1",
+      "example_word": "educational",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s6_e1.wav",
+      "all_examples": [
+        "educational"
+      ]
+    },
+    {
+      "clip_name": "6syl_s6_e2",
+      "example_word": "especially",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s6_e2.wav",
+      "all_examples": [
+        "especially"
+      ]
+    },
+    {
+      "clip_name": "6syl_s6_e3",
+      "example_word": "especially",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s6_e3.wav",
+      "all_examples": [
+        "especially"
+      ]
+    },
+    {
+      "clip_name": "6syl_s6_e4",
+      "example_word": "television",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s6_e4.wav",
+      "all_examples": [
+        "television"
+      ]
+    },
+    {
+      "clip_name": "6syl_s6_e5",
+      "example_word": "especially",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s6_e5.wav",
+      "all_examples": [
+        "especially"
+      ]
+    },
+    {
+      "clip_name": "6syl_s6_e6",
+      "example_word": "traditional",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s6_e6.wav",
+      "all_examples": [
+        "traditional"
+      ]
+    },
+    {
+      "clip_name": "6syl_s6_e7",
+      "example_word": "thanksgiving",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s6_e7.wav",
+      "all_examples": [
+        "thanksgiving"
+      ]
+    },
+    {
+      "clip_name": "6syl_s7_e0",
+      "example_word": "geographical",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s7_e0.wav",
+      "all_examples": [
+        "geographical"
+      ]
+    },
+    {
+      "clip_name": "6syl_s7_e1",
+      "example_word": "geographical",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s7_e1.wav",
+      "all_examples": [
+        "geographical"
+      ]
+    },
+    {
+      "clip_name": "6syl_s7_e2",
+      "example_word": "geographical",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s7_e2.wav",
+      "all_examples": [
+        "geographical"
+      ]
+    },
+    {
+      "clip_name": "6syl_s7_e3",
+      "example_word": "geographical",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s7_e3.wav",
+      "all_examples": [
+        "geographical"
+      ]
+    },
+    {
+      "clip_name": "6syl_s7_e4",
+      "example_word": "graduation",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s7_e4.wav",
+      "all_examples": [
+        "graduation"
+      ]
+    },
+    {
+      "clip_name": "6syl_s7_e5",
+      "example_word": "generative",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s7_e5.wav",
+      "all_examples": [
+        "generative"
+      ]
+    },
+    {
+      "clip_name": "6syl_s7_e6",
+      "example_word": "government",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s7_e6.wav",
+      "all_examples": [
+        "government"
+      ]
+    },
+    {
+      "clip_name": "6syl_s7_e7",
+      "example_word": "geographical",
+      "file_path": "C:\\Users\\Jason\\Desktop\\Important\\Projects\\AvatarResurrection\\lip_sync_clips\\6syl_s7_e7.wav",
+      "all_examples": [
+        "geographical"
+      ]
+    }
+  ],
+  "failed": [],
+  "total": 384
+}

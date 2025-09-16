@@ -1,0 +1,37 @@
+{
+  "idle_videos": {
+    "directory": "Nodes/main2main",
+    "shuffle": true,
+    "loop": true,
+    "transition_time": 0.5,
+    "description": "Videos played when Darwin is idle (waiting for input)"
+  },
+  
+  "lipsync_videos": {
+    "directory": "tempstream",
+    "auto_play": true,
+    "return_to_idle": true,
+    "cleanup_after": 5,
+    "description": "Lip-synced videos generated from Darwin's responses"
+  },
+  
+  "settings": {
+    "default_idle_duration": 8.0,
+    "video_fade_transition": false,
+    "audio_crossfade": false,
+    "max_stored_lipsyncs": 5
+  },
+  
+  "clip_selection": {
+    "archive_dir": "../archive",
+    "clip_odds": {
+      "circle1": 0.5,
+      "eye_look1": 1.0,
+      "idle2": 2.0,
+      "slight_look1": 1.0,
+      "slight_shake1": 0.3
+    },
+    "avoid_repeats": true,
+    "target_clips_per_second": 2
+  }
+}
