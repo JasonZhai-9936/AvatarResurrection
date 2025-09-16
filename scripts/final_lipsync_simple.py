@@ -12,14 +12,32 @@ import nltk
 from nltk.corpus import cmudict
 import re
 from typing import List, Dict, Optional
+import shutil
 
-# Configuration
-FFMPEG_BIN_PATH = r"C:\ffmpeg\bin"
+# Configuration - Use system PATH for FFmpeg
 WHISPER_MODEL = "base"
+
+def get_ffmpeg_path():
+    """Get FFmpeg executable path from system PATH"""
+    ffmpeg_exe = shutil.which("ffmpeg")
+    if ffmpeg_exe is None:
+        raise RuntimeError("FFmpeg not found in system PATH. Please install FFmpeg and add it to PATH.")
+    return ffmpeg_exe
+
+def get_ffprobe_path():
+    """Get FFprobe executable path from system PATH"""
+    ffprobe_exe = shutil.which("ffprobe")
+    if ffprobe_exe is None:
+        raise RuntimeError("FFprobe not found in system PATH. Please install FFmpeg (includes ffprobe) and add it to PATH.")
+    return ffprobe_exe
 
 class SimpleLipSync:
     def __init__(self, archive_directory: str):
         self.archive_dir = archive_directory
+        
+        # Get FFmpeg paths from system PATH
+        self.ffmpeg_path = get_ffmpeg_path()
+        self.ffprobe_path = get_ffprobe_path()
         
         # Initialize syllable counter
         self.dic = pyphen.Pyphen(lang='en')
@@ -72,6 +90,8 @@ class SimpleLipSync:
         ]
         
         print(f"Simple lip sync initialized with archive: {archive_directory}")
+        print(f"Using FFmpeg: {self.ffmpeg_path}")
+        print(f"Using FFprobe: {self.ffprobe_path}")
 
     def extract_words_from_audio(self, audio_file: str) -> List[str]:
         """Extract just the words from audio, no timing"""
@@ -92,9 +112,20 @@ class SimpleLipSync:
         return words
 
     def get_audio_duration(self, audio_file: str) -> float:
-        """Get the total duration of the audio file"""
+        """Get the total duration of the audio file with improved error handling"""
+        
+        # Check if audio file exists
+        if not os.path.exists(audio_file):
+            print(f"Audio file does not exist: {audio_file}")
+            return 10.0  # Default fallback
+        
+        # Check if ffprobe is available
+        if not hasattr(self, 'ffprobe_path') or self.ffprobe_path is None:
+            print("FFprobe not found in system PATH")
+            return 10.0  # Default fallback
+        
         cmd = [
-            os.path.join(FFMPEG_BIN_PATH, "ffprobe"),
+            self.ffprobe_path,
             "-v", "quiet",
             "-show_entries", "format=duration",
             "-of", "csv=p=0",
@@ -102,9 +133,31 @@ class SimpleLipSync:
         ]
         
         try:
+            print(f"Running ffprobe command: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            return float(result.stdout.strip())
-        except:
+            duration_str = result.stdout.strip()
+            print(f"FFprobe output: '{duration_str}'")
+            
+            if duration_str:
+                duration = float(duration_str)
+                print(f"Audio duration: {duration:.2f} seconds")
+                return duration
+            else:
+                print("FFprobe returned empty output")
+                return 10.0  # Default fallback
+                
+        except subprocess.CalledProcessError as e:
+            print(f"FFprobe command failed with return code {e.returncode}")
+            print(f"Error output: {e.stderr}")
+            print(f"Standard output: {e.stdout}")
+            return 10.0  # Default fallback
+            
+        except ValueError as e:
+            print(f"Could not parse duration '{duration_str}' as float: {e}")
+            return 10.0  # Default fallback
+            
+        except Exception as e:
+            print(f"Unexpected error getting audio duration: {e}")
             return 10.0  # Default fallback
 
     def get_syllables(self, word: str) -> int:
@@ -218,7 +271,7 @@ class SimpleLipSync:
             
             # Create clip with exact duration
             cmd = [
-                os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y",
+                self.ffmpeg_path, "-y",
                 "-i", clip_path,
                 "-vf", "scale=640:480",
                 "-t", str(time_per_word),
@@ -243,7 +296,7 @@ class SimpleLipSync:
             for clip in timed_clips:
                 # Convert Windows paths to forward slashes for FFmpeg
                 clip_path_fixed = clip.replace('\\', '/')
-                f.write(f"file '{clip_path_fixed}'\\n")
+                f.write(f"file '{clip_path_fixed}'\n")
         
         print(f"Concat file created with {len(timed_clips)} clips")
         
@@ -260,7 +313,7 @@ class SimpleLipSync:
         # Concatenate all clips
         final_video = os.path.join(temp_dir, "video_only.mp4")
         concat_cmd = [
-            os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y",
+            self.ffmpeg_path, "-y",
             "-f", "concat",
             "-safe", "0",
             "-i", concat_file,
@@ -311,7 +364,7 @@ class SimpleLipSync:
         
         final_video = os.path.join(temp_dir, "video_alt.mp4")
         
-        cmd = [os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y"]
+        cmd = [self.ffmpeg_path, "-y"]
         
         # Add inputs
         for input_file in inputs:
@@ -352,14 +405,14 @@ class SimpleLipSync:
         # Step 3: Map words to clips
         word_clips = self.map_words_to_clips(words)
         
-        print(f"\\nWord-to-clip mapping:")
+        print(f"\nWord-to-clip mapping:")
         for clip_info in word_clips:
             status = "✓" if clip_info["found"] else "⚠"
             print(f"  {status} {clip_info['word']} -> {clip_info['pattern']} ({clip_info['prefix']})")
         
         # Step 4: Create video with equal timing
         with tempfile.TemporaryDirectory() as temp_dir:
-            print("\\nCreating equal-time video...")
+            print("\nCreating equal-time video...")
             
             video_file = self.create_equal_time_video(word_clips, total_duration, temp_dir)
             
@@ -371,7 +424,7 @@ class SimpleLipSync:
             print("Combining with audio...")
             
             final_cmd = [
-                os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y",
+                self.ffmpeg_path, "-y",
                 "-i", video_file,
                 "-i", audio_file,
                 "-c:v", "libx264",
@@ -433,17 +486,17 @@ def test_word_extraction(audio_file: str, archive_dir: str = "./archive"):
     # Show analysis
     analysis = system.analyze_clip_usage(words)
     
-    print("\\nCLIP USAGE ANALYSIS:")
+    print("\nCLIP USAGE ANALYSIS:")
     print("=" * 40)
     print(f"Total words: {analysis['total_words']}")
     print(f"Found clips: {analysis['found_clips']}")
     print(f"Missing clips: {analysis['missing_clips']}")
     
-    print("\\nPrefix distribution:")
+    print("\nPrefix distribution:")
     for prefix, count in analysis['prefix_distribution'].items():
         print(f"  {prefix}: {count} clips")
     
-    print(f"\\nMost used patterns:")
+    print(f"\nMost used patterns:")
     sorted_patterns = sorted(analysis['pattern_usage'].items(), 
                            key=lambda x: len(x[1]), reverse=True)
     
@@ -476,12 +529,12 @@ if __name__ == "__main__":
             
     else:
         print(f"Audio file not found: {audio_file}")
-        print("\\nTo use:")
+        print("\nTo use:")
         print("1. Change 'your_audio_file.wav' to your actual audio file path")
         print("2. Run the script")
-        print("\\nExample:")
+        print("\nExample:")
         print("  audio_file = 'C:/Users/YourName/Desktop/speech.wav'")
         
         # Alternative: Test word extraction only
-        print("\\nOr test word extraction with an existing file:")
+        print("\nOr test word extraction with an existing file:")
         print("test_word_extraction('your_file.wav')")

@@ -1,23 +1,23 @@
-#old lipsyncer
-# Simplified Audio-to-Video Lip Sync System - FIXED VERSION
+# Simplified Audio-to-Video Lip Sync System - PATH-based FFmpeg
 # Evenly distributes clips across audio duration without word alignment
 
 import os
 import json
 import random
 import subprocess
+import shutil
 from pathlib import Path
 import tempfile
 from typing import List, Dict, Optional
 from datetime import datetime
 
-# Configuration
-FFMPEG_BIN_PATH = r"C:\ffmpeg\bin"
-
 class SimplifiedLipSyncSystem:
     def __init__(self, archive_directory: str, clip_odds: Dict[str, float] = None, 
                  avoid_repeats: bool = False):
         self.archive_dir = archive_directory
+        
+        # Check if FFmpeg is available in PATH
+        self._check_ffmpeg_availability()
         
         # Available clip prefixes from your archive
         # These are the ACTUAL prefixes in your filenames
@@ -66,6 +66,28 @@ class SimplifiedLipSyncSystem:
         print(f"Clip odds configured: {self.clip_odds}")
         print(f"Avoid repeats: {self.avoid_repeats}")
 
+    def _check_ffmpeg_availability(self):
+        """Check if FFmpeg and FFprobe are available in system PATH"""
+        ffmpeg_path = shutil.which("ffmpeg")
+        ffprobe_path = shutil.which("ffprobe")
+        
+        if not ffmpeg_path:
+            raise RuntimeError(
+                "FFmpeg not found in system PATH. Please install FFmpeg and ensure it's "
+                "added to your system PATH, or install it using:\n"
+                "- Windows: Download from https://ffmpeg.org/download.html or use 'winget install ffmpeg'\n"
+                "- macOS: brew install ffmpeg\n"
+                "- Linux: sudo apt install ffmpeg (Ubuntu/Debian) or sudo yum install ffmpeg (RHEL/CentOS)"
+            )
+        
+        if not ffprobe_path:
+            raise RuntimeError(
+                "FFprobe not found in system PATH. FFprobe should be included with FFmpeg installation."
+            )
+        
+        print(f"FFmpeg found at: {ffmpeg_path}")
+        print(f"FFprobe found at: {ffprobe_path}")
+
     def scan_available_clips(self) -> List[Dict]:
         """Scan archive directory for all available clips"""
         clips = []
@@ -76,7 +98,7 @@ class SimplifiedLipSyncSystem:
         
         for file in os.listdir(self.archive_dir):
             if file.endswith('.mp4'):
-                # FIXED: Better prefix detection
+                # Better prefix detection
                 # Check which prefix this file starts with
                 prefix_found = None
                 for prefix in self.available_prefixes:
@@ -125,9 +147,9 @@ class SimplifiedLipSyncSystem:
                 return os.path.join(directory, filename)
 
     def get_audio_duration(self, audio_file: str) -> float:
-        """Get the duration of an audio file"""
+        """Get the duration of an audio file using FFprobe from PATH"""
         cmd = [
-            os.path.join(FFMPEG_BIN_PATH, "ffprobe"),
+            "ffprobe",
             "-v", "quiet",
             "-show_entries", "format=duration",
             "-of", "csv=p=0",
@@ -137,14 +159,17 @@ class SimplifiedLipSyncSystem:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return float(result.stdout.strip())
-        except:
-            print(f"Error getting audio duration for {audio_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error getting audio duration for {audio_file}: {e}")
+            return 0.0
+        except (ValueError, FileNotFoundError) as e:
+            print(f"Error processing audio duration for {audio_file}: {e}")
             return 0.0
 
     def get_video_duration(self, video_path: str) -> float:
-        """Get the duration of a video file"""
+        """Get the duration of a video file using FFprobe from PATH"""
         cmd = [
-            os.path.join(FFMPEG_BIN_PATH, "ffprobe"),
+            "ffprobe",
             "-v", "quiet",
             "-show_entries", "format=duration",
             "-of", "csv=p=0",
@@ -243,9 +268,9 @@ class SimplifiedLipSyncSystem:
             # Create adjusted clip
             temp_clip = os.path.join(temp_dir, f"clip_{i:03d}.mp4")
             
-            # Build ffmpeg command with speed adjustment
+            # Build ffmpeg command with speed adjustment using FFmpeg from PATH
             cmd = [
-                os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y",
+                "ffmpeg", "-y",
                 "-i", clip_path,
                 "-vf", f"scale=720:480:force_original_aspect_ratio=increase,crop=720:480,setpts=PTS*{speed_factor}",
                 "-t", str(target_duration_per_clip),
@@ -261,6 +286,8 @@ class SimplifiedLipSyncSystem:
                 print(f"  [{i+1}/{num_clips}] {clip_info['filename']} → {target_duration_per_clip:.3f}s (speed: {1/speed_factor:.2f}x)")
             else:
                 print(f"  Warning: Failed to process clip {i}: {clip_info['filename']}")
+                if result.stderr:
+                    print(f"    FFmpeg error: {result.stderr}")
         
         if not processed_clips:
             print("Error: No clips were successfully processed")
@@ -275,10 +302,10 @@ class SimplifiedLipSyncSystem:
         # Debug: Print concat file contents
         print(f"\n  Concat file created with {len(processed_clips)} clips")
         
-        # Concatenate all clips
+        # Concatenate all clips using FFmpeg from PATH
         final_video = os.path.join(temp_dir, "video_only.mp4")
         concat_cmd = [
-            os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y",
+            "ffmpeg", "-y",
             "-f", "concat",
             "-safe", "0",
             "-i", concat_file,
@@ -366,9 +393,9 @@ class SimplifiedLipSyncSystem:
             
             print("\nCombining video with audio...")
             
-            # Combine with audio
+            # Combine with audio using FFmpeg from PATH
             final_cmd = [
-                os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y",
+                "ffmpeg", "-y",
                 "-i", video_file,
                 "-i", audio_file,
                 "-c:v", "libx264",
@@ -398,17 +425,14 @@ if __name__ == "__main__":
     
     # Clip selection odds (higher = more likely to be selected)
     CLIP_ODDS = {
-        
-            "circle1": 0,#bad
-            "eye_look1": 0.5,
-            "idle2": 1.0,
-            "slight_look1": 1.0,
-            "slight_shake1": 1,
-            "slight_shake2": 0.1,  # Added
-            "nod1": 0,     #very bad, redo
-            "main2": 1.0, 
-        
-        
+        "circle1": 0,  # bad
+        "eye_look1": 0.5,
+        "idle2": 1.0,
+        "slight_look1": 1.0,
+        "slight_shake1": 1,
+        "slight_shake2": 0.1,  # Added
+        "nod1": 0,     # very bad, redo
+        "main2": 1.0, 
     }
     
     AVOID_REPEATS = True  # Avoid using same prefix consecutively
