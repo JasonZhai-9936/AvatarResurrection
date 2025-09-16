@@ -1,3 +1,4 @@
+#old lipsyncer
 # Simple Equal-Time Lip Sync System
 # Transcribes audio, maps words to clips, divides total time equally
 
@@ -15,7 +16,7 @@ from typing import List, Dict, Optional
 import shutil
 
 # Configuration - Use system PATH for FFmpeg
-WHISPER_MODEL = "base"
+WHISPER_MODEL = "tiny"
 
 def get_ffmpeg_path():
     """Get FFmpeg executable path from system PATH"""

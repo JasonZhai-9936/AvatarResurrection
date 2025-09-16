@@ -19,7 +19,7 @@ sys.path.insert(0, SCRIPTS_DIR)
 # Import modules
 from LLM_Groq import generate_darwin_response
 from enhanced_tts_piper import generate_complete_audio
-from simple_final_lipsync import SimplifiedLipSyncSystem
+from lipsync_crossfade import SimplifiedLipSyncSystem
 from simplified_video_manager import SimplifiedVideoManager
 from ui import build_ui
 from nicegui import ui as nicegui_ui
@@ -291,14 +291,14 @@ class DarwinChatbot:
             
             output_dir = os.path.join(PROJECT_DIR, "tempstream")
             
-            # Run lipsync generation in executor
+            # Run lipsync generation in executor - FIXED: Removed target_clips parameter
             def generate_lipsync():
                 return self.lipsync_system.generate_lip_sync_video(
                     audio_file=audio_path,
                     output_file=None,
                     output_dir=output_dir,
-                    use_sequential=True,
-                    target_clips=None  # auto-calculate
+                    use_sequential=True
+                    # Removed target_clips=None - this parameter doesn't exist!
                 )
             
             lipsync_video = await asyncio.get_event_loop().run_in_executor(None, generate_lipsync)

@@ -1,23 +1,26 @@
-# Simplified Audio-to-Video Lip Sync System - CROSSFADE VERSION
+# Simplified Audio-to-Video Lip Sync System - CROSSFADE VERSION with PATH-based FFmpeg
 # Preserves natural clip speed and adds smooth transitions
 
 import os
 import json
 import random
 import subprocess
+import shutil
 from pathlib import Path
 import tempfile
 from typing import List, Dict, Optional
 from datetime import datetime
 
-# --- Configuration ---
-# IMPORTANT: Update this path to where ffmpeg.exe and ffprobe.exe are located on your system.
-FFMPEG_BIN_PATH = r"C:\ffmpeg\bin" 
-
 class SimplifiedLipSyncSystem:
     def __init__(self, archive_directory: str, clip_odds: Dict[str, float] = None,
-                 avoid_repeats: bool = False):
+                 avoid_repeats: bool = False, transition_duration: float = 0.1):
         self.archive_dir = archive_directory
+        
+        # Set the global transition duration for all crossfades
+        self.TRANSITION_DURATION = transition_duration
+        
+        # Check if FFmpeg is available in PATH
+        self._check_ffmpeg_availability()
         
         # Available clip prefixes from your archive
         # These are the ACTUAL prefixes in your filenames
@@ -54,6 +57,7 @@ class SimplifiedLipSyncSystem:
         # Print debug info about what was found
         print(f"Simplified lip sync system initialized")
         print(f"Archive directory: {archive_directory}")
+        print(f"Transition duration: {self.TRANSITION_DURATION}s")
         print(f"Found {len(self.available_clips)} available clips")
         
         # Debug: Show distribution of clips by prefix
@@ -65,6 +69,28 @@ class SimplifiedLipSyncSystem:
         
         print(f"Clip odds configured: {self.clip_odds}")
         print(f"Avoid repeats: {self.avoid_repeats}")
+
+    def _check_ffmpeg_availability(self):
+        """Check if FFmpeg and FFprobe are available in system PATH"""
+        ffmpeg_path = shutil.which("ffmpeg")
+        ffprobe_path = shutil.which("ffprobe")
+        
+        if not ffmpeg_path:
+            raise RuntimeError(
+                "FFmpeg not found in system PATH. Please install FFmpeg and ensure it's "
+                "added to your system PATH, or install it using:\n"
+                "- Windows: Download from https://ffmpeg.org/download.html or use 'winget install ffmpeg'\n"
+                "- macOS: brew install ffmpeg\n"
+                "- Linux: sudo apt install ffmpeg (Ubuntu/Debian) or sudo yum install ffmpeg (RHEL/CentOS)"
+            )
+        
+        if not ffprobe_path:
+            raise RuntimeError(
+                "FFprobe not found in system PATH. FFprobe should be included with FFmpeg installation."
+            )
+        
+        print(f"FFmpeg found at: {ffmpeg_path}")
+        print(f"FFprobe found at: {ffprobe_path}")
 
     def scan_available_clips(self) -> List[Dict]:
         """Scan archive directory for all available clips"""
@@ -123,9 +149,9 @@ class SimplifiedLipSyncSystem:
                 return os.path.join(directory, filename)
 
     def get_audio_duration(self, audio_file: str) -> float:
-        """Get the duration of an audio file using ffprobe."""
+        """Get the duration of an audio file using FFprobe from PATH."""
         cmd = [
-            os.path.join(FFMPEG_BIN_PATH, "ffprobe"),
+            "ffprobe",
             "-v", "quiet",
             "-show_entries", "format=duration",
             "-of", "csv=p=0",
@@ -135,14 +161,17 @@ class SimplifiedLipSyncSystem:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return float(result.stdout.strip())
-        except Exception as e:
+        except subprocess.CalledProcessError as e:
             print(f"Error getting audio duration for {audio_file}: {e}")
+            return 0.0
+        except (ValueError, FileNotFoundError) as e:
+            print(f"Error processing audio duration for {audio_file}: {e}")
             return 0.0
 
     def get_video_duration(self, video_path: str) -> float:
-        """Get the duration of a video file using ffprobe."""
+        """Get the duration of a video file using FFprobe from PATH."""
         cmd = [
-            os.path.join(FFMPEG_BIN_PATH, "ffprobe"),
+            "ffprobe",
             "-v", "quiet",
             "-show_entries", "format=duration",
             "-of", "csv=p=0",
@@ -212,9 +241,10 @@ class SimplifiedLipSyncSystem:
 
         return clip_sequence
 
-    def create_video_sequence_with_fades(self, clip_sequence: List[Dict], audio_duration: float, temp_dir: str, transition_duration: float = 0.1) -> str:
+    def create_video_sequence_with_fades(self, clip_sequence: List[Dict], audio_duration: float, temp_dir: str) -> str:
         """
         Create a video sequence using crossfades for smooth transitions.
+        Uses the class-level TRANSITION_DURATION for all crossfades.
         This version FIXES resolution mismatches by scaling clips BEFORE fading.
         """
         if not clip_sequence:
@@ -222,7 +252,7 @@ class SimplifiedLipSyncSystem:
             return None
 
         print(f"\nCreating video sequence with crossfades:")
-        print(f"  Transition duration: {transition_duration}s")
+        print(f"  Transition duration: {self.TRANSITION_DURATION}s")
 
         input_args = []
         clips_with_duration = []
@@ -255,18 +285,18 @@ class SimplifiedLipSyncSystem:
 
             for i in range(num_clips - 1):
                 clip_duration = clips_with_duration[i]['duration']
-                fade_offset = total_duration + clip_duration - transition_duration
+                fade_offset = total_duration + clip_duration - self.TRANSITION_DURATION  # Use class variable
                 next_stream_specifier = f"[s{i + 1}]" # Use the next SCALED stream
                 output_stream_name = f"[v{i + 1}]"
                 
                 xfade_filters.append(
                     f"{stream_specifier}{next_stream_specifier}"
-                    f"xfade=transition=fade:duration={transition_duration}:offset={fade_offset}"
+                    f"xfade=transition=fade:duration={self.TRANSITION_DURATION}:offset={fade_offset}"  # Use class variable
                     f"{output_stream_name}"
                 )
                 
                 stream_specifier = output_stream_name
-                total_duration += clip_duration - transition_duration
+                total_duration += clip_duration - self.TRANSITION_DURATION  # Use class variable
             
             # Combine scaling and fading filters into one graph
             final_filter_graph = ";".join(scaling_filters) + ";" + ";".join(xfade_filters)
@@ -278,10 +308,10 @@ class SimplifiedLipSyncSystem:
 
         print(f"  Generated filter graph for {num_clips} clip(s).")
 
-        # --- Step 3: Execute the FFmpeg command ---
+        # --- Step 3: Execute the FFmpeg command using FFmpeg from PATH ---
         final_video_path = os.path.join(temp_dir, "video_only.mp4")
         
-        cmd = [os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y"]
+        cmd = ["ffmpeg", "-y"]
         cmd.extend(input_args)
         cmd.extend([
             "-filter_complex", final_filter_graph,
@@ -302,10 +332,10 @@ class SimplifiedLipSyncSystem:
             return None
 
     def generate_lip_sync_video(self, audio_file: str, output_file: str = None, 
-                                  output_dir: str = None, use_sequential: bool = True,
-                                  transition_duration: float = 0.1) -> str:
+                                  output_dir: str = None, use_sequential: bool = True) -> str:
         """
         Main function to generate a lip-synced video from an audio file.
+        Uses the class-level TRANSITION_DURATION for crossfades.
         """
         if output_file is None:
             base_name = os.path.splitext(os.path.basename(audio_file))[0] + "_lipsynced"
@@ -318,6 +348,7 @@ class SimplifiedLipSyncSystem:
         print(f"{'='*60}")
         print(f"Input audio: {audio_file}")
         print(f"Output video: {output_file}")
+        print(f"Crossfade duration: {self.TRANSITION_DURATION}s")
         
         audio_duration = self.get_audio_duration(audio_file)
         if audio_duration <= 0:
@@ -337,7 +368,7 @@ class SimplifiedLipSyncSystem:
             print(f"Using temporary directory: {temp_dir}")
             
             video_only_file = self.create_video_sequence_with_fades(
-                clip_sequence, audio_duration, temp_dir, transition_duration
+                clip_sequence, audio_duration, temp_dir
             )
             
             if not video_only_file:
@@ -346,12 +377,11 @@ class SimplifiedLipSyncSystem:
             
             print("\nCombining final video with audio...")
             final_cmd = [
-                os.path.join(FFMPEG_BIN_PATH, "ffmpeg"), "-y",
+                "ffmpeg", "-y",
                 "-i", video_only_file,
                 "-i", audio_file,
                 "-c:v", "copy", # No need to re-encode the video
                 "-c:a", "aac",
-                "-shortest",
                 output_file
             ]
             
@@ -361,6 +391,7 @@ class SimplifiedLipSyncSystem:
                 print(f"\n{'='*60}")
                 print(f"✓ SUCCESS! Lip sync video created:")
                 print(f"  {output_file}")
+                print(f"  Crossfade duration used: {self.TRANSITION_DURATION}s")
                 print(f"{'='*60}")
                 return output_file
             else:
@@ -376,7 +407,7 @@ if __name__ == "__main__":
     ARCHIVE_DIR = "./archive" # Folder containing your .mp4 clips
     OUTPUT_DIR = "./output"   # Folder where final videos will be saved
     AVOID_REPEATS = True      # Avoid using the same clip prefix back-to-back
-    TRANSITION_DURATION = 0.1 # Duration of the crossfade in seconds (e.g., 0.1 is 100ms)
+    TRANSITION_DURATION = 0.15 # Duration of ALL crossfades in seconds (centrally controlled)
 
     # Clip selection odds (higher number = more likely to be selected)
     CLIP_ODDS = {
@@ -394,23 +425,23 @@ if __name__ == "__main__":
     print("-" * 60)
     
     try:
-        # Initialize the system with your configuration
+        # Initialize the system with your configuration - NOW WITH CENTRALIZED TRANSITION DURATION
         lipsync_system = SimplifiedLipSyncSystem(
             archive_directory=ARCHIVE_DIR,
             clip_odds=CLIP_ODDS,
-            avoid_repeats=AVOID_REPEATS
+            avoid_repeats=AVOID_REPEATS,
+            transition_duration=TRANSITION_DURATION  # This controls ALL crossfades
         )
         
         # Specify the audio file you want to process
         input_audio_file = "evo.wav" # <-- IMPORTANT: CHANGE THIS TO YOUR AUDIO FILE
         
         if os.path.exists(input_audio_file):
-            # Generate the video
+            # Generate the video - no need to pass transition_duration again
             output_video_path = lipsync_system.generate_lip_sync_video(
                 audio_file=input_audio_file,
                 output_dir=OUTPUT_DIR,
-                use_sequential=True,
-                transition_duration=TRANSITION_DURATION
+                use_sequential=True
             )
             
             if output_video_path:
