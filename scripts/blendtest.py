@@ -41,27 +41,24 @@ def create_fade_transition(video1, video2, output_path, transition_type, duratio
     # Calculate offset (start transition 1 second before video1 ends)
     offset = max(0, min(video1_duration - duration - 1, 5))
     
-    # Scale both videos to same resolution (720x1080) and apply transitions
     transitions = {
-        'crossfade': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]xfade=transition=fade:duration={duration}:offset={offset}[v]',
-        'dissolve': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]xfade=transition=dissolve:duration={duration}:offset={offset}[v]',
-        'wipeleft': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]xfade=transition=wipeleft:duration={duration}:offset={offset}[v]',
-        'wiperight': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]xfade=transition=wiperight:duration={duration}:offset={offset}[v]',
-        'fadeblack': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]xfade=transition=fadeblack:duration={duration}:offset={offset}[v]',
-        'fadewhite': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]xfade=transition=fadewhite:duration={duration}:offset={offset}[v]',
-        'smoothleft': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]xfade=transition=smoothleft:duration={duration}:offset={offset}[v]',
-        'smoothright': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]xfade=transition=smoothright:duration={duration}:offset={offset}[v]',
+        'crossfade': f'[0:v][1:v]xfade=transition=fade:duration={duration}:offset={offset}[v]',
+        'dissolve': f'[0:v][1:v]xfade=transition=dissolve:duration={duration}:offset={offset}[v]',
+        'wipeleft': f'[0:v][1:v]xfade=transition=wipeleft:duration={duration}:offset={offset}[v]',
+        'wiperight': f'[0:v][1:v]xfade=transition=wiperight:duration={duration}:offset={offset}[v]',
+        'fadeblack': f'[0:v][1:v]xfade=transition=fadeblack:duration={duration}:offset={offset}[v]',
+        'fadewhite': f'[0:v][1:v]xfade=transition=fadewhite:duration={duration}:offset={offset}[v]',
+        'smoothleft': f'[0:v][1:v]xfade=transition=smoothleft:duration={duration}:offset={offset}[v]',
+        'smoothright': f'[0:v][1:v]xfade=transition=smoothright:duration={duration}:offset={offset}[v]',
         # Simple blend transition as fallback
-        'blend': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]blend=all_mode=overlay:all_opacity=0.5[v]',
-        # Simple concatenation with scale
-        'concat': f'[0:v]scale=720:1080[v0];[1:v]scale=720:1080[v1];[v0][v1]concat=n=2:v=1:a=0[v]',
+        'blend': f'[0:v][1:v]blend=all_mode=overlay:all_opacity=0.5[v]',
     }
     
     if transition_type not in transitions:
         print(f"Unknown transition type: {transition_type}")
         return False
     
-    # Use shorter clips to avoid issues
+    # Use shorter clips (6 seconds each) to avoid issues
     clip_duration = offset + duration + 2
     
     cmd = [
@@ -74,6 +71,21 @@ def create_fade_transition(video1, video2, output_path, transition_type, duratio
         '-pix_fmt', 'yuv420p',  # Ensure compatibility
         str(output_path)
     ]
+    
+    # Add audio handling if first video has audio
+    try:
+        # Check if video has audio
+        probe_cmd = ['ffprobe', '-v', 'quiet', '-select_streams', 'a', '-show_entries', 'stream=codec_type', str(video1)]
+        probe_result = subprocess.run(probe_cmd, capture_output=True, text=True)
+        
+        if 'codec_type=audio' in probe_result.stdout:
+            # Insert audio mapping before codec options
+            cmd.insert(-4, '-map')
+            cmd.insert(-4, '0:a')
+            cmd.insert(-2, '-c:a')
+            cmd.insert(-2, 'aac')
+    except:
+        pass  # Continue without audio if probe fails
     
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
@@ -145,7 +157,7 @@ def main():
     # Best transition types for smooth results (simplified list)
     best_transitions_types = [
         'crossfade', 'dissolve', 'fadeblack', 'fadewhite',
-        'smoothleft', 'smoothright', 'blend', 'concat'
+        'smoothleft', 'smoothright', 'blend'
     ]
     
     successful_transitions = []

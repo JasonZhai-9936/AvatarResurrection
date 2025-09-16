@@ -50,15 +50,27 @@ class AsyncVideoPlayer:
         with ui.card().style('width: 800px; margin: 0 auto;'):
             ui.label('Async Video Player').style('font-size: 24px; font-weight: bold;')
             
-            # Video player with autoplay for seamless experience
+            # Video player with autoplay for seamless experience - NO CONTROLS
             self.video_element = ui.video(src="").style("width: 100%; height: 400px; background: black;")
             
-            # Set autoplay, muted (required for autoplay), and other attributes
-            # We need to set these as HTML attributes directly
+            # Set autoplay, muted, and REMOVE controls to prevent user interference
             self.video_element._props['autoplay'] = True
             self.video_element._props['muted'] = True
             self.video_element._props['playsinline'] = True
             self.video_element._props['preload'] = 'auto'
+            self.video_element._props['controls'] = False  # This hides the controls
+            
+            # Also disable right-click context menu and other interactions via CSS
+            self.video_element.style('''
+                width: 100%; 
+                height: 400px; 
+                background: black;
+                pointer-events: none;  /* Disables all mouse interactions */
+                -webkit-user-select: none;  /* Prevents text selection */
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            ''')
             self.video_element.on('ended', self.on_video_ended)
             self.video_element.on('loadstart', self.on_video_loadstart)
             
@@ -418,7 +430,7 @@ class AsyncVideoPlayer:
         if self.current_idle_task and not self.current_idle_task.done():
             print("🔴 Cancelling idle task from stop_player")
             self.current_idle_task.cancel()
-
+            
 
 # Main application setup
 def main():
