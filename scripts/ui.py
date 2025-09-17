@@ -1,4 +1,4 @@
-# ui.py - Enhanced UI with dark theme and word synchronization support
+# ui.py - SIMPLIFIED UI with JavaScript that only notifies Python (FIXED VERSION)
 
 from nicegui import ui
 import os
@@ -123,8 +123,8 @@ def settings_page():
             
             ui.button('Save Settings', on_click=save_settings).classes('w-full bg-blue-600 text-white py-3 rounded-lg mt-4 hover:bg-blue-700')
 
-def build_ui(trigger_response_callback, voice_change_callback=None):
-    """Build the main UI with dark theme and word synchronization."""
+def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None):
+    """Build the main UI with SIMPLIFIED JavaScript - only notifies Python."""
     
     # Apply dark theme styles
     ui.add_head_html('''
@@ -241,13 +241,6 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
     </style>
     ''')
     
-    # Global reference to video manager (will be set by main.py)
-    video_manager = None
-    
-    def set_video_manager(manager):
-        nonlocal video_manager
-        video_manager = manager
-    
     with ui.column().classes('w-full h-screen gap-0').style('background: #0a0f1c;'):
         # === MAIN CONTENT ROW ===
         with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4'):
@@ -260,7 +253,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
                     <div id="main-video-container" style="width: 100%; height: 100%; position: relative;">
                         <video id="mainVideo" autoplay muted playsinline 
                             style="width: 100%; height: 100%; object-fit: contain;"
-                            onended="handleVideoEnded()">
+                            onended="notifyPythonVideoEnded()">
                             <source src="" type="video/mp4">
                             Your browser does not support the video tag.
                         </video>
@@ -285,10 +278,6 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
                     def submit_prompt():
                         user_text = prompt_input.value
                         if user_text and user_text.strip():
-                            # Notify video manager about user input
-                            if video_manager:
-                                video_manager.prepare_for_user_input()
-                            
                             # Trigger the main response callback
                             trigger_response_callback(user_text)
                             prompt_input.value = ""
@@ -358,133 +347,56 @@ def build_ui(trigger_response_callback, voice_change_callback=None):
             # Voice info
             ui.label(f'Available voices: {len(available_voices)}').classes('text-sm').style('color: #64748b;')
 
-    # Add enhanced JavaScript with video management and word synchronization
+    # === SUPER SIMPLIFIED JAVASCRIPT - Only notifies Python ===
     ui.add_body_html('''
     <script>
-    let videoManager = {
-        currentVideo: null,
-        isReady: false,
-        wordSyncTimers: []
-    };
-
-    // Video ended handler - communicates with Python backend
-    function handleVideoEnded() {
-        console.log('[VIDEO] Video ended, requesting next clip');
-        // Clear any word sync timers
-        clearWordSyncTimers();
-        if (window.videoEndedCallback) {
-            window.videoEndedCallback();
-        }
-    }
-
-    // Clear all word sync timers
-    function clearWordSyncTimers() {
-        videoManager.wordSyncTimers.forEach(timer => clearTimeout(timer));
-        videoManager.wordSyncTimers = [];
-    }
-
-    // Update video source
-    function updateMainVideo(videoUrl) {
-        const video = document.getElementById('mainVideo');
+    console.log('[UI] SIMPLIFIED JavaScript - Python controls everything');
+    
+    // ONLY ONE FUNCTION: Notify Python when video ends
+    function notifyPythonVideoEnded() {
+        console.log('[VIDEO] Video ended - notifying Python backend');
         
+        // Simple fetch to notify Python
+        fetch('/api/video-ended', { 
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log('[VIDEO] Python notified successfully');
+            } else {
+                console.error('[VIDEO] Failed to notify Python');
+            }
+        })
+        .catch(err => {
+            console.error('[VIDEO] Error notifying Python:', err);
+        });
+    }
+    
+    // Simple function to update video source (called by Python)
+    function updateVideoSource(videoUrl) {
+        const video = document.getElementById('mainVideo');
         if (video && videoUrl) {
-            console.log('[VIDEO] Loading new video:', videoUrl);
-            
+            console.log('[VIDEO] Python requests video update:', videoUrl);
             video.src = videoUrl;
             video.load();
             
-            video.oncanplay = function() {
-                console.log('[VIDEO] Video ready to play');
-            };
-            
-            video.onplay = function() {
-                console.log('[VIDEO] Video started playing');
-            };
-            
-            video.onerror = function(e) {
-                console.error('[VIDEO] Error loading video:', e);
-            };
+            // Ensure our callback is always set
+            video.onended = notifyPythonVideoEnded;
         }
     }
-
-    // Word-by-word display function with enhanced animation
-    function displayWordsProgressive(containerId, words, delayMs) {
-        console.log(`[WORD-SYNC] Starting word display: ${words.length} words, ${delayMs}ms delay`);
-        
-        // Clear any existing timers
-        clearWordSyncTimers();
-        
-        const container = document.querySelector(`[data-darwin-response-id="${containerId}"]`);
-        if (!container) {
-            console.error('Could not find response container:', containerId);
-            return;
-        }
-        
-        container.innerHTML = '';
-        let currentIndex = 0;
-        
-        function addNextWord() {
-            if (currentIndex < words.length) {
-                // Create span for word with animation
-                const wordSpan = document.createElement('span');
-                wordSpan.textContent = words[currentIndex];
-                wordSpan.className = 'word-sync';
-                wordSpan.style.opacity = '0';
-                
-                // Add space before word (except for first word)
-                if (currentIndex > 0) {
-                    container.appendChild(document.createTextNode(' '));
-                }
-                
-                container.appendChild(wordSpan);
-                
-                // Trigger animation
-                setTimeout(() => {
-                    wordSpan.style.opacity = '1';
-                }, 10);
-                
-                currentIndex++;
-                
-                // Schedule next word
-                if (currentIndex < words.length) {
-                    const timer = setTimeout(addNextWord, delayMs);
-                    videoManager.wordSyncTimers.push(timer);
-                }
-            }
-        }
-        
-        // Start the word display with a small initial delay
-        const initialTimer = setTimeout(() => {
-            addNextWord();
-        }, 200);
-        videoManager.wordSyncTimers.push(initialTimer);
-    }
-
-    // Initialize when page loads
-    window.addEventListener('load', function() {
-        console.log('[UI] Darwin Chat UI with word sync loaded');
-        videoManager.isReady = true;
-        
-        // Set up global functions for Python callback
-        window.updateMainVideo = updateMainVideo;
-        window.displayWordsProgressive = displayWordsProgressive;
-        window.clearWordSyncTimers = clearWordSyncTimers;
-        
-        console.log('[UI] Video and word sync system ready');
-    });
     
-    // Clean up on page unload
-    window.addEventListener('beforeunload', function() {
-        clearWordSyncTimers();
-    });
+    // Make function globally available for Python to call
+    window.updateVideoSource = updateVideoSource;
+    
+    console.log('[UI] Simplified JavaScript ready - Python has full control');
     </script>
     ''')
 
     # Return necessary references for main.py
     return {
         'chat_log': chat_log,
-        'set_video_manager': set_video_manager,
         'video_status_label': video_status_label if 'video_status_label' in locals() else None,
         'state_label': state_label if 'state_label' in locals() else None,
-        'mode_label': mode_label if 'mode_label' in locals() else None
+        'mode_label': mode_label if 'mode_label' in locals() else None,
     }

@@ -1,5 +1,5 @@
-# main.py - Simplified Darwin Chatbot with integrated video and lipsync
-# FIXED: Better async handling and process management
+# main.py - Darwin Chatbot with EVENT-BASED video control (FINAL FIX)
+# This version uses NiceGUI's event system to avoid context issues
 
 import os
 import sys
@@ -10,6 +10,7 @@ from typing import Optional
 from colorama import Fore, Style, init
 import threading
 import signal
+import queue
 
 # Initialize colorama
 init(autoreset=True)
@@ -28,7 +29,7 @@ from ui import build_ui
 from nicegui import ui as nicegui_ui
 
 class DarwinChatbot:
-    """Main chatbot class integrating all components"""
+    """Main chatbot class with EVENT-BASED video control"""
     
     def __init__(self):
         # Initialize components
@@ -38,35 +39,28 @@ class DarwinChatbot:
         # UI references
         self.chat_log = None
         self.ui_components = None
-        self.video_element = None  # Store reference to video element
         
         # Processing state
         self.is_processing = False
         self._shutdown_flag = False
         
-        # Timer for idle video rotation
-        self.idle_timer = None
-        self.last_idle_change = time.time()  # Track last idle video change
-        self.idle_video_duration = 8.0  # redundant, no function
+        # Event queue for video control (thread-safe)
+        self.video_event_queue = queue.Queue()
         
-        # Executor for blocking operations
-        self.executor = None
-        
-        print(f"{Fore.GREEN}[MAIN] Darwin Chatbot initialized{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}[MAIN] Darwin Chatbot initialized with EVENT-BASED video control{Style.RESET_ALL}")
 
     def initialize_lipsync(self) -> SimplifiedLipSyncSystem:
         """Initialize the lip sync system"""
         archive_dir = os.path.join(PROJECT_DIR, "archive")
         
-        # Configure clip selection odds
         clip_odds = {
             "circle1": 0.5,
             "eye_look1": 0.5,
             "idle2": 1.0,
             "slight_look1": 1.0,
             "slight_shake1": 1,
-            "slight_shake2": 1.0,  # Added
-            "nod1": 1.0,           # Added
+            "slight_shake2": 1.0,
+            "nod1": 1.0,
             "main2": 1.0, 
         }
         
@@ -77,211 +71,112 @@ class DarwinChatbot:
         )
 
     def setup_ui(self):
-        """Set up the UI with callbacks"""
-        # Build UI with callbacks
+        """Set up the UI with event-based video system"""
         self.ui_components = build_ui(
             trigger_response_callback=self.handle_user_input,
-            voice_change_callback=self.handle_voice_change
+            voice_change_callback=self.handle_voice_change,
+            video_manager=self.video_manager
         )
         
-        # Get references
         self.chat_log = self.ui_components['chat_log']
         
-        # Defer video initialization until after UI is ready
-        # Use a timer with 0.5 second delay to ensure UI is fully loaded
-        nicegui_ui.timer(0.5, self.start_idle_videos, once=True)
+        # Connect video manager to UI update function
+        self.video_manager.set_video_update_callback(self.queue_video_update)
         
-        print(f"{Fore.GREEN}[MAIN] UI setup complete{Style.RESET_ALL}")
+        # Start the event processing timer and video system
+        nicegui_ui.timer(0.1, self.process_video_events)  # Process events every 100ms
+        nicegui_ui.timer(1.0, self.initialize_video_system, once=True)
+        
+        print(f"{Fore.GREEN}[MAIN] UI setup complete with EVENT-BASED video control{Style.RESET_ALL}")
 
-    def start_idle_videos(self):
-        """Start the idle video rotation"""
-        if self._shutdown_flag:
-            return
-            
-        # Play first idle video
-        self.play_next_idle_video()
-        
-        # Set up timer to check for video updates every 0.2 seconds for smoother transitions
-        if self.idle_timer:
-            self.idle_timer.cancel()
-        
-        self.idle_timer = nicegui_ui.timer(0.2, self.check_and_play_video)
-        print(f"{Fore.GREEN}[MAIN] Started idle video rotation{Style.RESET_ALL}")
-
-    def check_and_play_video(self):
-        """Check if we should play a new video - runs every 0.2 seconds"""
-        if self._shutdown_flag:
-            return
-            
-        current_time = time.time()
-        
-        # Check if there's a queued lipsync video that needs to play
-        if self.video_manager.current_mode == "lipsync" and self.video_manager.next_video_path:
-            try:
-                video_path = self.video_manager.current_video_path
-                rel_path = os.path.relpath(video_path, PROJECT_DIR).replace('\\', '/')
-                video_url = f"/{rel_path}"
-                
-                print(f"{Fore.CYAN}[MAIN] Playing lipsync video: {os.path.basename(video_path)}{Style.RESET_ALL}")
-                
-                # Get the next idle video ready
-                next_idle = self.video_manager.get_random_idle_video()
-                next_idle_url = ""
-                if next_idle:
-                    next_idle_rel = os.path.relpath(next_idle, PROJECT_DIR).replace('\\', '/')
-                    next_idle_url = f"/{next_idle_rel}"
-                
-                # Update video using JavaScript with onended event
-                nicegui_ui.run_javascript(f'''
-                    const video = document.getElementById('mainVideo');
-                    if (video) {{
-                        video.src = '{video_url}';
-                        video.load();
-                        video.play();
-                        const statusDiv = document.getElementById('video-status');
-                        if (statusDiv) {{
-                            statusDiv.textContent = 'Playing Lipsync';
-                        }}
-                        
-                        // When lipsync ends, immediately play an idle video
-                        video.onended = function() {{
-                            console.log('[MAIN] Lipsync ended, playing idle');
-                            if ('{next_idle_url}') {{
-                                video.src = '{next_idle_url}';
-                                video.load();
-                                video.play();
-                                if (statusDiv) {{
-                                    statusDiv.textContent = 'Playing Idle';
-                                }}
-                            }}
-                        }};
-                    }}
-                ''')
-                
-                # Clear the queue flag and reset mode
-                self.video_manager.next_video_path = None
-                self.video_manager.current_mode = "idle"  # Set back to idle immediately
-                self.last_idle_change = current_time
-                
-            except Exception as e:
-                print(f"{Fore.RED}[MAIN] Error playing lipsync video: {e}{Style.RESET_ALL}")
-            return
-        
-        # For idle videos, check if we need to refresh the chain
-        # This handles the case where an idle video ends but doesn't have a next one set
-        if self.video_manager.current_mode == "idle":
-            # Only refresh if enough time has passed (safety check)
-            if current_time - self.last_idle_change >= 20.0:  # Safety timeout
-                print(f"{Fore.YELLOW}[MAIN] Idle chain may have broken, refreshing{Style.RESET_ALL}")
-                self.play_next_idle_video()
-                self.last_idle_change = current_time
-
-    def play_next_idle_video(self):
-        """Play the next idle video"""
-        if self._shutdown_flag:
-            return
-            
+    def queue_video_update(self, video_url: str):
+        """Queue a video update to be processed in the UI thread"""
         try:
-            video_path = self.video_manager.get_next_idle_video()
-            if video_path:
-                self.video_manager.current_video_path = video_path
-                self.update_video_display(video_path)
+            self.video_event_queue.put(('update_video', video_url))
+            print(f"{Fore.CYAN}[MAIN] Queued video update: {video_url.split('/')[-1]}{Style.RESET_ALL}")
         except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error playing next idle video: {e}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[MAIN] Error queueing video update: {e}{Style.RESET_ALL}")
 
-    def update_video_display(self, video_path: str):
-        """Update the video display with a new video"""
-        if not video_path or not os.path.exists(video_path) or self._shutdown_flag:
-            return
-        
+    def process_video_events(self):
+        """Process video events from the queue (runs in UI context)"""
         try:
-            # Convert to relative path for web serving
-            rel_path = os.path.relpath(video_path, PROJECT_DIR).replace('\\', '/')
-            video_url = f"/{rel_path}"
-            
-            # Determine if this is an idle video
-            is_idle = self.video_manager.current_mode == "idle"
-            
-            if is_idle:
-                # For idle videos, prepare the next one
-                next_idle = self.video_manager.get_random_idle_video()
-                next_idle_url = ""
-                if next_idle:
-                    next_idle_rel = os.path.relpath(next_idle, PROJECT_DIR).replace('\\', '/')
-                    next_idle_url = f"/{next_idle_rel}"
+            while not self.video_event_queue.empty():
+                event_type, data = self.video_event_queue.get_nowait()
                 
-                # Update video with automatic next video on end
-                nicegui_ui.run_javascript(f'''
-                    const video = document.getElementById('mainVideo');
-                    if (video) {{
-                        video.src = '{video_url}';
-                        video.load();
-                        video.play();
-                        const statusDiv = document.getElementById('video-status');
-                        if (statusDiv) {{
-                            statusDiv.textContent = 'Playing: {os.path.basename(video_path)}';
-                        }}
-                        
-                        // When this idle video ends, immediately play the next one
-                        video.onended = function() {{
-                            console.log('Idle video ended, playing next');
-                            if ('{next_idle_url}') {{
-                                video.src = '{next_idle_url}';
-                                video.load();
-                                video.play();
-                                if (statusDiv) {{
-                                    statusDiv.textContent = 'Playing: {os.path.basename(next_idle) if next_idle else "idle"}';
-                                }}
-                                // Set up the next video after this one
-                                setTimeout(() => {{
-                                    video.onended = null;  // Clear to prevent loop
-                                }}, 100);
-                            }}
-                        }};
-                    }}
-                ''')
-                # Update tracking
-                self.last_idle_change = time.time()
-                
-            else:
-                # For non-idle videos, just play normally
-                nicegui_ui.run_javascript(f'''
-                    const video = document.getElementById('mainVideo');
-                    if (video) {{
-                        video.src = '{video_url}';
-                        video.load();
-                        video.play();
-                        const statusDiv = document.getElementById('video-status');
-                        if (statusDiv) {{
-                            statusDiv.textContent = 'Playing: {os.path.basename(video_path)}';
-                        }}
-                        video.onended = null;  // Clear any previous handlers
-                    }}
-                ''')
+                if event_type == 'update_video':
+                    self.execute_video_update(data)
+                elif event_type == 'video_ended':
+                    self.handle_video_ended_in_context()
+                    
+        except queue.Empty:
+            pass
         except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error updating video display: {e}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[MAIN] Error processing video events: {e}{Style.RESET_ALL}")
+
+    def execute_video_update(self, video_url: str):
+        """Execute video update in proper UI context"""
+        try:
+            js_code = f'''
+                if (window.updateVideoSource) {{
+                    window.updateVideoSource('{video_url}');
+                }} else {{
+                    console.error('[MAIN] updateVideoSource function not ready');
+                }}
+            '''
+            nicegui_ui.run_javascript(js_code)
+            print(f"{Fore.GREEN}[MAIN] Video updated successfully: {video_url.split('/')[-1]}{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.YELLOW}[MAIN] Video update failed (will retry): {e}{Style.RESET_ALL}")
+
+    def initialize_video_system(self):
+        """Initialize the video system - Python starts first idle video"""
+        try:
+            print(f"{Fore.GREEN}[MAIN] Starting EVENT-BASED video system{Style.RESET_ALL}")
+            
+            # Python immediately starts playing the first idle video
+            self.video_manager.play_next_idle_video()
+            
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error initializing video system: {e}{Style.RESET_ALL}")
+
+    def queue_video_ended_event(self):
+        """Queue a video ended event (called from API)"""
+        try:
+            self.video_event_queue.put(('video_ended', None))
+            print(f"{Fore.BLUE}[MAIN] Video ended event queued{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error queueing video ended event: {e}{Style.RESET_ALL}")
+
+    def handle_video_ended_in_context(self):
+        """Handle video ended in proper UI context"""
+        if self._shutdown_flag:
+            return
+            
+        print(f"{Fore.BLUE}[MAIN] Processing video ended event{Style.RESET_ALL}")
+        
+        # Python decides what to play next
+        self.video_manager.on_video_ended()
 
     def handle_user_input(self, user_text: str):
-        """Handle user input from UI"""
+        """Handle user input"""
         if self.is_processing:
-            nicegui_ui.notify("Please wait for the current response to complete", type="warning")
+            nicegui_ui.notify("Please wait for current response", type="warning")
             return
         
         if self._shutdown_flag:
             return
         
-        # Process response asynchronously
         asyncio.create_task(self.process_response_async(user_text))
 
     async def process_response_async(self, user_text: str):
-        """Process user input and generate response (async)"""
+        """Process user input and generate response"""
         if self._shutdown_flag:
             return
             
         self.is_processing = True
         
         try:
-            # Update chat log with user message
+            # Update chat log
             if self.chat_log:
                 with self.chat_log:
                     with nicegui_ui.row().classes('w-full justify-end'):
@@ -290,55 +185,42 @@ class DarwinChatbot:
             
             print(f"{Fore.CYAN}[MAIN] Processing: {user_text}{Style.RESET_ALL}")
             
-            # Step 1: Generate LLM response (run in executor to not block)
-            print(f"{Fore.BLUE}[MAIN] Generating Darwin's response...{Style.RESET_ALL}")
-            
-            # Use asyncio.to_thread for better async handling (Python 3.9+)
+            # Generate response
             try:
                 darwin_response = await asyncio.to_thread(generate_darwin_response, user_text)
             except AttributeError:
-                # Fallback for older Python versions
                 loop = asyncio.get_event_loop()
                 darwin_response = await loop.run_in_executor(None, generate_darwin_response, user_text)
             
             if not darwin_response or self._shutdown_flag:
-                print(f"{Fore.RED}[MAIN] No response generated or shutting down{Style.RESET_ALL}")
                 return
             
             print(f"{Fore.GREEN}[MAIN] Response: {darwin_response}{Style.RESET_ALL}")
             
-            # Update chat log with Darwin's response
+            # Update chat log
             if self.chat_log and not self._shutdown_flag:
                 with self.chat_log:
                     with nicegui_ui.row().classes('w-full justify-start'):
                         with nicegui_ui.card().classes('bg-gray-100 p-3 rounded-lg max-w-lg').style('word-wrap: break-word;'):
                             nicegui_ui.label(f"🎩 Darwin: {darwin_response}")
             
-            # Step 2: Generate TTS audio
+            # Generate audio
             print(f"{Fore.BLUE}[MAIN] Generating audio...{Style.RESET_ALL}")
-            
-            # Ensure we have the correct voice path
             default_voice = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-northern_english_male-medium.onnx")
             
             try:
                 audio_path = await asyncio.to_thread(generate_complete_audio, darwin_response, None, default_voice)
             except AttributeError:
-                # Fallback for older Python versions
                 loop = asyncio.get_event_loop()
                 audio_path = await loop.run_in_executor(None, generate_complete_audio, darwin_response, None, default_voice)
             
             if not audio_path or not os.path.exists(audio_path) or self._shutdown_flag:
-                print(f"{Fore.RED}[MAIN] Audio generation failed or shutting down{Style.RESET_ALL}")
                 return
             
-            print(f"{Fore.GREEN}[MAIN] Audio saved: {audio_path}{Style.RESET_ALL}")
-            
-            # Step 3: Generate lip-sync video
+            # Generate lipsync
             print(f"{Fore.BLUE}[MAIN] Creating lip-sync video...{Style.RESET_ALL}")
-            
             output_dir = os.path.join(PROJECT_DIR, "tempstream")
             
-            # Run lipsync generation in executor with proper error handling
             def generate_lipsync():
                 try:
                     return self.lipsync_system.generate_lip_sync_video(
@@ -348,116 +230,98 @@ class DarwinChatbot:
                         use_sequential=True
                     )
                 except Exception as e:
-                    print(f"Error in lipsync generation: {e}")
+                    print(f"Lipsync error: {e}")
                     return None
             
             try:
                 lipsync_video = await asyncio.to_thread(generate_lipsync)
             except AttributeError:
-                # Fallback for older Python versions
                 loop = asyncio.get_event_loop()
                 lipsync_video = await loop.run_in_executor(None, generate_lipsync)
             
             if not lipsync_video or not os.path.exists(lipsync_video) or self._shutdown_flag:
-                print(f"{Fore.RED}[MAIN] Lip-sync generation failed or shutting down{Style.RESET_ALL}")
                 return
             
-            print(f"{Fore.GREEN}[MAIN] Lip-sync video created: {lipsync_video}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}[MAIN] Lipsync created: {os.path.basename(lipsync_video)}{Style.RESET_ALL}")
             
-            # Step 4: Play lip-sync video
-            if not self._shutdown_flag:
-                self.video_manager.current_mode = "lipsync"
-                self.video_manager.current_video_path = lipsync_video
-                self.video_manager.next_video_path = True  # Flag that we have a new video to play
-                
-                print(f"{Fore.GREEN}[MAIN] Lipsync video queued for playback{Style.RESET_ALL}")
-                
-                # Clean up old files periodically
-                try:
-                    self.video_manager.cleanup_old_lipsync_videos(keep_last=5)
-                except Exception as e:
-                    print(f"{Fore.YELLOW}[MAIN] Warning: Cleanup failed: {e}{Style.RESET_ALL}")
+            # Python immediately plays the lipsync video
+            self.video_manager.play_lipsync_video(lipsync_video)
+            print(f"{Fore.CYAN}[MAIN] Python playing lipsync video{Style.RESET_ALL}")
             
-        except asyncio.CancelledError:
-            print(f"{Fore.YELLOW}[MAIN] Response processing cancelled{Style.RESET_ALL}")
+            # Cleanup
+            try:
+                self.video_manager.cleanup_old_lipsync_videos(keep_last=5)
+            except:
+                pass
+                
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error processing response: {e}{Style.RESET_ALL}")
-            import traceback
-            traceback.print_exc()
-        
         finally:
             self.is_processing = False
 
     def handle_voice_change(self, voice_name: str):
-        """Handle voice model change"""
+        """Handle voice change"""
         try:
-            # Voice files are .onnx files directly in Piper_Voices
             voice_path = os.path.join(PROJECT_DIR, "Piper_Voices", voice_name + ".onnx")
-            
-            # Import and set voice
             from enhanced_tts_piper import set_voice_model
             set_voice_model(voice_path)
-            
             print(f"{Fore.GREEN}[MAIN] Voice changed to: {voice_name}{Style.RESET_ALL}")
-            
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error changing voice: {e}{Style.RESET_ALL}")
 
     def cleanup(self):
         """Clean up resources"""
-        print(f"{Fore.YELLOW}[MAIN] Cleaning up resources...{Style.RESET_ALL}")
-        
+        print(f"{Fore.YELLOW}[MAIN] Cleaning up...{Style.RESET_ALL}")
         self._shutdown_flag = True
-        
-        # Stop timers
-        if self.idle_timer:
-            try:
-                self.idle_timer.cancel()
-            except:
-                pass
-        
-        # Clean up lipsync system processes
-        if hasattr(self, 'lipsync_system') and self.lipsync_system:
-            try:
-                self.lipsync_system.cleanup_processes()
-            except Exception as e:
-                print(f"{Fore.RED}[MAIN] Error cleaning up lipsync processes: {e}{Style.RESET_ALL}")
 
     def setup_signal_handlers(self):
-        """Set up signal handlers for graceful shutdown"""
+        """Set up signal handlers"""
         def signal_handler(signum, frame):
-            print(f"\n{Fore.YELLOW}[MAIN] Received signal {signum}, shutting down gracefully...{Style.RESET_ALL}")
+            print(f"\n{Fore.YELLOW}[MAIN] Shutting down...{Style.RESET_ALL}")
             self.cleanup()
             os._exit(0)
         
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
+    def setup_api_routes(self):
+        """Set up API routes for video ended notifications"""
+        from nicegui import app
+        
+        @app.post('/api/video-ended')
+        async def video_ended_api():
+            """API endpoint called by JavaScript when video ends"""
+            # Simply queue the event - no UI context needed
+            self.queue_video_ended_event()
+            return {"status": "ok", "message": "Event queued"}
+
     def run(self):
-        """Run the chatbot application"""
+        """Run the application"""
         print(f"{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
-        print(f"{Fore.YELLOW}Darwin Chatbot - Simplified Version{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Darwin Chatbot - EVENT-BASED Video Control{Style.RESET_ALL}")
         print(f"{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
         
         try:
-            # Set up signal handlers
             self.setup_signal_handlers()
             
-            # Add static file serving for the project directory
             from nicegui import app
             from fastapi.staticfiles import StaticFiles
             
-            # Mount the project directory to serve video files
+            # Mount static file directories
             app.mount('/avatars', StaticFiles(directory=os.path.join(PROJECT_DIR, 'avatars')), name='avatars')
             app.mount('/tempstream', StaticFiles(directory=os.path.join(PROJECT_DIR, 'tempstream')), name='tempstream')
             
-            # Setup UI
+            # Set up API routes
+            self.setup_api_routes()
+            
+            # Set up UI
             self.setup_ui()
             
-            # Run the UI
-            print(f"{Fore.GREEN}[MAIN] Starting web interface...{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}[MAIN] EVENT-BASED video control system ready{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}[MAIN] API events will be queued and processed in UI context{Style.RESET_ALL}")
+            
             nicegui_ui.run(
-                title="Darwin Chatbot",
+                title="Darwin Chatbot - Event Control",
                 favicon="🎩",
                 dark=False,
                 reload=False,
@@ -466,7 +330,7 @@ class DarwinChatbot:
             )
             
         except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error running application: {e}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[MAIN] Error: {e}{Style.RESET_ALL}")
             raise
         finally:
             self.cleanup()
@@ -475,12 +339,10 @@ def main():
     """Main entry point"""
     chatbot = None
     try:
-        # Create and run chatbot
         chatbot = DarwinChatbot()
         chatbot.run()
-        
     except KeyboardInterrupt:
-        print(f"\n{Fore.YELLOW}[MAIN] Keyboard interrupt received{Style.RESET_ALL}")
+        print(f"\n{Fore.YELLOW}[MAIN] Interrupted{Style.RESET_ALL}")
     except Exception as e:
         print(f"{Fore.RED}[MAIN] Fatal error: {e}{Style.RESET_ALL}")
         import traceback
