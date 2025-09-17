@@ -32,7 +32,7 @@ class SimplifiedLipSyncSystem:
         if clip_odds is None:
             self.clip_odds = {
                 "circle1": 0.5,
-                "eye_look1": 0.5,
+                "eye_look1": 0.5,#no blinking
                 "idle2": 1.0,
                 "slight_look1": 1.0,
                 "slight_shake1": 1.0,
