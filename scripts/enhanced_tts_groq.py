@@ -83,7 +83,7 @@ def generate_complete_audio(text: str, output_filename: str = None, voice_path: 
         # Call Groq TTS API
         response = client.audio.speech.create(
             model="playai-tts",
-            voice="Fritz-PlayAI",
+            voice="Basil-PlayAI",
             input=text,
             response_format="wav"
         )

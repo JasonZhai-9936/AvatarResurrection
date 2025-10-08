@@ -1,4 +1,4 @@
-# ui.py - UI with STREAMING text synchronized to video duration
+# ui.py - UI with TYPING INDICATOR and streaming text
 
 from nicegui import ui
 import os
@@ -116,7 +116,7 @@ def settings_page():
             ui.button('Save Settings', on_click=save_settings).classes('w-full bg-blue-600 text-white py-3 rounded-lg mt-4 hover:bg-blue-700')
 
 def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None):
-    """Build the main UI with STREAMING text synchronized to video."""
+    """Build the main UI with TYPING INDICATOR and streaming text."""
     
     ui.add_head_html('''
     <style>
@@ -281,6 +281,16 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                             ui.notify("Please enter a question first", color="warning")
 
                     ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full text-lg py-3 px-6 rounded-lg primary-button').style('font-weight: 600;')
+                    
+                    # Clear chat button
+                    def clear_chat():
+                        chat_log.clear()
+                        with chat_log:
+                            with ui.row().classes('w-full justify-center'):
+                                ui.label('Chat cleared - Ready for new conversation').classes('text-lg text-center').style('color: #64748b;')
+                        ui.notify('Chat history cleared', type='info')
+                    
+                    ui.button('🗑️ Clear Chat', on_click=clear_chat).classes('w-full text-sm py-2 px-4 rounded-lg').style('background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 500;')
 
             # === RIGHT SIDEBAR ===
             with ui.column().classes('h-full').style('width: 250px; background: rgba(15, 23, 42, 0.95); border-left: 1px solid rgba(59, 130, 246, 0.1);'):
@@ -331,10 +341,51 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             voice_dropdown.on('update:model-value', on_voice_change)
             ui.label(f'Available voices: {len(available_voices)}').classes('text-sm').style('color: #64748b;')
 
-    # === JAVASCRIPT with STREAMING TEXT SUPPORT ===
+    # === JAVASCRIPT with TYPING INDICATOR & STREAMING TEXT ===
     ui.add_body_html('''
     <script>
-    console.log('[UI] JavaScript with streaming text support initialized');
+    console.log('[UI] JavaScript with typing indicator initialized');
+    
+    // Typing indicator state
+    const typingIntervals = {};
+    
+    // Start typing indicator animation
+    window.startTypingIndicator = function(elementId) {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.error('[TYPING] Element not found:', elementId);
+            return;
+        }
+        
+        // Stop any existing interval
+        if (typingIntervals[elementId]) {
+            clearInterval(typingIntervals[elementId]);
+        }
+        
+        let dots = 0;
+        element.innerHTML = '<span style="color: #94a3b8;">typing</span>';
+        
+        typingIntervals[elementId] = setInterval(() => {
+            dots = (dots + 1) % 4;
+            const dotString = '.'.repeat(dots);
+            element.innerHTML = `<span style="color: #94a3b8;">typing${dotString}</span>`;
+        }, 400);
+        
+        console.log('[TYPING] Started indicator for:', elementId);
+    }
+    
+    // Stop typing indicator
+    window.stopTypingIndicator = function(elementId) {
+        if (typingIntervals[elementId]) {
+            clearInterval(typingIntervals[elementId]);
+            delete typingIntervals[elementId];
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = ''; // Clear typing text
+            }
+            console.log('[TYPING] Stopped indicator for:', elementId);
+        }
+    }
     
     // Video control - notify Python when video ends
     function notifyPythonVideoEnded() {
@@ -352,7 +403,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
     }
     
     // Simple video source update
-    function updateVideoSource(videoUrl) {
+    window.updateVideoSource = function(videoUrl) {
         const video = document.getElementById('mainVideo');
         if (video && videoUrl) {
             console.log('[VIDEO] Updating video:', videoUrl);
@@ -363,12 +414,15 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
     }
     
     // STREAMING TEXT FUNCTION - Reveals text over video duration
-    function streamText(elementId, fullText, durationSeconds) {
+    window.streamText = function(elementId, fullText, durationSeconds) {
         const element = document.getElementById(elementId);
         if (!element) {
             console.error('[STREAM] Element not found:', elementId);
             return;
         }
+        
+        // Stop typing indicator first
+        window.stopTypingIndicator(elementId);
         
         console.log('[STREAM] Starting text stream:', {
             length: fullText.length,
@@ -391,7 +445,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 const span = document.createElement('span');
                 span.className = 'char-reveal';
                 
-                // Preserve spaces by using &nbsp; or actual space
+                // Preserve spaces
                 if (char === ' ') {
                     span.innerHTML = '&nbsp;';
                 } else {
@@ -408,13 +462,9 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             }
         }, delayPerChar);
         
-        // Store interval ID for potential cancellation
+        // Store interval ID
         element.dataset.streamInterval = streamInterval;
     }
-    
-    // Make functions globally available
-    window.updateVideoSource = updateVideoSource;
-    window.streamText = streamText;
     
     console.log('[UI] All functions ready');
     </script>

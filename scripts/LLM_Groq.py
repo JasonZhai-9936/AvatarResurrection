@@ -1,10 +1,10 @@
-#LLM_Groq.py
+#LLM_Groq.py - Enhanced with emotion classification
 """
-The main function for external use is:
-    generate_darwin_response(user_input: str) -> str
+The main function for external use is now:
+    generate_darwin_response(user_input: str) -> dict
+    Returns: {'text': str, 'emotion': str}
     
     bool useRAG and int maxWords are set in config, can be changed live
-
 """
 
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -47,7 +47,6 @@ def load_config():
                 'maxWords': config.get("maxWords", 50)
             }
     except (FileNotFoundError, json.JSONDecodeError):
-        # If file is missing or invalid, default to safe values and warn the user
         print(f"{Fore.RED}[CONFIG] config.json not found or invalid. Using defaults.{Style.RESET_ALL}")
         return {'useRAG': False, 'maxWords': 50}
 
@@ -207,9 +206,6 @@ class MultiRAGQueryAgent:
     def handle_query(self, user_input):
         query_type = self.classify_query_type(user_input)
         print(f"{Fore.MAGENTA}[RAG] Query classified as type: {query_type}{Style.RESET_ALL}")
-        
-        # Create background playlist using the proper background manager
-        print(f"{Fore.MAGENTA}[RAG] Creating background playlist for query{Style.RESET_ALL}")
 
         if query_type == 1:
             print(f"{Fore.MAGENTA}[RAG] Generic question - No RAG retrieval needed{Style.RESET_ALL}")
@@ -241,13 +237,8 @@ class MultiRAGQueryAgent:
                     footer = f"{Fore.GREEN}╚═{'═' * 80}═╝{Style.RESET_ALL}"
                     formatted_output = f"{header}\n{title}\n{footer}\n\n" + "\n\n".join(formatted_docs)
                     
-                    # Store original content for the LLM
                     llm_content = "\nRetrieved General Darwin Information:\n" + "\n".join(unique_contents)
-                    
-                    # Print formatted output to console
                     print(formatted_output)
-                    
-                    # Return content for LLM
                     return llm_content
                 else:
                     print(f"{Fore.RED}[RAG] No relevant documents found{Style.RESET_ALL}")
@@ -277,13 +268,8 @@ class MultiRAGQueryAgent:
                 footer = f"{Fore.GREEN}╚═{'═' * 80}═╝{Style.RESET_ALL}"
                 formatted_output = f"{header}\n{title}\n{footer}\n\n" + "\n\n".join(formatted_docs)
                 
-                # Store original content for the LLM
                 llm_content = "\nRetrieved Darwin Writings:\n" + "\n".join(llm_contents)
-                
-                # Print formatted output to console
                 print(formatted_output)
-                
-                # Return content for LLM
                 return llm_content
             else:
                 print(f"{Fore.RED}[RAG] No specific writings found{Style.RESET_ALL}")
@@ -308,9 +294,48 @@ class DarwinLLM:
         response = self.model.invoke(langchain_messages)
         return response.content.strip()
 
+class EmotionClassifier:
+    """Classifies the emotional tone of responses for clip selection"""
+    
+    def __init__(self):
+        self.llm = ChatGroq(model_name="llama-3.1-8b-instant", api_key=os.getenv("GROQ_API_KEY"))
+    
+    def classify_emotion(self, response_text: str) -> str:
+        """
+        Classify emotional tone into one category.
+        Returns: neutral, emphatic, contrastive, positive, or negative
+        """
+        prompt = [
+            SystemMessage(content=(
+                "Classify the emotional tone of the following text into EXACTLY ONE category.\n"
+                "Return ONLY the category name (no explanation):\n\n"
+                "1. neutral - Calm, informative, factual statements\n"
+                "2. emphatic - Strong assertions, passionate explanations, emphasis\n"
+                "3. contrastive - Corrections, disagreements, contrasting ideas, when you are correcting what the speaker said\n"
+                "4. positive - Happy, enthusiastic, pleased, excited, when speaking of happy memories\n"
+                "5. negative - Sad, disappointed, regretful, somber, when speaking of sad memories\n\n"
+                "Respond with ONLY ONE WORD from the list above."
+            )),
+            HumanMessage(content=response_text)
+        ]
+        
+        response = self.llm.invoke(prompt).content.strip().lower()
+        
+        valid_emotions = ['neutral', 'emphatic', 'contrastive', 'positive', 'negative']
+        for emotion in valid_emotions:
+            if emotion in response:
+                print(f"{Fore.MAGENTA}[EMOTION] Classified as: {emotion}{Style.RESET_ALL}")
+                return emotion
+        
+        print(f"{Fore.YELLOW}[EMOTION] Could not classify, defaulting to 'neutral'{Style.RESET_ALL}")
+        return 'neutral'
+
 
 def generate_darwin_response(user_input):
-    # Check the config file at the start of every call
+    """
+    Generate Darwin's response WITH emotion classification.
+    NOW RETURNS: {'text': str, 'emotion': str}
+    """
     config = load_config()
     use_rag = config['useRAG']
     max_words = config['maxWords']
@@ -322,7 +347,6 @@ def generate_darwin_response(user_input):
     messages = conversation_history.copy()
     retrieved_docs = None
 
-    # Conditionally run the RAG agent based on the config setting
     if use_rag:
         print(f"{Fore.BLUE}[RAG] Generating response for: {user_input}{Style.RESET_ALL}")
         query_agent = MultiRAGQueryAgent()
@@ -330,7 +354,6 @@ def generate_darwin_response(user_input):
     else:
         print(f"{Fore.BLUE}[LLM] Generating response for: {user_input} (RAG is off){Style.RESET_ALL}")
 
-    # If RAG ran and found documents, add them to the system prompt
     if retrieved_docs:
         print(f"{Fore.BLUE}[LLM] Retrieved Documents Passed to LLM: (Content logged above){Style.RESET_ALL}")
         messages.append({
@@ -345,7 +368,6 @@ def generate_darwin_response(user_input):
             )
         })
     else:
-        # This block now handles both "RAG off" and "RAG on but found nothing" cases
         messages.append({
             "role": "system", 
             "content": (
@@ -356,27 +378,32 @@ def generate_darwin_response(user_input):
 
     messages.append({"role": "user", "content": user_input})
     
-    # Generate initial response
     reply = llm.generate_response(messages)
-    
-    # Apply hard truncation as backup
     original_length = len(reply)
     reply = truncate_response(reply, max_words=max_words)
     
     if len(reply) != original_length:
         print(f"{Fore.YELLOW}[LLM] Response was truncated from {original_length} to {len(reply)} characters{Style.RESET_ALL}")
     
-    # Log final response stats
+    # Classify emotion
+    emotion_classifier = EmotionClassifier()
+    emotion = emotion_classifier.classify_emotion(reply)
+    
     word_count = len(reply.split())
     sentence_count = len([s for s in re.split(r'[.!?]+', reply) if s.strip()])
     print(f"{Fore.BLUE}[LLM] Final response: {len(reply)} chars, {word_count} words, {sentence_count} sentences{Style.RESET_ALL}")
+    print(f"{Fore.MAGENTA}[LLM] Response emotion: {emotion}{Style.RESET_ALL}")
     
     conversation_history.append({"role": "user", "content": user_input})
     conversation_history.append({"role": "assistant", "content": reply})
-    return reply
+    
+    # Return dict with both text and emotion
+    return {
+        'text': reply,
+        'emotion': emotion
+    }
 
 if __name__ == "__main__":
-    # Import time here to avoid circular imports when used as a module
     import time
     
     print(f"\n{Fore.GREEN}{'=' * 40}")
@@ -387,8 +414,8 @@ if __name__ == "__main__":
             user_input = input(f"{Fore.CYAN}You: {Style.RESET_ALL}")
             if not user_input.strip():
                 continue
-            response = generate_darwin_response(user_input)
-            print(f"{Fore.GREEN}Darwin: {Style.RESET_ALL}{response}\n")
+            response_data = generate_darwin_response(user_input)
+            print(f"{Fore.GREEN}Darwin [{response_data['emotion'].upper()}]: {Style.RESET_ALL}{response_data['text']}\n")
         except KeyboardInterrupt:
             print(f"\n{Fore.YELLOW}Goodbye.{Style.RESET_ALL}")
             break
