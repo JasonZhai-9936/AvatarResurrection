@@ -25,20 +25,25 @@ class SimplifiedLipSyncSystem:
         # Available clip prefixes from your archive
         # These are the ACTUAL prefixes in your filenames
         self.available_prefixes = [
-            "circle1", "eye_look1", "idle2", "slight_look1", "slight_shake1", "nod1", "slight_shake2"
+            "circle1", "eye_look1", "idle2", "slight_look1", "slight_shake1", "nod1", "slight_shake2",
+            "look_down1", "slight_lean3", "slight_shake7", "smirk1"
         ]
         
         # Set up clip odds (probability weights for each prefix)
         if clip_odds is None:
             self.clip_odds = {
                 "circle1": 0.5,
-                "eye_look1": 0.5,#no blinking
+                "eye_look1": 0.5,
                 "idle2": 1.0,
                 "slight_look1": 1.0,
                 "slight_shake1": 1.0,
                 "slight_shake2": 1.0,
                 "nod1": 1.0,
                 "main2": 1.0,
+                "look_down1": 1.0,
+                "slight_lean3": 1.0,
+                "slight_shake7": 1.0,
+                "smirk1": 1.0,
             }
         else:
             self.clip_odds = clip_odds
@@ -214,33 +219,50 @@ class SimplifiedLipSyncSystem:
 
     def generate_clip_sequence(self, audio_duration: float) -> List[Dict]:
         """
-        Generate a sequence of clips to fill the audio duration.
-        Plays clips at their natural speed.
+        Generate a sequence of clips to fill the audio duration,
+        accurately accounting for the shortening effect of crossfades.
         """
         clip_sequence = []
-        current_duration = 0.0
+        # This tracks the true duration of the final faded video
+        effective_duration = 0.0
 
-        # Fill the duration by adding clips one by one
-        while current_duration < audio_duration:
+        # Loop until our effective video duration is longer than the audio
+        while effective_duration < audio_duration:
             clip = self.select_random_clip()
             if not clip:
                 continue  # Try again if no clip was selected
 
-            # Get the clip's real duration to add to our total
             clip_real_duration = self.get_video_duration(clip['path'])
 
+            # Only process clips that have a valid duration
             if clip_real_duration > 0:
-                clip_sequence.append(clip)
-                current_duration += clip_real_duration
+                
+                # --- THIS IS THE KEY FIX ---
+                # For the first clip, the effective duration is its full length.
+                # For all subsequent clips, the effective duration added is the
+                # clip's length MINUS the transition overlap.
+                if not clip_sequence:
+                    # This is the first clip, add its full duration
+                    duration_to_add = clip_real_duration
+                else:
+                    # This is a subsequent clip, account for the fade overlap
+                    duration_to_add = clip_real_duration - self.TRANSITION_DURATION
+
+                # Ensure we don't add a negative duration for very short clips
+                if duration_to_add > 0:
+                    clip_sequence.append(clip)
+                    effective_duration += duration_to_add
+                else:
+                    print(f"Warning: Skipping clip '{clip['filename']}' as it is shorter than the transition duration.")
             else:
                 print(f"Warning: Skipping clip with 0 duration: {clip['filename']}")
 
-        # If no clips were selected, use a fallback
+        # Fallback if no clips were selected at all
         if not clip_sequence and self.available_clips:
             clip_sequence = [random.choice(self.available_clips)]
 
         return clip_sequence
-
+    
     def create_video_sequence_with_fades(self, clip_sequence: List[Dict], audio_duration: float, temp_dir: str) -> str:
         """
         Create a video sequence using crossfades for smooth transitions.
@@ -411,14 +433,18 @@ if __name__ == "__main__":
 
     # Clip selection odds (higher number = more likely to be selected)
     CLIP_ODDS = {
-        "circle1": 0.5,
-        "eye_look1": 0.5,
+        "circle1": 0.3,
+        "eye_look1": 0.3,
         "idle2": 1.0,
-        "slight_look1": 1.0,
-        "slight_shake1": 1.0,
-        "slight_shake2": 1.0,
-        "nod1": 1.0,
+        "slight_look1": 0.3,
+        "slight_shake1": 0.7,
+        "slight_shake2": 0.3,
+        "nod1": 0.3,
         "main2": 1.0,
+        "look_down1": 1.0,
+        "slight_lean3": 1.0,
+        "slight_shake7": 1.0,
+        "smirk1": 1.0,
     }
     
     print("STARTING LIP SYNC SYSTEM")
@@ -434,7 +460,7 @@ if __name__ == "__main__":
         )
         
         # Specify the audio file you want to process
-        input_audio_file = "evo.wav" # <-- IMPORTANT: CHANGE THIS TO YOUR AUDIO FILE
+        input_audio_file = "evo2.wav" # <-- IMPORTANT: CHANGE THIS TO YOUR AUDIO FILE
         
         if os.path.exists(input_audio_file):
             # Generate the video - no need to pass transition_duration again
