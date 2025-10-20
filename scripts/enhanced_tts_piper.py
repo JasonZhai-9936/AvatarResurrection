@@ -146,3 +146,35 @@ def test_tts_system():
     except Exception as e:
         print(f"{Fore.RED}[TTS] System test failed: {e}{Style.RESET_ALL}")
         return False
+
+
+# Standalone execution
+if __name__ == "__main__":
+    print(f"{Fore.YELLOW}{'='*60}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}TTS System - Standalone Test Mode{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}{'='*60}{Style.RESET_ALL}\n")
+    
+    # Custom test message
+    test_message = "Everything in your life is a reflection of a choice you have made. If you want a different result, make a different choice"
+    
+    print(f"{Fore.CYAN}Test Message: {test_message}{Style.RESET_ALL}\n")
+    
+    # Run system test first
+    print(f"{Fore.MAGENTA}Running system diagnostics...{Style.RESET_ALL}")
+    if test_tts_system():
+        print(f"{Fore.GREEN}✓ System check passed{Style.RESET_ALL}\n")
+        
+        # Generate audio
+        print(f"{Fore.MAGENTA}Generating audio file...{Style.RESET_ALL}")
+        output_file = generate_complete_audio(test_message, output_filename="standalone_test")
+        
+        if output_file:
+            print(f"\n{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}✓ Success! Audio file generated:{Style.RESET_ALL}")
+            print(f"{Fore.WHITE}  {output_file}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
+        else:
+            print(f"\n{Fore.RED}✗ Failed to generate audio file{Style.RESET_ALL}")
+    else:
+        print(f"{Fore.RED}✗ System check failed{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Please ensure voice models are installed in the Piper_Voices directory{Style.RESET_ALL}")

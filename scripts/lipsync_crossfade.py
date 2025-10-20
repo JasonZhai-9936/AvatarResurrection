@@ -551,9 +551,10 @@ if __name__ == "__main__":
             'slight_lean3': 0.7
         },
         'positive': {
-            'smirk1': 1.0,
-            'slight_look1': 0.8,
-            'nod1': 0.9
+            'nod1': 0.5,
+            'smirk1': 0.5,
+            'idle8':0.5,
+            
         },
         'negative': {
             'look_down1': 1.0,
@@ -564,12 +565,11 @@ if __name__ == "__main__":
     
     # BASE CLIPS (for non-emphasized words) - INDEPENDENT CONFIGURATION
     BASE_CLIP_CONFIG = {
-        'idle2': 1.0,
-        'slight_look1': 0.8,
-        'eye_look1': 0.6,
-        'circle1': 0.3,
-        'slight_shake1': 0.5,
-        'nod1': 0.4
+            'idle2': 0.3,
+            'idle4': 0.3,
+            'idle5': 1.0,
+            'idle6': 1.0,
+            'idle7': 1.0,
     }
     
     print(f"{Fore.GREEN}STARTING EMOTIONAL LIP-SYNC SYSTEM{Style.RESET_ALL}")
@@ -584,8 +584,8 @@ if __name__ == "__main__":
             transition_duration=TRANSITION_DURATION
         )
         
-        input_audio_file = "evo2.wav"
-        test_text = "The Beagle voyage was an amazing adventure!"
+        input_audio_file = "4.m4a"
+        test_text = "Everything in your life is a reflection of a choice you have made. If you want a different result, make a different choice"
         test_emotion = "positive"
         
         if os.path.exists(input_audio_file):
