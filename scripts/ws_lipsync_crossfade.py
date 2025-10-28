@@ -1,4 +1,4 @@
-# lipsync_whisper_aligned.py - Word-aligned lip-sync using Whisper timestamps
+# lipsync_whisper_aligned_improved.py - Word-aligned lip-sync with stretch limits
 
 import os
 import random
@@ -25,6 +25,11 @@ except:
 
 # Global Whisper model
 _whisper_model = None
+
+# STRETCH LIMIT CONFIGURATION
+MAX_STRETCH_RATIO = 1.5  # Don't stretch clips more than 1.5x
+MIN_STRETCH_RATIO = 0.5  # Don't slow down clips more than 0.5x (2x slower)
+MAX_SELECTION_ATTEMPTS = 5  # Try 5 times before using fallback
 
 def get_whisper_model():
     """Get or create Whisper model instance"""
@@ -102,16 +107,42 @@ class WhisperAlignedLipSync:
         'idle6.mp4': 1.0,
     }
     
+    # Default word library clips (prefixes that have word-specific clips)
+    DEFAULT_WORD_LIBRARY_CLIPS = {
+        'idle7': 1.0,
+        'slight_shake7': 0.8,
+        'idle6': 1.0,
+    }
+    
+    # Default short clips (used as fallback when stretch limits are exceeded)
+    DEFAULT_SHORT_CLIPS = {
+        'idle4': 1.0,
+        'idle5': 1.0,
+        'idle6': 1.0,
+    }
+    
     def __init__(self, archive_directory: str, emotion_clips: Dict[str, Dict[str, float]] = None,
                  base_clips: Dict[str, float] = None, idle_clips: Dict[str, float] = None,
+                 word_library_clips: Dict[str, float] = None, short_clips: Dict[str, float] = None,
+                 word_clip_odds: int = 3, syllable_clip_odds: int = 1,
                  avoid_repeats: bool = False):
         self.archive_dir = archive_directory
+        self.word_library_dir = os.path.join(archive_directory, "word_library")
         
         self._check_ffmpeg_availability()
         
         self.emotion_clip_mapping = emotion_clips if emotion_clips is not None else self.DEFAULT_EMOTION_CLIPS.copy()
         self.base_clip_odds = base_clips if base_clips is not None else self.DEFAULT_BASE_CLIPS.copy()
         self.idle_clip_odds = idle_clips if idle_clips is not None else self.DEFAULT_IDLE_CLIPS.copy()
+        self.word_library_clip_odds = word_library_clips if word_library_clips is not None else self.DEFAULT_WORD_LIBRARY_CLIPS.copy()
+        self.short_clip_odds = short_clips if short_clips is not None else self.DEFAULT_SHORT_CLIPS.copy()
+        
+        # Word vs Syllable preference odds
+        self.word_clip_odds = word_clip_odds
+        self.syllable_clip_odds = syllable_clip_odds
+        
+        print(f"{Fore.CYAN}[LIPSYNC] Word clip odds: {word_clip_odds}, Syllable clip odds: {syllable_clip_odds}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[LIPSYNC] Stretch limits: {MIN_STRETCH_RATIO}x - {MAX_STRETCH_RATIO}x, Max attempts: {MAX_SELECTION_ATTEMPTS}{Style.RESET_ALL}")
         
         # Normalize base odds
         total_odds = sum(self.base_clip_odds.values())
@@ -123,16 +154,32 @@ class WhisperAlignedLipSync:
         if total_idle_odds > 0:
             self.idle_clip_odds = {k: v / total_idle_odds for k, v in self.idle_clip_odds.items()}
         
+        # Normalize word library odds
+        total_word_library_odds = sum(self.word_library_clip_odds.values())
+        if total_word_library_odds > 0:
+            self.word_library_clip_odds = {k: v / total_word_library_odds for k, v in self.word_library_clip_odds.items()}
+        
+        # Normalize short clips odds
+        total_short_clip_odds = sum(self.short_clip_odds.values())
+        if total_short_clip_odds > 0:
+            self.short_clip_odds = {k: v / total_short_clip_odds for k, v in self.short_clip_odds.items()}
+        
         # Extract all unique clip prefixes
         all_prefixes = set(self.base_clip_odds.keys())
         for emotion_clips_dict in self.emotion_clip_mapping.values():
             all_prefixes.update(emotion_clips_dict.keys())
+        all_prefixes.update(self.word_library_clip_odds.keys())
+        all_prefixes.update(self.short_clip_odds.keys())  # Add short clips to scanning
         self.available_prefixes = list(all_prefixes)
         
         self.avoid_repeats = avoid_repeats
         self.last_used_prefix = None
         
+        # Scan syllable clips
         self.available_clips = self.scan_available_clips()
+        
+        # Scan word library clips
+        self.word_library_clips = self.scan_word_library_clips()
         
         # Scan for idle clips
         self.available_idle_clips = []
@@ -151,7 +198,9 @@ class WhisperAlignedLipSync:
             print(f"{Fore.GREEN}[LIPSYNC] Found {len(self.available_idle_clips)} idle clips for deadtime{Style.RESET_ALL}")
         
         print(f"{Fore.GREEN}[LIPSYNC] Whisper-aligned lip-sync initialized{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}[LIPSYNC] Found {len(self.available_clips)} clips{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[LIPSYNC] Found {len(self.available_clips)} syllable clips{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[LIPSYNC] Found {len(self.word_library_clips)} word-specific clips{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[LIPSYNC] Short clips for fallback: {list(self.short_clip_odds.keys())}{Style.RESET_ALL}")
 
     def _check_ffmpeg_availability(self):
         """Check if FFmpeg and FFprobe are available"""
@@ -161,7 +210,7 @@ class WhisperAlignedLipSync:
             raise RuntimeError("FFprobe not found in system PATH")
 
     def scan_available_clips(self) -> List[Dict]:
-        """Scan archive directory for clips"""
+        """Scan archive directory for syllable clips (lazy load durations)"""
         clips = []
         if not os.path.exists(self.archive_dir):
             return clips
@@ -175,13 +224,75 @@ class WhisperAlignedLipSync:
                         break
                 
                 if prefix_found:
+                    full_path = os.path.join(self.archive_dir, file)
+                    
                     clips.append({
                         'filename': file,
-                        'path': os.path.join(self.archive_dir, file),
-                        'prefix': prefix_found
+                        'path': full_path,
+                        'prefix': prefix_found,
+                        'duration': None  # Will be loaded on-demand
                     })
         
+        if clips:
+            print(f"{Fore.GREEN}[LIPSYNC] Syllable clips scanned: {len(clips)} clips{Style.RESET_ALL}")
+        
         return clips
+
+    def scan_word_library_clips(self) -> Dict[str, List[Dict]]:
+        """Scan word_library directory for word-specific clips (lazy load durations)"""
+        word_clips = {}
+        
+        if not os.path.exists(self.word_library_dir):
+            print(f"{Fore.YELLOW}[LIPSYNC] Warning: word_library directory not found{Style.RESET_ALL}")
+            return word_clips
+        
+        for file in os.listdir(self.word_library_dir):
+            if file.endswith('.mp4'):
+                # Check if filename matches any word library prefix
+                for prefix in self.word_library_clip_odds.keys():
+                    if file.startswith(prefix + "_"):
+                        # Extract word from filename (e.g., "idle7_hello.mp4" -> "hello")
+                        word = file[len(prefix)+1:-4].lower()
+                        full_path = os.path.join(self.word_library_dir, file)
+                        
+                        if word not in word_clips:
+                            word_clips[word] = []
+                        
+                        word_clips[word].append({
+                            'filename': file,
+                            'path': full_path,
+                            'prefix': prefix,
+                            'duration': None,  # Will be loaded on-demand
+                            'weight': self.word_library_clip_odds[prefix]
+                        })
+                        break
+        
+        total_clips = sum(len(clips) for clips in word_clips.values())
+        if word_clips:
+            print(f"{Fore.GREEN}[LIPSYNC] Word library loaded: {len(word_clips)} unique words, {total_clips} total clips{Style.RESET_ALL}")
+        
+        return word_clips
+
+    def count_syllables(self, word: str) -> int:
+        """Estimate syllable count"""
+        word = word.lower().strip('.,!?;:"\'-')
+        vowels = "aeiouy"
+        syllable_count = 0
+        previous_was_vowel = False
+        
+        for char in word:
+            is_vowel = char in vowels
+            if is_vowel and not previous_was_vowel:
+                syllable_count += 1
+            previous_was_vowel = is_vowel
+        
+        if word.endswith("e"):
+            syllable_count -= 1
+        
+        if word.endswith("le") and len(word) > 2 and word[-3] not in vowels:
+            syllable_count += 1
+        
+        return max(1, syllable_count)
 
     def select_random_idle_clip(self) -> Optional[str]:
         """Select random idle clip using weighted odds"""
@@ -238,11 +349,115 @@ class WhisperAlignedLipSync:
         print(f"{Fore.GREEN}[WHISPER] Found {len(word_timings)} words with timestamps{Style.RESET_ALL}")
         return word_timings
 
-    def select_clip_for_word(self, word: str, emotion: str, emphasized_words: List[str]) -> Optional[Dict]:
-        """Select clip based on word and emotion"""
+    def select_clip_with_stretch_limit(self, clips_pool: List[Dict], weights: List[float], 
+                                       target_duration: float, clip_type: str) -> Optional[Dict]:
+        """
+        Select a clip that won't exceed MAX_STRETCH_RATIO or go below MIN_STRETCH_RATIO.
+        Try up to MAX_SELECTION_ATTEMPTS times, then use the shortest clip as fallback.
+        
+        Args:
+            clips_pool: List of available clips
+            weights: Corresponding weights for selection
+            target_duration: Duration the clip needs to be stretched to
+            clip_type: Description for logging (e.g., "word", "syllable", "emotion")
+        """
+        if not clips_pool:
+            return None
+        
+        attempted_clips = []  # Track all attempts to find shortest
+        
+        for attempt in range(MAX_SELECTION_ATTEMPTS):
+            selected = random.choices(clips_pool, weights=weights, k=1)[0]
+            clip_duration = self.get_clip_duration(selected)  # Load on-demand
+            
+            attempted_clips.append((selected, clip_duration))
+            
+            if clip_duration == 0:
+                print(f"{Fore.YELLOW}[STRETCH] Warning: Clip has 0 duration, using anyway{Style.RESET_ALL}")
+                return selected
+            
+            stretch_ratio = target_duration / clip_duration
+            
+            # Check if stretch ratio is within acceptable range
+            if MIN_STRETCH_RATIO <= stretch_ratio <= MAX_STRETCH_RATIO:
+                if attempt > 0:
+                    print(f"{Fore.GREEN}[STRETCH] Found suitable {clip_type} clip on attempt {attempt + 1} (stretch: {stretch_ratio:.2f}x){Style.RESET_ALL}")
+                return selected
+            else:
+                if attempt < MAX_SELECTION_ATTEMPTS - 1:
+                    if stretch_ratio > MAX_STRETCH_RATIO:
+                        print(f"{Fore.YELLOW}[STRETCH] Attempt {attempt + 1}: {clip_type} clip too short (would need {stretch_ratio:.2f}x stretch), retrying...{Style.RESET_ALL}")
+                    else:
+                        print(f"{Fore.YELLOW}[STRETCH] Attempt {attempt + 1}: {clip_type} clip too long (would be {stretch_ratio:.2f}x stretch), retrying...{Style.RESET_ALL}")
+        
+        # After MAX_SELECTION_ATTEMPTS, use short clips pool as fallback
+        # Filter available clips to only those in short_clip_odds
+        short_clips_pool = [
+            clip for clip in clips_pool 
+            if clip['prefix'] in self.short_clip_odds
+        ]
+        
+        if not short_clips_pool:
+            # If no short clips available, fall back to finding closest clip from original pool
+            shortest_clip = min(attempted_clips, key=lambda x: abs(x[1] - target_duration))
+            selected = shortest_clip[0]
+            stretch_ratio = target_duration / self.get_clip_duration(selected)
+            print(f"{Fore.RED}[STRETCH] No short clips available, using closest from attempts (orig:{shortest_clip[1]:.2f}s, stretch: {stretch_ratio:.2f}x){Style.RESET_ALL}")
+            return selected
+        
+        # Select from short clips pool with weights
+        short_weights = [self.short_clip_odds.get(clip['prefix'], 1.0) for clip in short_clips_pool]
+        if sum(short_weights) == 0:
+            short_weights = [1.0] * len(short_clips_pool)
+        
+        selected = random.choices(short_clips_pool, weights=short_weights, k=1)[0]
+        clip_duration = self.get_clip_duration(selected)
+        stretch_ratio = target_duration / clip_duration
+        
+        print(f"{Fore.MAGENTA}[STRETCH] Using SHORT CLIP fallback: {selected['prefix']} (orig:{clip_duration:.2f}s, stretch: {stretch_ratio:.2f}x){Style.RESET_ALL}")
+        return selected
+
+    def select_clip_for_word(self, word: str, word_duration: float, emotion: str, 
+                            emphasized_words: List[str]) -> Optional[Dict]:
+        """
+        Select clip based on word and emotion, with stretch limit checking.
+        Priority: word-specific clips > syllable clips with stretch checking
+        """
         is_emphasized = word.lower() in emphasized_words
+        word_normalized = word.lower().strip('.,!?;:')
+        
+        # STEP 1: Check word-specific clips first
+        has_word_clip = word_normalized in self.word_library_clips
+        
+        if has_word_clip:
+            # Decide whether to use word clip or syllable clip based on odds
+            choice = random.choices(
+                ['word', 'syllable'],
+                weights=[self.word_clip_odds, self.syllable_clip_odds],
+                k=1
+            )[0]
+            
+            if choice == 'word':
+                available_word_clips = self.word_library_clips[word_normalized]
+                weights = [clip['weight'] for clip in available_word_clips]
+                
+                if sum(weights) == 0:
+                    weights = [1.0] * len(weights)
+                
+                # Try to find a word clip that doesn't exceed stretch limit
+                selected = self.select_clip_with_stretch_limit(
+                    available_word_clips, weights, word_duration, f"word '{word}'"
+                )
+                
+                if selected:
+                    print(f"{Fore.MAGENTA}[WORD] Using word clip for '{word}': {selected['prefix']}{Style.RESET_ALL}")
+                    return selected
+        
+        # STEP 2: Fall back to syllable-based selection with emotion weighting
+        syllable_count = self.count_syllables(word)
         
         if is_emphasized and emotion in self.emotion_clip_mapping:
+            # Use emotion-weighted clips for emphasized words
             emotion_clips = self.emotion_clip_mapping[emotion]
             allowed_prefixes = list(emotion_clips.keys())
             
@@ -252,14 +467,18 @@ class WhisperAlignedLipSync:
             ]
             
             weights = [emotion_clips.get(clip['prefix'], 0.5) for clip in suitable_clips]
+            clip_type = f"emotion ({emotion})"
         else:
+            # Use base clips for non-emphasized words
             suitable_clips = [
                 clip for clip in self.available_clips 
                 if clip['prefix'] in self.base_clip_odds
             ]
             
             weights = [self.base_clip_odds.get(clip['prefix'], 0.5) for clip in suitable_clips]
+            clip_type = "syllable"
         
+        # Filter for clips with no weights
         if not suitable_clips:
             suitable_clips = self.available_clips
             weights = [1.0] * len(suitable_clips)
@@ -267,8 +486,18 @@ class WhisperAlignedLipSync:
         if sum(weights) == 0:
             weights = [1.0] * len(suitable_clips)
         
-        selected = random.choices(suitable_clips, weights=weights, k=1)[0]
+        # Try to find a syllable/emotion clip that doesn't exceed stretch limit
+        selected = self.select_clip_with_stretch_limit(
+            suitable_clips, weights, word_duration, clip_type
+        )
+        
         return selected
+
+    def get_clip_duration(self, clip: Dict) -> float:
+        """Get clip duration, loading on-demand and caching result"""
+        if 'duration' not in clip or clip['duration'] is None:
+            clip['duration'] = self.get_video_duration(clip['path'])
+        return clip['duration']
 
     def get_video_duration(self, video_path: str) -> float:
         """Get video duration using ffprobe"""
@@ -298,129 +527,165 @@ class WhisperAlignedLipSync:
         except:
             return 0.0
 
-    def create_timed_clip(self, clip_path: str, target_duration: float, temp_dir: str, index: int) -> str:
-        """Speed up or slow down a clip to match target duration with forced resolution"""
-        original_duration = self.get_video_duration(clip_path)
-        if original_duration == 0:
-            return None
+    def time_stretch_video(self, input_video: str, output_video: str, speed_factor: float, target_duration: float) -> bool:
+        """Stretch/compress video using FFmpeg setpts filter with forced duration and re-encoding"""
+        pts_factor = 1.0 / speed_factor
         
-        output_path = os.path.join(temp_dir, f"timed_clip_{index}.mp4")
-        
-        # Calculate speed multiplier (speed up = >1, slow down = <1)
-        speed = original_duration / target_duration
-        
-        # Force 1440x1080 landscape resolution with consistent format
-        # Scale, crop, and ensure consistent pixel format
         cmd = [
-            "ffmpeg", "-y", "-i", clip_path,
-            "-filter:v", f"setpts={1/speed}*PTS,fps=30,scale=1440:1080:force_original_aspect_ratio=increase,crop=1440:1080,format=yuv420p",
-            "-t", str(target_duration),  # Trim to exact duration
-            "-an",  # Remove audio
-            "-c:v", "libx264",  # Re-encode to ensure consistency
-            "-preset", "fast",  # Fast encoding
-            output_path
+            "ffmpeg", "-y",
+            "-i", input_video,
+            "-filter:v", f"setpts={pts_factor}*PTS,fps=30,scale=1440:1080:force_original_aspect_ratio=increase,crop=1440:1080,format=yuv420p",
+            "-t", str(target_duration),  # Force exact output duration
+            "-an",
+            "-c:v", "libx264",
+            "-preset", "fast",
+            output_video
         ]
         
         result = subprocess.run(cmd, capture_output=True, text=True)
+        
         if result.returncode == 0:
             # Verify the output duration
-            actual_duration = self.get_video_duration(output_path)
+            actual_duration = self.get_video_duration(output_video)
             if abs(actual_duration - target_duration) > 0.1:
-                print(f"{Fore.YELLOW}[LIPSYNC] Warning: clip {index} duration mismatch: {actual_duration:.2f}s vs {target_duration:.2f}s{Style.RESET_ALL}")
-            return output_path
+                print(f"{Fore.YELLOW}[STRETCH] Warning: duration mismatch: {actual_duration:.2f}s vs {target_duration:.2f}s{Style.RESET_ALL}")
+            return True
         else:
-            print(f"{Fore.RED}[LIPSYNC] Error creating timed clip {index}:{Style.RESET_ALL}")
-            print(result.stderr)
-        return None
+            print(f"{Fore.RED}[STRETCH] FFmpeg error: {result.stderr[:200]}{Style.RESET_ALL}")
+            return False
 
-    def generate_word_aligned_sequence(self, audio_file: str, text: str, emotion: str, temp_dir: str) -> List[str]:
-        """Generate clip sequence aligned to word timestamps"""
-        word_timings = self.get_word_timestamps(audio_file)
-        emphasized_words = self.get_emphasized_words(text)
+    def concatenate_clips(self, clips: List[str], output_file: str) -> bool:
+        """Concatenate video clips using FFmpeg concat demuxer"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            concat_file = f.name
+            for clip in clips:
+                f.write(f"file '{clip}'\n")
         
-        # Get total audio duration
-        audio_duration = self.get_audio_duration(audio_file)
+        try:
+            cmd = [
+                "ffmpeg", "-y",
+                "-f", "concat",
+                "-safe", "0",
+                "-i", concat_file,
+                "-c", "copy",
+                output_file
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            return result.returncode == 0
+        finally:
+            if os.path.exists(concat_file):
+                os.remove(concat_file)
+
+    def get_next_output_filename(self, base_output_file: str) -> str:
+        """Generate incremental filename if file exists"""
+        if not os.path.exists(base_output_file):
+            return base_output_file
+        
+        directory = os.path.dirname(base_output_file)
+        filename = os.path.basename(base_output_file)
+        name, ext = os.path.splitext(filename)
+        
+        counter = 1
+        while True:
+            new_filename = f"{name}_{counter}{ext}"
+            new_path = os.path.join(directory, new_filename)
+            if not os.path.exists(new_path):
+                return new_path
+            counter += 1
+
+    def generate_word_aligned_sequence(self, audio_file: str, text: str, 
+                                      emotion: str, temp_dir: str) -> List[str]:
+        """Generate time-aligned video sequence based on Whisper word timestamps"""
+        
+        # Get word timestamps from Whisper
+        word_timings = self.get_word_timestamps(audio_file)
+        
+        if not word_timings:
+            print(f"{Fore.RED}[LIPSYNC] No word timings detected{Style.RESET_ALL}")
+            return []
+        
+        # Get emphasized words
+        emphasized_words = self.get_emphasized_words(text)
+        print(f"{Fore.CYAN}[LIPSYNC] Emphasized words: {emphasized_words}{Style.RESET_ALL}")
         
         timed_clips = []
+        audio_duration = self.get_audio_duration(audio_file)
         
-        for i, word_data in enumerate(word_timings):
-            word = word_data['word']
-            duration = word_data['duration']
+        for i, word_info in enumerate(word_timings):
+            word = word_info['word']
+            start_time = word_info['start']
+            end_time = word_info['end']
+            word_duration = word_info['duration']
             
-            # Check for deadtime before this word
-            if i > 0:
-                prev_end = word_timings[i-1]['end']
-                current_start = word_data['start']
-                gap = current_start - prev_end
+            # Select clip with stretch limit checking
+            selected_clip = self.select_clip_for_word(
+                word, word_duration, emotion, emphasized_words
+            )
+            
+            if not selected_clip:
+                print(f"{Fore.YELLOW}[LIPSYNC] No clip found for word '{word}'{Style.RESET_ALL}")
+                continue
+            
+            clip_path = selected_clip['path']
+            clip_duration = self.get_clip_duration(selected_clip)  # Load on-demand
+            
+            if clip_duration == 0:
+                print(f"{Fore.YELLOW}[LIPSYNC] Clip has 0 duration: {clip_path}{Style.RESET_ALL}")
+                continue
+            
+            # Calculate speed adjustment
+            speed_factor = clip_duration / word_duration
+            stretch_ratio = word_duration / clip_duration  # This is the actual stretch amount
+            
+            # Time-stretch the clip
+            stretched_clip = os.path.join(temp_dir, f"stretched_{i}_{word}.mp4")
+            
+            if self.time_stretch_video(clip_path, stretched_clip, speed_factor, word_duration):
+                timed_clips.append(stretched_clip)
+                prefix = selected_clip.get('prefix', 'unknown')
+                print(f"{Fore.GREEN}[LIPSYNC] '{word}' (word:{word_duration:.2f}s, orig:{clip_duration:.2f}s, stretch:{stretch_ratio:.2f}x) → {prefix}{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.RED}[LIPSYNC] Failed to stretch clip for '{word}'{Style.RESET_ALL}")
+            
+            # Fill gaps with idle clips
+            if i < len(word_timings) - 1:
+                next_start = word_timings[i + 1]['start']
+                gap_duration = next_start - end_time
                 
-                if gap > 0.1:
-                    # Select random idle clip for deadtime
+                if gap_duration > 0.1:
                     idle_clip_path = self.select_random_idle_clip()
                     if idle_clip_path:
-                        idle_filename = os.path.basename(idle_clip_path)
-                        print(f"{Fore.YELLOW}[LIPSYNC] Deadtime {gap:.2f}s - inserting {idle_filename}{Style.RESET_ALL}")
-                        idle_timed = self.create_timed_clip(idle_clip_path, gap, temp_dir, f"idle_{i}")
-                        if idle_timed:
-                            timed_clips.append(idle_timed)
-            
-            # Select and time clip for this word
-            clip = self.select_clip_for_word(word, emotion, emphasized_words)
-            if clip:
-                timed_clip = self.create_timed_clip(clip['path'], duration, temp_dir, i)
-                if timed_clip:
-                    timed_clips.append(timed_clip)
-                    print(f"{Fore.CYAN}[LIPSYNC] '{word}' ({duration:.2f}s) → {clip['prefix']}{Style.RESET_ALL}")
+                        idle_duration = self.get_video_duration(idle_clip_path)
+                        if idle_duration > 0:
+                            idle_speed = idle_duration / gap_duration
+                            stretched_idle = os.path.join(temp_dir, f"idle_{i}.mp4")
+                            idle_filename = os.path.basename(idle_clip_path)
+                            
+                            if self.time_stretch_video(idle_clip_path, stretched_idle, idle_speed, gap_duration):
+                                timed_clips.append(stretched_idle)
+                                print(f"{Fore.CYAN}[LIPSYNC] Deadtime {gap_duration:.2f}s - inserting {idle_filename}{Style.RESET_ALL}")
         
-        # **FIX: Check for deadtime AFTER the last word**
+        # Fill final deadtime if needed
         if word_timings:
             last_word_end = word_timings[-1]['end']
             final_gap = audio_duration - last_word_end
             
-            if final_gap > 0.15:
+            if final_gap > 0.1:
                 idle_clip_path = self.select_random_idle_clip()
                 if idle_clip_path:
-                    idle_filename = os.path.basename(idle_clip_path)
-                    print(f"{Fore.YELLOW}[LIPSYNC] Final deadtime {final_gap:.2f}s - inserting {idle_filename}{Style.RESET_ALL}")
-                    idle_timed = self.create_timed_clip(idle_clip_path, final_gap, temp_dir, f"idle_final")
-                    if idle_timed:
-                        timed_clips.append(idle_timed)
+                    idle_duration = self.get_video_duration(idle_clip_path)
+                    if idle_duration > 0:
+                        idle_speed = idle_duration / final_gap
+                        stretched_idle = os.path.join(temp_dir, f"idle_final.mp4")
+                        idle_filename = os.path.basename(idle_clip_path)
+                        
+                        if self.time_stretch_video(idle_clip_path, stretched_idle, idle_speed, final_gap):
+                            timed_clips.append(stretched_idle)
+                            print(f"{Fore.CYAN}[LIPSYNC] Final deadtime {final_gap:.2f}s - inserting {idle_filename}{Style.RESET_ALL}")
         
         return timed_clips
-
-    def concatenate_clips(self, clip_paths: List[str], output_path: str) -> bool:
-        """Concatenate all timed clips into final video with re-encoding for perfect alignment"""
-        if not clip_paths:
-            return False
-        
-        # Create concat file
-        concat_file = output_path + "_concat.txt"
-        with open(concat_file, 'w') as f:
-            for clip in clip_paths:
-                f.write(f"file '{clip}'\n")
-        
-        # **FIX: Re-encode instead of copy to ensure frame-perfect concatenation**
-        cmd = [
-            "ffmpeg", "-y",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", concat_file,
-            "-c:v", "libx264",  # Re-encode instead of copy
-            "-preset", "fast",
-            "-crf", "18",  # High quality
-            "-pix_fmt", "yuv420p",
-            "-r", "30",  # Force consistent framerate
-            output_path
-        ]
-        
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        os.remove(concat_file)
-        
-        if result.returncode != 0:
-            print(f"{Fore.RED}[LIPSYNC] Concatenation error:{Style.RESET_ALL}")
-            print(result.stderr)
-        
-        return result.returncode == 0
-
+    
     def generate_lip_sync_video(self, audio_file: str, output_file: str = None,
                                   output_dir: str = None, use_sequential: bool = True,
                                   text: str = "", emotion: str = "neutral") -> str:
@@ -435,28 +700,28 @@ class WhisperAlignedLipSync:
                 output_dir = os.path.dirname(audio_file) or "."
             output_file = os.path.join(output_dir, base_name + ".mp4")
         
+        # Get next available filename with incremental numbering
+        output_file = self.get_next_output_filename(output_file)
+        
         print(f"\n{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
-        print(f"{Fore.YELLOW}WHISPER-ALIGNED LIP-SYNC{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}WHISPER-ALIGNED LIP-SYNC (with stretch limits){Style.RESET_ALL}")
         print(f"{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Audio: {audio_file}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Text: {text}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Emotion: {emotion}{Style.RESET_ALL}")
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            # Generate word-aligned clip sequence
             timed_clips = self.generate_word_aligned_sequence(audio_file, text, emotion, temp_dir)
             
             if not timed_clips:
                 print(f"{Fore.RED}[LIPSYNC] No clips generated{Style.RESET_ALL}")
                 return None
             
-            # Concatenate clips
             video_only = os.path.join(temp_dir, "video_only.mp4")
             if not self.concatenate_clips(timed_clips, video_only):
                 print(f"{Fore.RED}[LIPSYNC] Failed to concatenate clips{Style.RESET_ALL}")
                 return None
             
-            # Verify video duration matches audio
             video_duration = self.get_video_duration(video_only)
             audio_duration = self.get_audio_duration(audio_file)
             
@@ -466,17 +731,16 @@ class WhisperAlignedLipSync:
             if abs(video_duration - audio_duration) > 0.5:
                 print(f"{Fore.YELLOW}[LIPSYNC] Warning: Duration mismatch > 0.5s{Style.RESET_ALL}")
             
-            # **FIX: Combine with audio using shortest duration and explicit stream mapping**
             cmd = [
                 "ffmpeg", "-y",
                 "-i", video_only,
                 "-i", audio_file,
-                "-map", "0:v:0",  # Explicitly map video from first input
-                "-map", "1:a:0",  # Explicitly map audio from second input
-                "-c:v", "copy",   # Copy video stream
-                "-c:a", "aac",    # Encode audio
-                "-b:a", "192k",   # Audio bitrate
-                "-shortest",      # Use shortest stream (should now be properly aligned)
+                "-map", "0:v:0",
+                "-map", "1:a:0",
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                "-shortest",
                 output_file
             ]
             
@@ -545,23 +809,58 @@ if __name__ == "__main__":
         }
     }
     
-    # BASE CLIPS (for non-emphasized words) - INDEPENDENT CONFIGURATION
+    # BASE CLIPS (for non-emphasized words)
     BASE_CLIP_CONFIG = {
         'idle2': 0.3,
         'idle4': 0.3,
-        'idle5': 1.0,
-        'idle6': 1.0,
-        'idle7': 1.0,
+        # 'idle5': 0.7,
+        # 'idle6': 0.7,
+        # 'idle7': 0.7,
+        # 'nod1': 1.0,
+        # 'smirk1': 1.0,
+        'head_lower1': 1,
+        'head_lower2': 1,
+        'head_raise1': 1,
+        'look_down1': 1.0,
+        'slight_shake7': 0.8,
+        'slight_shake2': 0.5,
+        'slight_look1': 0.8,
+        'eye_look1': 0.6,
+        'idle_hand1': 0.6,
+        'nod3': 0.6,
+        'slight_shake3': 0.5,
     }
     
-    # IDLE CLIPS (for deadtime gaps) - Individual clip filenames with odds
+    # IDLE CLIPS (for deadtime gaps)
     IDLE_CLIP_CONFIG = {
         'idle4.mp4': 1.0,
         'idle5.mp4': 1.0,
         'idle6.mp4': 1.0,
     }
     
-    print(f"{Fore.GREEN}STARTING WHISPER-ALIGNED LIP-SYNC SYSTEM{Style.RESET_ALL}")
+    # WORD LIBRARY CLIPS
+    WORD_LIBRARY_CONFIG = {
+        # 'idle7': 1.0,
+        'slight_shake7': 0.5,
+        # 'idle6': 1.0,
+        # 'idle7': 1.0,
+        # 'idle6': 1.0,
+        # 'idle_4f': 1.0,
+        # 'idle7.5': 0.5,
+    }
+    
+    # SHORT CLIPS (fallback when stretch limits exceeded after 5 attempts)
+    SHORT_CLIPS_CONFIG = {
+        'idle4': 1.0,
+        'idle5': 1.0,
+        'idle6': 1.0,
+    }
+    
+    # WORD vs SYLLABLE PREFERENCE
+    WORD_CLIP_ODDS = 1
+    SYLLABLE_CLIP_ODDS = 9
+    
+    print(f"{Fore.GREEN}STARTING WHISPER-ALIGNED LIP-SYNC SYSTEM (WITH STRETCH LIMITS){Style.RESET_ALL}")
     print(f"{Fore.CYAN}{'-' * 60}{Style.RESET_ALL}")
     
     try:
@@ -570,13 +869,17 @@ if __name__ == "__main__":
             emotion_clips=EMOTION_CLIP_CONFIG,
             base_clips=BASE_CLIP_CONFIG,
             idle_clips=IDLE_CLIP_CONFIG,
+            word_library_clips=WORD_LIBRARY_CONFIG,
+            short_clips=SHORT_CLIPS_CONFIG,
+            word_clip_odds=WORD_CLIP_ODDS,
+            syllable_clip_odds=SYLLABLE_CLIP_ODDS,
             avoid_repeats=False
         )
         
         # CONFIGURE YOUR AUDIO FILE AND TEXT HERE
         input_audio_file = "heygen_s.m4a"
         test_text = "Everything in your life is a reflection of a choice you have made. If you want a different result, make a different choice"
-        test_emotion = "positive"
+        test_emotion = "emphatic"
         
         if os.path.exists(input_audio_file):
             output_video_path = lipsync_system.generate_lip_sync_video(

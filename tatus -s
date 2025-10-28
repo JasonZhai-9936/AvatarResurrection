@@ -1,0 +1,29 @@
+[33ma776fe9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mwhisper-aligned[m[33m, [m[1;31morigin/whisper-aligned[m[33m)[m both ws and non ws lipsyncs available
+[33m1432cac[m[33m ([m[1;31morigin/emotions[m[33m, [m[1;32memotions-groq[m[33m, [m[1;32memotions[m[33m)[m working demo with emotional lipsync
+[33m6e0b783[m[33m ([m[1;31morigin/streaming-chat[m[33m, [m[1;32mstreaming-chat[m[33m)[m backup
+[33m115dab7[m working chat stream, added new clips
+[33mdae392f[m working chat stream
+[33m1166a63[m[33m ([m[1;31morigin/working-avatar[m[33m, [m[1;32mworking-avatar[m[33m)[m some scripts for enhanced lipsync
+[33m44ea49a[m simplified system, no more freezing
+[33m804bdc0[m working avatar, some idle chain freezing between clips
+[33mc05db6a[m[33m ([m[1;31morigin/cleaned[m[33m)[m cleaned project
+[33m044ea21[m saved
+[33m3ed7ecc[m[33m ([m[1;31morigin/presentation[m[33m, [m[1;32mpresentation[m[33m)[m presentation
+[33mbe78bff[m[33m ([m[1;32mdemo2[m[33m)[m better ui
+[33m159dea3[m WORKING LIPSYNC stream
+[33meb250f3[m initial
+[33m94bbe6a[m[33m ([m[1;32mworking-demo[m[33m)[m working basic
+[33me6ad6f8[m[33m ([m[1;32mdemo[m[33m)[m working commit
+[33mfa8331e[m working stream/idle
+[33m938bd91[m better ui
+[33maded12d[m demo
+[33m13e5568[m[33m ([m[1;31morigin/preload-checkpoints[m[33m, [m[1;32mpreload-checkpoints[m[33m)[m added musetalk call
+[33m6ebba4c[m 2nd docker launch:
+[33mc4fa378[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m working docker lp call
+[33m05c17a9[m setting
+[33me7ef7a9[m refactored locations
+[33m7c8fdc4[m remove voice commit2
+[33m6e11954[m remove voice commit
+[33m2c7aeaf[m Merge pull request #1 from JasonZhai-9936/pipertts
+[33m75f4716[m[33m ([m[1;31morigin/pipertts[m[33m, [m[1;32mpipertts[m[33m)[m working local tts
+[33mcddba76[m initial, working chat
