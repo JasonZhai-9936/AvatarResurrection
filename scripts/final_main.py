@@ -192,59 +192,62 @@ class DarwinChatbot:
                 'text': text,
                 'duration': duration
             }))
-            print(f"{Fore.MAGENTA}[MAIN] Queued text stream: {len(text)} chars over {duration:.2f}s{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}[MAIN] Queued text stream{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing text stream: {e}{Style.RESET_ALL}")
     
     def queue_typing_indicator(self, element_id: str, show: bool):
-        """Queue typing indicator show/hide"""
+        """Queue typing indicator update"""
         try:
             self.video_event_queue.put(('typing_indicator', {
                 'element_id': element_id,
                 'show': show
             }))
-            print(f"{Fore.CYAN}[MAIN] Queued typing indicator: {'show' if show else 'hide'}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing typing indicator: {e}{Style.RESET_ALL}")
-
+    
     def queue_video_ended_event(self):
         """Queue video ended event"""
-        self.video_event_queue.put(('video_ended', None))
-
-    def process_video_events(self):
-        """Process video events and text streaming"""
         try:
-            while not self.video_event_queue.empty():
+            self.video_event_queue.put(('video_ended', None))
+            print(f"{Fore.BLUE}[MAIN] Video ended event queued{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error queueing video ended event: {e}{Style.RESET_ALL}")
+    
+    def process_video_events(self):
+        """Process all queued video events"""
+        while not self.video_event_queue.empty():
+            try:
                 event_type, data = self.video_event_queue.get_nowait()
                 
                 if event_type == 'update_video':
                     self.execute_video_update(data)
-                elif event_type == 'video_ended':
-                    self.handle_video_ended_in_context()
                 elif event_type == 'stream_text':
                     self.execute_text_stream(data)
                 elif event_type == 'typing_indicator':
                     self.execute_typing_indicator(data)
+                elif event_type == 'video_ended':
+                    self.handle_video_ended_in_context()
                     
-        except queue.Empty:
-            pass
-        except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error processing video events: {e}{Style.RESET_ALL}")
-
+            except queue.Empty:
+                break
+            except Exception as e:
+                print(f"{Fore.RED}[MAIN] Error processing event: {e}{Style.RESET_ALL}")
+    
     def execute_video_update(self, video_url: str):
-        """Update video in UI"""
+        """Execute video update"""
         try:
             js_code = f'''
                 if (window.updateVideoSource) {{
                     window.updateVideoSource('{video_url}');
                 }} else {{
-                    console.error('[MAIN] updateVideoSource function not ready');
+                    console.error('[MAIN] updateVideoSource not ready');
                 }}
             '''
             nicegui_ui.run_javascript(js_code)
             print(f"{Fore.GREEN}[MAIN] Video updated: {video_url.split('/')[-1]}{Style.RESET_ALL}")
         except Exception as e:
-            print(f"{Fore.YELLOW}[MAIN] Video update failed: {e}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[MAIN] Video update failed: {e}{Style.RESET_ALL}")
     
     def execute_text_stream(self, data: dict):
         """Execute text streaming"""
@@ -308,14 +311,14 @@ class DarwinChatbot:
     def initialize_video_system(self):
         """Initialize video system"""
         try:
+            print(f"{Fore.CYAN}[MAIN] Initializing video system...{Style.RESET_ALL}")
             self.video_manager.play_next_idle_video()
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error initializing video: {e}{Style.RESET_ALL}")
 
     async def handle_user_input(self, user_text: str):
-        """Handle user input with typing indicator"""
-        if self.is_processing or self._shutdown_flag:
-            print(f"{Fore.YELLOW}[MAIN] Busy, ignoring input{Style.RESET_ALL}")
+        """Handle user input and generate response"""
+        if self.is_processing:
             return
         
         self.is_processing = True
@@ -329,13 +332,14 @@ class DarwinChatbot:
             
             # Create unique response ID
             self.current_response_id += 1
-            # response_id = f"response_{self.current_response_id}" # Moved up
             
-            # Add user message
+            # FIXED: Add user message with proper alignment wrapper
             with self.chat_log:
-                nicegui_ui.html(f'<div class="user-message"><strong>You:</strong> {user_text}</div>')
-                # Use html for the bot message container
-                nicegui_ui.html(f'<div class="darwin-message" id="{response_id}"></div>')
+                with nicegui_ui.row().classes('w-full justify-end'):
+                    nicegui_ui.html(f'<div class="user-message"><strong>You:</strong> {user_text}</div>')
+                # FIXED: Add Darwin message with proper alignment wrapper
+                with nicegui_ui.row().classes('w-full justify-start'):
+                    nicegui_ui.html(f'<div class="darwin-message" id="{response_id}"></div>')
             
             # Start typing indicator
             self.queue_typing_indicator(response_id, True)
@@ -378,9 +382,10 @@ class DarwinChatbot:
                 self.queue_typing_indicator(response_id, False)
                 return
             
-            # Generate lip-sync video (FLOAT or Crossfade)
+            print(f"{Fore.GREEN}[MAIN] Audio generated: {audio_path}{Style.RESET_ALL}")
+            
+            # Generate lipsync
             if self.use_float:
-                # <<<<< MODIFIED to call new FLOAT generator >>>>>
                 lipsync_video = await self._generate_float_lipsync(audio_path, darwin_response)
             else:
                 lipsync_video = await self._generate_crossfade_lipsync(audio_path, darwin_response, emotion)
@@ -389,9 +394,9 @@ class DarwinChatbot:
                 self.queue_typing_indicator(response_id, False)
                 return
             
-            print(f"{Fore.GREEN}[MAIN] Lipsync video created: {os.path.basename(lipsync_video)}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}[MAIN] Lipsync video: {lipsync_video}{Style.RESET_ALL}")
             
-            # Get video duration for text streaming
+            # Get video duration
             video_duration = self.get_video_duration(lipsync_video)
             
             # Play the lipsync video
@@ -581,4 +586,3 @@ if __name__ == "__main__":
     # This ensures that when running 'python scripts/final_main.py',
     # the PROJECT_DIR is set correctly before anything else runs.
     main()
-
