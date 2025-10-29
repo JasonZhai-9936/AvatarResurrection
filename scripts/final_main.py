@@ -1,4 +1,4 @@
-# final_main.py - Darwin Chatbot with EMOTIONAL lip-sync and typing indicator
+# final_main.py - Darwin Chatbot with EMOTIONAL lip-sync and FLOAT support
 
 import os
 import sys
@@ -6,7 +6,7 @@ import time
 import asyncio
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from colorama import Fore, Style, init
 import threading
 import signal
@@ -14,23 +14,59 @@ import queue
 
 init(autoreset=True)
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
+# Set PROJECT_DIR to be the parent directory of 'scripts'
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS_DIR = os.path.join(PROJECT_DIR, "scripts")
 sys.path.insert(0, SCRIPTS_DIR)
 
-# Import with emotion support (returns dict now)
+# Import existing modules
 from LLM_Groq import generate_darwin_response
 from enhanced_tts_piper import generate_complete_audio
-from lipsync_crossfade import SimplifiedLipSyncSystem
 from simplified_video_manager import SimplifiedVideoManager
 from ui import build_ui
 from nicegui import ui as nicegui_ui
 
+# ============================================================================
+# CONFIGURATION - Edit these settings directly
+# ============================================================================
+
+# Choose lipsync mode: False = Crossfade (default), True = FLOAT
+# <<<<< THIS IS THE NEW CONFIGURATION VARIABLE >>>>>
+USE_FLOAT_LIPSYNC = True
+
+# FLOAT model configuration (only used if USE_FLOAT_LIPSYNC = True)
+# This config is passed to the daemon.
+FLOAT_CONFIG = {
+    "ref_path": "assets/main2.png", # Default reference image
+    "ckpt_path": "./checkpoints/float.pth",
+    "wav2vec_model_path": "./checkpoints/wav2vec2-base-960h",
+    "audio2emotion_path": "./checkpoints/wav2vec-english-speech-emotion-recognition",
+    "nfe": 10,              # Number of function evaluations (higher = better quality, slower)
+    "fps": 25,              # Frames per second
+    "a_cfg_scale": 2.0,     # Audio guidance scale
+    "r_cfg_scale": 1.0,     # Reference image guidance scale
+    "e_cfg_scale": 1.0,     # Emotion guidance scale
+    "seed": 15,             # Random seed
+    "no_crop": True         # Use no_crop
+}
+
+
 class DarwinChatbot:
-    """Main chatbot with emotional lip-sync and typing indicator"""
+    """Main chatbot with emotional lip-sync and FLOAT support"""
     
     def __init__(self):
+        # Use configuration from constants above
+        self.use_float = USE_FLOAT_LIPSYNC
+        
+        print(f"\n{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}DARWIN CHATBOT INITIALIZATION{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}[CONFIG] Lipsync mode: {'FLOAT' if self.use_float else 'Crossfade'}{Style.RESET_ALL}\n")
+        
         self.video_manager = SimplifiedVideoManager(avatar_name="Darwin")
+        
+        # This will call either _initialize_float_lipsync or _initialize_crossfade_lipsync
+        # based on the USE_FLOAT_LIPSYNC flag.
         self.lipsync_system = self.initialize_lipsync()
         
         self.chat_log = None
@@ -42,18 +78,69 @@ class DarwinChatbot:
         self.video_event_queue = queue.Queue()
         self.current_response_id = 0
         
-        print(f"{Fore.GREEN}[MAIN] Darwin Chatbot with EMOTIONAL lip-sync initialized{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}[MAIN] Darwin Chatbot initialized{Style.RESET_ALL}")
 
-    def initialize_lipsync(self) -> SimplifiedLipSyncSystem:
-        """Initialize lip-sync system - uses defaults from lipsync_crossfade.py"""
+    def initialize_lipsync(self):
+        """Initialize lip-sync system based on config"""
+        if self.use_float:
+            # <<<<< MODIFIED to call new subprocess-based FLOAT initializer >>>>>
+            return self._initialize_float_lipsync()
+        else:
+            return self._initialize_crossfade_lipsync()
+    
+    def _initialize_float_lipsync(self):
+        """
+        Initialize FLOAT lipsync system using the subprocess manager.
+        This starts the daemon in the 'FLOAT' conda env.
+        """
+        try:
+            print(f"{Fore.CYAN}[MAIN] Initializing FLOAT lipsync system via subprocess...{Style.RESET_ALL}")
+            
+            # Import FLOAT module (subprocess-based)
+            from float_lipsync_subprocess import FloatLipsync
+            
+            # Create instance of the subprocess manager
+            # Pass the project dir and the config dict
+            float_lipsync = FloatLipsync(PROJECT_DIR, FLOAT_CONFIG)
+            
+            # Pre-initialize model and preprocess image in the daemon
+            # This will block until the daemon is ready
+            print(f"{Fore.CYAN}[MAIN] Loading FLOAT model in conda environment... (This is slow){Style.RESET_ALL}")
+            if not float_lipsync.initialize():
+                raise RuntimeError("FLOAT daemon failed to initialize.")
+            
+            print(f"{Fore.GREEN}[MAIN] ✓ FLOAT lipsync system ready{Style.RESET_ALL}\n")
+            return float_lipsync
+            
+        except ImportError as e:
+            print(f"{Fore.RED}[MAIN] Failed to import 'float_lipsync_subprocess'. Make sure 'float_lipsync_subprocess.py' is in the 'scripts' directory.{Style.RESET_ALL}")
+            print(f"{Fore.RED}[MAIN] Error details: {e}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}[MAIN] Falling back to crossfade lipsync{Style.RESET_ALL}")
+            self.use_float = False # Force fallback
+            return self._initialize_crossfade_lipsync()
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Failed to initialize FLOAT: {e}{Style.RESET_ALL}")
+            import traceback
+            traceback.print_exc()
+            print(f"{Fore.YELLOW}[MAIN] Falling back to crossfade lipsync{Style.RESET_ALL}")
+            self.use_float = False # Force fallback
+            return self._initialize_crossfade_lipsync()
+    
+    def _initialize_crossfade_lipsync(self):
+        """Initialize crossfade lipsync system"""
+        print(f"{Fore.CYAN}[MAIN] Initializing crossfade lipsync system...{Style.RESET_ALL}")
+        
+        from ws_lipsync_crossfade import WhisperAlignedLipSync
+        
         archive_dir = os.path.join(PROJECT_DIR, "archive")
         
-        # Simply use defaults - no parameters needed
-        return SimplifiedLipSyncSystem(
-            archive_directory=archive_dir,
-            avoid_repeats=True,
-            transition_duration=0.1  # Crossfade duration in seconds
+        system = WhisperAlignedLipSync(
+            archive_directory=archive_dir
+            # Add other config from ws_lipsync_crossfade.py __main__ if needed
         )
+        
+        print(f"{Fore.GREEN}[MAIN] ✓ Crossfade lipsync system ready{Style.RESET_ALL}\n")
+        return system
 
     def get_video_duration(self, video_path: str) -> float:
         """Get video duration"""
@@ -87,7 +174,7 @@ class DarwinChatbot:
         nicegui_ui.timer(0.1, self.process_video_events)
         nicegui_ui.timer(1.0, self.initialize_video_system, once=True)
         
-        print(f"{Fore.GREEN}[MAIN] UI setup complete with typing indicator{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}[MAIN] UI setup complete{Style.RESET_ALL}")
 
     def queue_video_update(self, video_url: str):
         """Queue video update"""
@@ -119,6 +206,10 @@ class DarwinChatbot:
             print(f"{Fore.CYAN}[MAIN] Queued typing indicator: {'show' if show else 'hide'}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing typing indicator: {e}{Style.RESET_ALL}")
+
+    def queue_video_ended_event(self):
+        """Queue video ended event"""
+        self.video_event_queue.put(('video_ended', None))
 
     def process_video_events(self):
         """Process video events and text streaming"""
@@ -207,70 +298,51 @@ class DarwinChatbot:
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Typing indicator failed: {e}{Style.RESET_ALL}")
 
+    def handle_video_ended_in_context(self):
+        """Handle video ended event"""
+        try:
+            self.video_manager.on_video_ended()
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error handling video ended: {e}{Style.RESET_ALL}")
+
     def initialize_video_system(self):
         """Initialize video system"""
         try:
-            print(f"{Fore.GREEN}[MAIN] Starting video system{Style.RESET_ALL}")
             self.video_manager.play_next_idle_video()
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error initializing video: {e}{Style.RESET_ALL}")
 
-    def queue_video_ended_event(self):
-        """Queue video ended event"""
-        try:
-            self.video_event_queue.put(('video_ended', None))
-            print(f"{Fore.BLUE}[MAIN] Video ended event queued{Style.RESET_ALL}")
-        except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error queueing video ended event: {e}{Style.RESET_ALL}")
-
-    def handle_video_ended_in_context(self):
-        """Handle video ended"""
-        if self._shutdown_flag:
-            return
-        print(f"{Fore.BLUE}[MAIN] Processing video ended event{Style.RESET_ALL}")
-        self.video_manager.on_video_ended()
-
-    def handle_user_input(self, user_text: str):
-        """Handle user input"""
-        if self.is_processing:
-            nicegui_ui.notify("Please wait for current response", type="warning")
+    async def handle_user_input(self, user_text: str):
+        """Handle user input with typing indicator"""
+        if self.is_processing or self._shutdown_flag:
+            print(f"{Fore.YELLOW}[MAIN] Busy, ignoring input{Style.RESET_ALL}")
             return
         
-        if self._shutdown_flag:
-            return
-        
-        asyncio.create_task(self.process_response_async(user_text))
-
-    async def process_response_async(self, user_text: str):
-        """Process with EMOTIONAL lip-sync and typing indicator"""
-        if self._shutdown_flag:
-            return
-            
         self.is_processing = True
-        self.current_response_id += 1
-        response_id = f"darwin_response_{self.current_response_id}"
+        response_id = f"response_{self.current_response_id + 1}" # Define here for finally block
         
         try:
-            # Display user message
-            if self.chat_log:
-                with self.chat_log:
-                    with nicegui_ui.row().classes('w-full justify-end'):
-                        with nicegui_ui.card().classes('user-message'):
-                            nicegui_ui.label(user_text)
+            if not user_text or not user_text.strip():
+                return
             
-            print(f"{Fore.CYAN}[MAIN] Processing: {user_text}{Style.RESET_ALL}")
+            print(f"\n{Fore.CYAN}[USER] {user_text}{Style.RESET_ALL}")
             
-            # Create Darwin message bubble with empty div
-            if self.chat_log and not self._shutdown_flag:
-                with self.chat_log:
-                    with nicegui_ui.row().classes('w-full justify-start'):
-                        with nicegui_ui.card().classes('darwin-message'):
-                            nicegui_ui.html(f'<div id="{response_id}" class="text-base"></div>')
+            # Create unique response ID
+            self.current_response_id += 1
+            # response_id = f"response_{self.current_response_id}" # Moved up
             
-            # Start typing indicator immediately
+            # Add user message
+            with self.chat_log:
+                nicegui_ui.html(f'<div class="user-message"><strong>You:</strong> {user_text}</div>')
+                # Use html for the bot message container
+                nicegui_ui.html(f'<div class="darwin-message" id="{response_id}"></div>')
+            
+            # Start typing indicator
             self.queue_typing_indicator(response_id, True)
             
-            # Generate LLM response WITH EMOTION
+            # Generate response
+            print(f"{Fore.BLUE}[MAIN] Generating response...{Style.RESET_ALL}")
+            
             try:
                 response_data = await asyncio.to_thread(generate_darwin_response, user_text)
             except AttributeError:
@@ -282,7 +354,6 @@ class DarwinChatbot:
                 darwin_response = response_data['text']
                 emotion = response_data['emotion']
             else:
-                # Fallback for old version
                 darwin_response = response_data
                 emotion = 'neutral'
             
@@ -295,7 +366,7 @@ class DarwinChatbot:
             
             # Generate audio
             print(f"{Fore.BLUE}[MAIN] Generating audio...{Style.RESET_ALL}")
-            default_voice = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-northern_english_male-medium.onnx")
+            default_voice = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
             
             try:
                 audio_path = await asyncio.to_thread(generate_complete_audio, darwin_response, None, default_voice)
@@ -307,35 +378,18 @@ class DarwinChatbot:
                 self.queue_typing_indicator(response_id, False)
                 return
             
-            # Generate EMOTIONAL lip-sync video
-            print(f"{Fore.BLUE}[MAIN] Creating emotional lip-sync (emotion: {emotion})...{Style.RESET_ALL}")
-            output_dir = os.path.join(PROJECT_DIR, "tempstream")
-            
-            def generate_lipsync():
-                try:
-                    return self.lipsync_system.generate_lip_sync_video(
-                        audio_file=audio_path,
-                        output_file=None,
-                        output_dir=output_dir,
-                        use_sequential=True,
-                        text=darwin_response,  # Pass text for emphasis detection
-                        emotion=emotion  # Pass emotion for clip selection
-                    )
-                except Exception as e:
-                    print(f"Lipsync error: {e}")
-                    return None
-            
-            try:
-                lipsync_video = await asyncio.to_thread(generate_lipsync)
-            except AttributeError:
-                loop = asyncio.get_event_loop()
-                lipsync_video = await loop.run_in_executor(None, generate_lipsync)
+            # Generate lip-sync video (FLOAT or Crossfade)
+            if self.use_float:
+                # <<<<< MODIFIED to call new FLOAT generator >>>>>
+                lipsync_video = await self._generate_float_lipsync(audio_path, darwin_response)
+            else:
+                lipsync_video = await self._generate_crossfade_lipsync(audio_path, darwin_response, emotion)
             
             if not lipsync_video or not os.path.exists(lipsync_video) or self._shutdown_flag:
                 self.queue_typing_indicator(response_id, False)
                 return
             
-            print(f"{Fore.GREEN}[MAIN] Emotional lipsync created: {os.path.basename(lipsync_video)}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}[MAIN] Lipsync video created: {os.path.basename(lipsync_video)}{Style.RESET_ALL}")
             
             # Get video duration for text streaming
             video_duration = self.get_video_duration(lipsync_video)
@@ -361,10 +415,63 @@ class DarwinChatbot:
             print(f"{Fore.RED}[MAIN] Error processing response: {e}{Style.RESET_ALL}")
             import traceback
             traceback.print_exc()
-            # Stop typing indicator on error
             self.queue_typing_indicator(response_id, False)
         finally:
             self.is_processing = False
+
+    async def _generate_float_lipsync(self, audio_path: str, text: str) -> Optional[str]:
+        """
+        Generate lipsync using the new FLOAT subprocess manager.
+        'text' is unused but kept for consistent signature.
+        """
+        print(f"{Fore.BLUE}[MAIN] Creating FLOAT lipsync...{Style.RESET_ALL}")
+        
+        def generate_float():
+            try:
+                # self.lipsync_system is our FloatLipsync (subprocess manager) instance
+                # The generate_lipsync() method takes audio_path
+                return self.lipsync_system.generate_lipsync(
+                    audio_path=audio_path,
+                    output_filename=None # Daemon will auto-name
+                )
+            except Exception as e:
+                print(f"{Fore.RED}[FLOAT] Error: {e}{Style.RESET_ALL}")
+                import traceback
+                traceback.print_exc()
+                return None
+        
+        try:
+            # Run the blocking generation in a separate thread
+            return await asyncio.to_thread(generate_float)
+        except AttributeError:
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, generate_float)
+
+    async def _generate_crossfade_lipsync(self, audio_path: str, text: str, emotion: str) -> Optional[str]:
+        """Generate lipsync using crossfade"""
+        print(f"{Fore.BLUE}[MAIN] Creating emotional lipsync (emotion: {emotion})...{Style.RESET_ALL}")
+        output_dir = os.path.join(PROJECT_DIR, "tempstream")
+        
+        def generate_crossfade():
+            try:
+                return self.lipsync_system.generate_lip_sync_video(
+                    audio_file=audio_path,
+                    output_file=None,
+                    output_dir=output_dir,
+                    use_sequential=True,
+                    text=text,
+                    emotion=emotion
+                )
+            except Exception as e:
+                print(f"{Fore.RED}[CROSSFADE] Error: {e}{Style.RESET_ALL}")
+                return None
+        
+        try:
+            # Note: Fixed typo here, was generate__crossfade
+            return await asyncio.to_thread(generate_crossfade)
+        except AttributeError:
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, generate_crossfade)
 
     def handle_voice_change(self, voice_name: str):
         """Handle voice change"""
@@ -380,12 +487,21 @@ class DarwinChatbot:
         """Clean up resources"""
         print(f"{Fore.YELLOW}[MAIN] Cleaning up...{Style.RESET_ALL}")
         self._shutdown_flag = True
+        # <<<<< ADDED CLEANUP FOR SUBPROCESS >>>>>
+        if self.use_float and self.lipsync_system:
+            try:
+                self.lipsync_system.cleanup()
+            except Exception as e:
+                print(f"{Fore.RED}[MAIN] Error during lipsync cleanup: {e}{Style.RESET_ALL}")
+
 
     def setup_signal_handlers(self):
         """Set up signal handlers"""
         def signal_handler(signum, frame):
             print(f"\n{Fore.YELLOW}[MAIN] Shutting down...{Style.RESET_ALL}")
             self.cleanup()
+            # Give a moment for cleanup to try
+            time.sleep(1)
             os._exit(0)
         
         signal.signal(signal.SIGINT, signal_handler)
@@ -404,7 +520,7 @@ class DarwinChatbot:
     def run(self):
         """Run the application"""
         print(f"{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
-        print(f"{Fore.YELLOW}Darwin Chatbot - Emotional Lip-Sync with Typing Indicator{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Darwin Chatbot - {'FLOAT' if self.use_float else 'Emotional'} Lip-Sync{Style.RESET_ALL}")
         print(f"{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
         
         try:
@@ -423,12 +539,14 @@ class DarwinChatbot:
             # Set up UI
             self.setup_ui()
             
-            print(f"{Fore.GREEN}[MAIN] Emotional lip-sync system ready{Style.RESET_ALL}")
-            print(f"{Fore.CYAN}[MAIN] Emotions: neutral, emphatic, contrastive, positive, negative{Style.RESET_ALL}")
-            print(f"{Fore.CYAN}[MAIN] Typing indicator and text streaming enabled{Style.RESET_ALL}")
+            if self.use_float:
+                print(f"{Fore.GREEN}[MAIN] FLOAT lipsync system pre-loaded and ready{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.GREEN}[MAIN] Emotional lipsync system ready{Style.RESET_ALL}")
+                print(f"{Fore.CYAN}[MAIN] Emotions: neutral, emphatic, contrastive, positive, negative{Style.RESET_ALL}")
             
             nicegui_ui.run(
-                title="Darwin Chatbot - Emotional",
+                title=f"Darwin Chatbot - {'FLOAT' if self.use_float else 'Emotional'}",
                 favicon="🎩",
                 dark=False,
                 reload=False,
@@ -460,4 +578,7 @@ def main():
         print(f"{Fore.YELLOW}[MAIN] Shutdown complete{Style.RESET_ALL}")
 
 if __name__ == "__main__":
+    # This ensures that when running 'python scripts/final_main.py',
+    # the PROJECT_DIR is set correctly before anything else runs.
     main()
+

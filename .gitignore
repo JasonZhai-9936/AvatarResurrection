@@ -50,3 +50,6 @@ Piper_Voices/
 #api keys
 groq_api_key.txt
 
+#Float files
+checkpoints/
+models/

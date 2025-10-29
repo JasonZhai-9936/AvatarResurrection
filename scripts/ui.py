@@ -244,12 +244,17 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             
             # === LEFT VIDEO PLAYER ===
             with ui.column().classes('items-start shrink-0').style('width: 35%; height: auto;'):
-                video_container = ui.card().classes('p-0 overflow-hidden').style('width: 100%; aspect-ratio: 3/2; background: #000; border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);')
+                # --- MODIFICATION: Changed aspect-ratio from 3/2 to 1/1 ---
+                video_container = ui.card().classes('p-0 overflow-hidden').style(
+                    'width: 100%; aspect-ratio: 1/1; background: #000; '
+                    'border: 1px solid rgba(59, 130, 246, 0.2); '
+                    'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);'
+                )
                 with video_container:
                     ui.html('''
                     <div id="main-video-container" style="width: 100%; height: 100%; position: relative;">
                         <video id="mainVideo" autoplay muted playsinline 
-                            style="width: 100%; height: 100%; object-fit: contain;"
+                            style="width: 100%; height: 100%; object-fit: cover;"
                             onended="notifyPythonVideoEnded()">
                             <source src="" type="video/mp4">
                             Your browser does not support the video tag.
@@ -272,10 +277,10 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                         placeholder='Ask Charles Darwin anything...'
                     ).props('outlined dark').classes('w-full').style('min-height: 120px; font-size: 16px;')
 
-                    def submit_prompt():
+                    async def submit_prompt():
                         user_text = prompt_input.value
                         if user_text and user_text.strip():
-                            trigger_response_callback(user_text)
+                            await trigger_response_callback(user_text)
                             prompt_input.value = ""
                         else:
                             ui.notify("Please enter a question first", color="warning")
