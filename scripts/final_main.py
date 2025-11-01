@@ -24,6 +24,7 @@ from LLM_Groq import generate_darwin_response
 from enhanced_tts_piper import generate_complete_audio
 from simplified_video_manager import SimplifiedVideoManager
 from ui import build_ui
+from chat_message_manager import ChatMessageManager
 from nicegui import ui as nicegui_ui
 
 # ============================================================================
@@ -70,6 +71,7 @@ class DarwinChatbot:
         self.lipsync_system = self.initialize_lipsync()
         
         self.chat_log = None
+        self.message_manager = None  # Will be initialized in setup_ui
         self.ui_components = None
         
         self.is_processing = False
@@ -169,6 +171,10 @@ class DarwinChatbot:
         )
         
         self.chat_log = self.ui_components['chat_log']
+        
+        # Initialize the ChatMessageManager
+        self.message_manager = ChatMessageManager(self.chat_log)
+        
         self.video_manager.set_video_update_callback(self.queue_video_update)
         
         nicegui_ui.timer(0.1, self.process_video_events)
@@ -333,13 +339,9 @@ class DarwinChatbot:
             # Create unique response ID
             self.current_response_id += 1
             
-            # FIXED: Add user message with proper alignment wrapper
-            with self.chat_log:
-                with nicegui_ui.row().classes('w-full justify-end items-start'):
-                    nicegui_ui.html(f'<div class="user-message"><strong>You:</strong> {user_text}</div>')
-                # FIXED: Add Darwin message with proper alignment wrapper
-                with nicegui_ui.row().classes('w-full justify-start items-start'):
-                    nicegui_ui.html(f'<div class="darwin-message" id="{response_id}"></div>')
+            # Use ChatMessageManager for consistent message structure
+            self.message_manager.add_user_message(user_text)
+            response_id = self.message_manager.add_bot_message(response_id)
             
             # Start typing indicator
             self.queue_typing_indicator(response_id, True)

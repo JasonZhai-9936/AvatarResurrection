@@ -149,6 +149,103 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             color: #e2e8f0 !important;
         }
         
+        /* ===== UNIFIED CHAT MESSAGE SYSTEM ===== */
+        
+        /* Chat Message Wrappers - Control alignment and positioning */
+        .chat-message-wrapper {
+            width: 100% !important;
+            display: flex !important;
+            margin: 8px 0 !important;
+            padding: 0 16px !important;
+            clear: both !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+        
+        .user-wrapper {
+            justify-content: flex-end !important;
+            align-items: flex-end !important;
+            flex-direction: row !important;
+        }
+        
+        .darwin-wrapper {
+            justify-content: flex-start !important;
+            align-items: flex-start !important;
+            flex-direction: row !important;
+        }
+        
+        .system-wrapper {
+            justify-content: center;  /* Center system messages */
+        }
+        
+        /* Message Bubbles - Control sizing and appearance */
+        .message-bubble {
+            display: block;  /* Changed from inline-block */
+            max-width: 70%;
+            min-width: 200px;
+            width: fit-content;  /* Shrink to content size */
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            white-space: pre-wrap;  /* Preserve line breaks and wrap text */
+        }
+        
+        /* Darwin messages get consistent starting width */
+        .darwin-bubble {
+            background: rgba(30, 41, 59, 0.9);
+            color: #e2e8f0;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            min-height: 40px;
+            min-width: 300px;  /* Wider minimum for consistency */
+        }
+        
+        /* User bubble styling */
+        .user-bubble {
+            background: linear-gradient(135deg, #1e3a5f, #2563eb);
+            color: white;
+            min-width: 100px;  /* Smaller min for short messages */
+        }
+        
+        /* Darwin bubble styling */
+        .darwin-bubble {
+            background: rgba(30, 41, 59, 0.9);
+            color: #e2e8f0;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            min-height: 40px;
+        }
+        
+        /* Typing indicator bubble */
+        .typing-bubble {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 12px 20px;
+            min-width: 80px;
+        }
+        
+        .typing-dots {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        
+        /* Error bubble styling */
+        .error-bubble {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+        
+        /* System message bubble */
+        .system-bubble {
+            background: rgba(100, 116, 139, 0.2);
+            color: #cbd5e1;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        /* Legacy class support (for backward compatibility) */
         .user-message {
             background: linear-gradient(135deg, #1e3a5f, #2563eb);
             color: white;
@@ -183,17 +280,6 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         @keyframes blink {
             0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0; }
-        }
-        
-        /* Character reveal animation */
-        .char-reveal {
-            display: inline-block;
-            opacity: 0;
-            animation: fadeIn 0.05s forwards;
-        }
-        
-        @keyframes fadeIn {
-            to { opacity: 1; }
         }
         
         .primary-button {
@@ -404,35 +490,38 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             duration: durationSeconds
         });
         
+        // Set initial space to establish width
+        element.textContent = fullText;
+        element.style.visibility = 'hidden';
+        const initialWidth = element.offsetWidth;
+        element.style.width = initialWidth + 'px';
+        element.style.visibility = 'visible';
+        element.textContent = '';
+        
         // Calculate delay between characters
         const totalChars = fullText.length;
         const delayPerChar = (durationSeconds * 1000) / totalChars;
         
-        // Clear element and add cursor class
-        element.innerHTML = '';
+        // Add cursor class
         element.classList.add('streaming-cursor');
         
         let currentIndex = 0;
+        let displayedText = '';
         
         const streamInterval = setInterval(() => {
             if (currentIndex < totalChars) {
                 const char = fullText[currentIndex];
-                const span = document.createElement('span');
-                span.className = 'char-reveal';
+                displayedText += char;
                 
-                // Preserve spaces
-                if (char === ' ') {
-                    span.innerHTML = '&nbsp;';
-                } else {
-                    span.textContent = char;
-                }
+                // Update the entire text at once (no individual spans)
+                element.textContent = displayedText;
                 
-                element.appendChild(span);
                 currentIndex++;
             } else {
-                // Streaming complete - remove cursor
+                // Streaming complete - remove cursor and width constraint
                 clearInterval(streamInterval);
                 element.classList.remove('streaming-cursor');
+                element.style.width = 'fit-content';
                 console.log('[STREAM] Text streaming complete');
             }
         }, delayPerChar);
