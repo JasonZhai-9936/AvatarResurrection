@@ -1,4 +1,5 @@
 # ui.py - UI with TYPING INDICATOR and streaming text
+# FIXED: Proper aspect ratio handling for FLOAT 1:1 videos
 
 from nicegui import ui
 import os
@@ -187,54 +188,23 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         /* Character reveal animation */
         .char-reveal {
             display: inline-block;
-            animation: charFadeIn 0.1s ease-in;
+            opacity: 0;
+            animation: fadeIn 0.05s forwards;
         }
         
-        @keyframes charFadeIn {
-            from { 
-                opacity: 0;
-                transform: translateY(5px);
-            }
-            to { 
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.5);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: rgba(59, 130, 246, 0.5);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(59, 130, 246, 0.7);
-        }
-        
-        .q-card {
-            background: rgba(15, 23, 42, 0.95) !important;
-            border: 1px solid rgba(59, 130, 246, 0.1);
+        @keyframes fadeIn {
+            to { opacity: 1; }
         }
         
         .primary-button {
-            background: linear-gradient(135deg, #2563eb, #3b82f6);
-            color: white;
-            border: none;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
             transition: all 0.3s ease;
         }
         
         .primary-button:hover {
-            background: linear-gradient(135deg, #3b82f6, #60a5fa);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
         }
     </style>
     ''')
@@ -242,9 +212,9 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
     with ui.column().classes('w-full h-screen gap-0').style('background: #0a0f1c;'):
         with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4'):
             
-            # === LEFT VIDEO PLAYER ===
+            # === LEFT VIDEO PLAYER (FIXED FOR 1:1 ASPECT RATIO) ===
             with ui.column().classes('items-start shrink-0').style('width: 35%; height: auto;'):
-                # --- MODIFICATION: Changed aspect-ratio from 3/2 to 1/1 ---
+                # CRITICAL FIX: Use aspect-ratio: 1/1 AND object-fit: contain
                 video_container = ui.card().classes('p-0 overflow-hidden').style(
                     'width: 100%; aspect-ratio: 1/1; background: #000; '
                     'border: 1px solid rgba(59, 130, 246, 0.2); '
@@ -252,9 +222,9 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 )
                 with video_container:
                     ui.html('''
-                    <div id="main-video-container" style="width: 100%; height: 100%; position: relative;">
+                    <div id="main-video-container" style="width: 100%; height: 100%; position: relative; background: #000;">
                         <video id="mainVideo" autoplay muted playsinline 
-                            style="width: 100%; height: 100%; object-fit: cover;"
+                            style="width: 100%; height: 100%; object-fit: contain; background: #000;"
                             onended="notifyPythonVideoEnded()">
                             <source src="" type="video/mp4">
                             Your browser does not support the video tag.

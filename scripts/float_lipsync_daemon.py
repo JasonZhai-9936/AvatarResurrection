@@ -133,7 +133,7 @@ class FloatLipSync:
         self.opt.seed = config.get("seed", 15)
         self.opt.a_cfg_scale = config.get("a_cfg_scale", 2.0)
         self.opt.e_cfg_scale = config.get("e_cfg_scale", 1.0)
-        self.opt.no_crop = config.get("no_crop", True)
+        self.opt.no_crop = config.get("no_crop", False)
         self.opt.nfe = config.get("nfe", 10)
         self.opt.fps = config.get("fps", 25.)
         self.opt.r_cfg_scale = config.get("r_cfg_scale", 1.0)

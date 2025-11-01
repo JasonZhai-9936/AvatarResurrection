@@ -155,7 +155,7 @@ if __name__ == "__main__":
     print(f"{Fore.YELLOW}{'='*60}{Style.RESET_ALL}\n")
     
     # Custom test message
-    test_message = "Everything in your life is a reflection of a choice you have made. If you want a different result, make a different choice"
+    test_message = "That's a good question."
     
     print(f"{Fore.CYAN}Test Message: {test_message}{Style.RESET_ALL}\n")
     

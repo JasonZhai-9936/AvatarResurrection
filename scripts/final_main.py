@@ -335,10 +335,10 @@ class DarwinChatbot:
             
             # FIXED: Add user message with proper alignment wrapper
             with self.chat_log:
-                with nicegui_ui.row().classes('w-full justify-end'):
+                with nicegui_ui.row().classes('w-full justify-end items-start'):
                     nicegui_ui.html(f'<div class="user-message"><strong>You:</strong> {user_text}</div>')
                 # FIXED: Add Darwin message with proper alignment wrapper
-                with nicegui_ui.row().classes('w-full justify-start'):
+                with nicegui_ui.row().classes('w-full justify-start items-start'):
                     nicegui_ui.html(f'<div class="darwin-message" id="{response_id}"></div>')
             
             # Start typing indicator

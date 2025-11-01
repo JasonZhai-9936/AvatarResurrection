@@ -56,8 +56,8 @@ def ensure_temp_directory():
     return temp_dir
 
 def set_voice_model(voice_name: str):
-    """Set voice model (for compatibility - Groq uses Fritz-PlayAI)"""
-    print(f"{Fore.CYAN}[TTS] Voice setting: {voice_name} (using Fritz-PlayAI){Style.RESET_ALL}")
+    """Set voice model (for compatibility - Groq uses Basil-PlayAI)"""
+    print(f"{Fore.CYAN}[TTS] Voice setting: {voice_name} (using Basil-PlayAI){Style.RESET_ALL}")
 
 def generate_complete_audio(text: str, output_filename: str = None, voice_path: str = None) -> str:
     """Generate complete audio file using Groq TTS API"""
@@ -78,7 +78,7 @@ def generate_complete_audio(text: str, output_filename: str = None, voice_path: 
     try:
         client = get_groq_client()
         
-        print(f"{Fore.BLUE}[TTS] Generating audio with Groq API (Fritz-PlayAI)...{Style.RESET_ALL}")
+        print(f"{Fore.BLUE}[TTS] Generating audio with Groq API (Basil-PlayAI)...{Style.RESET_ALL}")
         
         # Call Groq TTS API
         response = client.audio.speech.create(
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     print(f"{Fore.GREEN}{'=' * 60}{Style.RESET_ALL}\n")
     
     # Sample sentence for testing
-    test_sentence = "Good day! I am Charles Darwin, and I am delighted to speak with you using this remarkable technology."
+    test_sentence = "Hmmm...That's a good question."
     
     print(f"{Fore.CYAN}Test sentence: {test_sentence}{Style.RESET_ALL}\n")
     
