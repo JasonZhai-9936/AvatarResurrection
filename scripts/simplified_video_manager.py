@@ -24,19 +24,25 @@ class SimplifiedVideoManager:
         
         # Video directories
         self.idle_videos_dir = os.path.join(self.avatar_dir, "Nodes", "main2main")
+        self.pregenerated_dir = os.path.join(self.avatar_dir, "pre-generated responses")
         self.lipsync_output_dir = os.path.join(PROJECT_DIR, "tempstream")
         
         # State management - SIMPLIFIED
-        self.current_mode = "idle"  # "idle" or "lipsync"
+        self.current_mode = "idle"  # "idle", "pregenerated", or "lipsync"
         self.current_video_path = None
         self.video_update_callback = None  # Function to call when video needs updating
+        
+        # Pre-generated response queue
+        self.pregenerated_pending = False
         
         # Ensure output directory exists
         os.makedirs(self.lipsync_output_dir, exist_ok=True)
         
         print(f"{Fore.GREEN}[VIDEO_MANAGER] Initialized Python-only video control{Style.RESET_ALL}")
         print(f"{Fore.CYAN}[VIDEO_MANAGER] Idle videos: {self.idle_videos_dir}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[VIDEO_MANAGER] Pre-generated: {self.pregenerated_dir}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}[VIDEO_MANAGER] Found {len(self.get_idle_videos())} idle videos{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[VIDEO_MANAGER] Found {len(self.get_pregenerated_videos())} pre-generated videos{Style.RESET_ALL}")
 
     def set_video_update_callback(self, callback):
         """Set the callback function for updating video in UI"""
@@ -54,12 +60,32 @@ class SimplifiedVideoManager:
         
         return videos
 
+    def get_pregenerated_videos(self) -> List[str]:
+        """Get all available pre-generated response videos"""
+        videos = []
+        
+        if os.path.exists(self.pregenerated_dir):
+            for file in os.listdir(self.pregenerated_dir):
+                if file.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+                    videos.append(os.path.join(self.pregenerated_dir, file))
+        
+        return videos
+
     def get_random_idle_video(self) -> Optional[str]:
         """Get a random idle video path"""
         videos = self.get_idle_videos()
         if videos:
             video = random.choice(videos)
             print(f"{Fore.BLUE}[VIDEO_MANAGER] Selected idle video: {os.path.basename(video)}{Style.RESET_ALL}")
+            return video
+        return None
+
+    def get_random_pregenerated_video(self) -> Optional[str]:
+        """Get a random pre-generated response video"""
+        videos = self.get_pregenerated_videos()
+        if videos:
+            video = random.choice(videos)
+            print(f"{Fore.MAGENTA}[VIDEO_MANAGER] Selected pre-generated response: {os.path.basename(video)}{Style.RESET_ALL}")
             return video
         return None
 
@@ -73,6 +99,27 @@ class SimplifiedVideoManager:
             self._update_video_in_ui(video_path)
             return True
         return False
+
+    def queue_pregenerated_response(self):
+        """Queue a pre-generated response to play after current video ends"""
+        print(f"{Fore.YELLOW}[VIDEO_MANAGER] Pre-generated response queued for next video end{Style.RESET_ALL}")
+        self.pregenerated_pending = True
+
+    def play_pregenerated_video(self):
+        """Play a random pre-generated response video"""
+        video_path = self.get_random_pregenerated_video()
+        
+        if video_path:
+            self.current_mode = "pregenerated"
+            self.current_video_path = video_path
+            self.pregenerated_pending = False
+            self._update_video_in_ui(video_path)
+            print(f"{Fore.MAGENTA}[VIDEO_MANAGER] Playing pre-generated response: {os.path.basename(video_path)}{Style.RESET_ALL}")
+            return True
+        else:
+            print(f"{Fore.YELLOW}[VIDEO_MANAGER] No pre-generated videos available, playing idle instead{Style.RESET_ALL}")
+            self.pregenerated_pending = False
+            return self.play_next_idle_video()
 
     def play_lipsync_video(self, video_path: str):
         """Play a lip-sync video"""
@@ -90,10 +137,17 @@ class SimplifiedVideoManager:
         """Called when ANY video ends - Python decides what's next"""
         print(f"{Fore.BLUE}[VIDEO_MANAGER] Video ended, mode was: {self.current_mode}{Style.RESET_ALL}")
         
-        if self.current_mode == "lipsync":
-            print(f"{Fore.YELLOW}[VIDEO_MANAGER] Lipsync finished, returning to idle{Style.RESET_ALL}")
+        # Priority 1: Play pre-generated response if queued
+        if self.pregenerated_pending:
+            print(f"{Fore.YELLOW}[VIDEO_MANAGER] Playing queued pre-generated response{Style.RESET_ALL}")
+            self.play_pregenerated_video()
+            return
         
-        # ALWAYS return to idle after any video ends
+        # Priority 2: After pre-generated or lipsync, return to idle
+        if self.current_mode in ["lipsync", "pregenerated"]:
+            print(f"{Fore.YELLOW}[VIDEO_MANAGER] {self.current_mode.capitalize()} finished, returning to idle{Style.RESET_ALL}")
+        
+        # Default: Play idle video
         self.play_next_idle_video()
 
     def _update_video_in_ui(self, video_path: str):
@@ -141,5 +195,7 @@ class SimplifiedVideoManager:
         return {
             "mode": self.current_mode,
             "current_video": os.path.basename(self.current_video_path) if self.current_video_path else None,
-            "idle_videos_count": len(self.get_idle_videos())
+            "idle_videos_count": len(self.get_idle_videos()),
+            "pregenerated_pending": self.pregenerated_pending,
+            "pregenerated_videos_count": len(self.get_pregenerated_videos())
         }

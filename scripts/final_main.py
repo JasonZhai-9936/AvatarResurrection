@@ -336,6 +336,9 @@ class DarwinChatbot:
             
             print(f"\n{Fore.CYAN}[USER] {user_text}{Style.RESET_ALL}")
             
+            # Queue pre-generated response IMMEDIATELY after user input
+            self.video_manager.queue_pregenerated_response()
+            
             # Create unique response ID
             self.current_response_id += 1
             
