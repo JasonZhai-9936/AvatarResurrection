@@ -308,12 +308,21 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 with video_container:
                     ui.html('''
                     <div id="main-video-container" style="width: 100%; height: 100%; position: relative; background: #000;">
-                        <video id="mainVideo" autoplay muted playsinline 
+                        <video id="mainVideo" autoplay playsinline 
                             style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000;"
                             onended="notifyPythonVideoEnded()">
                             <source src="" type="video/mp4">
                             Your browser does not support the video tag.
                         </video>
+                        <div id="unmute-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+                            background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; 
+                            cursor: pointer; z-index: 10;">
+                            <div style="text-align: center; color: white;">
+                                <div style="font-size: 48px; margin-bottom: 10px;">🔊</div>
+                                <div style="font-size: 18px; font-weight: 600;">Click to Enable Audio</div>
+                                <div style="font-size: 14px; color: #94a3b8; margin-top: 5px;">Required for sound playback</div>
+                            </div>
+                        </div>
                     </div>
                     ''').classes('w-full h-full')
 
@@ -462,6 +471,26 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         })
         .catch(err => console.error('[VIDEO] Error notifying Python:', err));
     }
+    
+    // Handle unmute overlay click
+    window.addEventListener('DOMContentLoaded', function() {
+        const overlay = document.getElementById('unmute-overlay');
+        const video = document.getElementById('mainVideo');
+        
+        if (overlay && video) {
+            overlay.addEventListener('click', function() {
+                video.muted = false;
+                video.volume = 1.0;
+                video.play().then(() => {
+                    console.log('[VIDEO] Audio enabled and playing');
+                    overlay.style.display = 'none';
+                }).catch(err => {
+                    console.error('[VIDEO] Play failed:', err);
+                });
+            });
+            console.log('[VIDEO] Unmute overlay handler registered');
+        }
+    });
     
     // Simple video source update
     window.updateVideoSource = function(videoUrl) {
