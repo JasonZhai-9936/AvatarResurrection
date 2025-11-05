@@ -48,7 +48,7 @@ FLOAT_CONFIG = {
     "r_cfg_scale": 1.0,     # Reference image guidance scale
     "e_cfg_scale": 1.0,     # Emotion guidance scale
     "seed": 15,             # Random seed
-    "no_crop": True         # Use no_crop
+    "no_crop": False         # Use no_crop
 }
 
 

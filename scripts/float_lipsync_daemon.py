@@ -148,7 +148,7 @@ class FloatLipSync:
         # --- END OF PATH FIX ---
 
         self.opt.fix_noise_seed = False
-        self.opt.input_size = 512
+        self.opt.input_size = 512  # FIXED: Was 256, should be 512 to match checkpoint
         self.opt.input_nc = 3
         self.opt.sampling_rate = 16000
         self.opt.audio_marcing = 2
@@ -452,4 +452,3 @@ if __name__ == "__main__":
         print("[DAEMON] Interrupted.", file=sys.stderr, flush=True)
     except Exception as e:
         send_response({"status": "error", "message": f"Daemon main loop crashed: {e}"})
-

@@ -180,10 +180,9 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         
         /* Message Bubbles - Control sizing and appearance */
         .message-bubble {
-            display: block;  /* Changed from inline-block */
-            max-width: 70%;
-            min-width: 200px;
-            width: fit-content;  /* Shrink to content size */
+            display: block;
+            max-width: 85%;
+            width: fit-content;  /* Default width */
             padding: 12px 16px;
             border-radius: 12px;
             word-wrap: break-word;
@@ -192,13 +191,19 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             white-space: pre-wrap;  /* Preserve line breaks and wrap text */
         }
         
-        /* Darwin messages get consistent starting width */
+        /* Darwin messages get consistent FINAL width */
         .darwin-bubble {
             background: rgba(30, 41, 59, 0.9);
             color: #e2e8f0;
             border: 1px solid rgba(59, 130, 246, 0.2);
             min-height: 40px;
-            min-width: 300px;  /* Wider minimum for consistency */
+            /* *** CHANGE 1: Set final width *** */
+            width: 85%;
+        }
+        
+        /* *** CHANGE 2: New rule to override width ONLY during streaming *** */
+        .darwin-bubble.streaming-cursor {
+            width: fit-content; /* Let JS control the width */
         }
         
         /* User bubble styling */
@@ -207,21 +212,14 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             color: white;
             min-width: 100px;  /* Smaller min for short messages */
         }
-        
-        /* Darwin bubble styling */
-        .darwin-bubble {
-            background: rgba(30, 41, 59, 0.9);
-            color: #e2e8f0;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            min-height: 40px;
-        }
-        
+
         /* Typing indicator bubble */
         .typing-bubble {
             background: rgba(30, 41, 59, 0.9);
             border: 1px solid rgba(59, 130, 246, 0.2);
             padding: 12px 20px;
-            min-width: 80px;
+            /* *** CHANGE 1: Set final width *** */
+            width: 85%;
         }
         
         .typing-dots {
@@ -298,11 +296,12 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
     with ui.column().classes('w-full h-screen gap-0').style('background: #0a0f1c;'):
         with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4'):
             
-            # === LEFT VIDEO PLAYER (FIXED FOR 1:1 ASPECT RATIO) ===
+            # === LEFT VIDEO PLAYER (FIXED 512x512 FOR SEAMLESS TRANSITIONS) ===
             with ui.column().classes('items-start shrink-0').style('width: 35%; height: auto;'):
-                # CRITICAL FIX: Use aspect-ratio: 1/1 AND object-fit: contain
+                # FIXED: Set to exact 512x512 to match FLOAT output
+                # object-fit: cover crops larger idle videos to show center 512x512
                 video_container = ui.card().classes('p-0 overflow-hidden').style(
-                    'width: 100%; aspect-ratio: 1/1; background: #000; '
+                    'width: 512px; height: 512px; background: #000; '
                     'border: 1px solid rgba(59, 130, 246, 0.2); '
                     'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);'
                 )
@@ -310,7 +309,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                     ui.html('''
                     <div id="main-video-container" style="width: 100%; height: 100%; position: relative; background: #000;">
                         <video id="mainVideo" autoplay muted playsinline 
-                            style="width: 100%; height: 100%; object-fit: contain; background: #000;"
+                            style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000;"
                             onended="notifyPythonVideoEnded()">
                             <source src="" type="video/mp4">
                             Your browser does not support the video tag.
@@ -321,7 +320,8 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             # === CENTER PANEL ===
             with ui.column().classes('items-center gap-4 h-full').style('width: 45%;'):
                 # === CHAT LOG ===
-                chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-auto rounded-lg').style('background: rgba(15, 23, 42, 0.6); max-height: 60vh; border: 1px solid rgba(59, 130, 246, 0.1);')
+                # *** CHANGE 3: Changed overflow-y-auto to overflow-y-scroll ***
+                chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-scroll rounded-lg').style('background: rgba(15, 23, 42, 0.6); max-height: 60vh; border: 1px solid rgba(59, 130, 246, 0.1);')
                 with chat_log:
                     with ui.row().classes('w-full justify-center'):
                         ui.label('Ready to chat with Darwin').classes('text-lg text-center').style('color: #64748b;')
@@ -475,6 +475,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
     }
     
     // STREAMING TEXT FUNCTION - Reveals text over video duration
+    // *** CHANGE 4: Restored this function to its original state ***
     window.streamText = function(elementId, fullText, durationSeconds) {
         const element = document.getElementById(elementId);
         if (!element) {
@@ -494,7 +495,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         element.textContent = fullText;
         element.style.visibility = 'hidden';
         const initialWidth = element.offsetWidth;
-        element.style.width = initialWidth + 'px';
+        element.style.width = initialWidth + 'px'; // RESTORED
         element.style.visibility = 'visible';
         element.textContent = '';
         
@@ -521,7 +522,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 // Streaming complete - remove cursor and width constraint
                 clearInterval(streamInterval);
                 element.classList.remove('streaming-cursor');
-                element.style.width = 'fit-content';
+                element.style.width = 'fit-content'; // RESTORED
                 console.log('[STREAM] Text streaming complete');
             }
         }, delayPerChar);

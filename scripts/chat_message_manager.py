@@ -12,8 +12,8 @@ class ChatMessageManager:
     Unified system for managing all chat messages with consistent structure.
     
     Structure:
-        - Wrapper (column): Controls alignment (left/right)
-        - Bubble (div): Controls size, styling, and content
+        - Wrapper (column): Controls alignment (left/right) via CSS classes
+        - Bubble (div): Controls size, styling, and content via CSS classes
     
     This separates positioning from appearance for cleaner code.
     """
@@ -46,7 +46,8 @@ class ChatMessageManager:
         escaped_text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
         
         with self.chat_log:
-            with ui.row().classes('chat-message-wrapper user-wrapper').style('justify-content: flex-end !important; margin-left: 0 !important;'):
+            # REMOVED: .style(...)
+            with ui.row().classes('chat-message-wrapper user-wrapper'):
                 ui.html(
                     f'<div class="message-bubble user-bubble" id="{message_id}">'
                     f'<strong>You:</strong> {escaped_text}'
@@ -71,7 +72,8 @@ class ChatMessageManager:
             self.message_counter += 1
         
         with self.chat_log:
-            with ui.row().classes('chat-message-wrapper darwin-wrapper').style('justify-content: flex-start !important; margin-left: 0 !important;'):
+            # REMOVED: .style(...)
+            with ui.row().classes('chat-message-wrapper darwin-wrapper'):
                 ui.html(
                     f'<div class="message-bubble darwin-bubble" id="{message_id}"></div>'
                 )
@@ -90,7 +92,8 @@ class ChatMessageManager:
             str: The message ID
         """
         with self.chat_log:
-            with ui.row().classes('chat-message-wrapper darwin-wrapper typing-wrapper').style('justify-content: flex-start !important; margin-left: 0 !important;'):
+            # REMOVED: .style(...)
+            with ui.row().classes('chat-message-wrapper darwin-wrapper typing-wrapper'):
                 ui.html(
                     f'<div class="message-bubble typing-bubble" id="{message_id}">'
                     f'<span class="typing-dots">typing</span>'
@@ -114,7 +117,8 @@ class ChatMessageManager:
         self.message_counter += 1
         
         with self.chat_log:
-            with ui.row().classes('chat-message-wrapper darwin-wrapper').style('justify-content: flex-start !important; margin-left: 0 !important;'):
+            # REMOVED: .style(...)
+            with ui.row().classes('chat-message-wrapper darwin-wrapper'):
                 ui.html(
                     f'<div class="message-bubble error-bubble" id="{message_id}">'
                     f'<strong>⚠️ Error:</strong> {error_text}'
@@ -138,7 +142,8 @@ class ChatMessageManager:
         self.message_counter += 1
         
         with self.chat_log:
-            with ui.row().classes('chat-message-wrapper system-wrapper').style('justify-content: center !important; margin-left: 0 !important;'):
+            # REMOVED: .style(...)
+            with ui.row().classes('chat-message-wrapper system-wrapper'):
                 ui.html(
                     f'<div class="message-bubble system-bubble" id="{message_id}">'
                     f'{text}'
