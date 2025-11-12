@@ -307,12 +307,16 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 )
                 with video_container:
                     ui.html('''
-                    <div id="main-video-container" style="width: 100%; height: 100%; position: relative; background: #000;">
-                        <video id="mainVideo" autoplay playsinline 
-                            style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000;"
-                            onended="notifyPythonVideoEnded()">
+                    <div id="main-video-container" style="width: 100%; height: 100%; position: relative; background: #000; overflow: hidden;">
+                        <!-- Video A - Bottom layer -->
+                        <video id="videoA" autoplay playsinline 
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 1; transition: opacity 0.1s ease;">
                             <source src="" type="video/mp4">
-                            Your browser does not support the video tag.
+                        </video>
+                        <!-- Video B - Top layer -->
+                        <video id="videoB" autoplay playsinline 
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 0; transition: opacity 0.1s ease;">
+                            <source src="" type="video/mp4">
                         </video>
                         <div id="unmute-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
                             background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; 
@@ -475,32 +479,107 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
     // Handle unmute overlay click
     window.addEventListener('DOMContentLoaded', function() {
         const overlay = document.getElementById('unmute-overlay');
-        const video = document.getElementById('mainVideo');
+        const videoA = document.getElementById('videoA');
+        const videoB = document.getElementById('videoB');
         
-        if (overlay && video) {
+        if (overlay && videoA && videoB) {
             overlay.addEventListener('click', function() {
-                video.muted = false;
-                video.volume = 1.0;
-                video.play().then(() => {
+                // Unmute both videos
+                videoA.muted = false;
+                videoA.volume = 1.0;
+                videoB.muted = false;
+                videoB.volume = 1.0;
+                
+                // Play the active video
+                const activeVideo = videoA.style.opacity === '1' ? videoA : videoB;
+                activeVideo.play().then(() => {
                     console.log('[VIDEO] Audio enabled and playing');
                     overlay.style.display = 'none';
                 }).catch(err => {
                     console.error('[VIDEO] Play failed:', err);
                 });
             });
-            console.log('[VIDEO] Unmute overlay handler registered');
+            console.log('[VIDEO] Unmute overlay handler registered for dual videos');
         }
     });
     
+    // Dual-video crossfade system for seamless transitions
+    let currentVideo = 'A'; // Track which video is currently visible
+    let isTransitioning = false;
+    
     // Simple video source update
     window.updateVideoSource = function(videoUrl) {
-        const video = document.getElementById('mainVideo');
-        if (video && videoUrl) {
-            console.log('[VIDEO] Updating video:', videoUrl);
-            video.src = videoUrl;
-            video.load();
-            video.onended = notifyPythonVideoEnded;
+        const videoA = document.getElementById('videoA');
+        const videoB = document.getElementById('videoB');
+        
+        if (!videoA || !videoB || !videoUrl) {
+            console.error('[VIDEO] Video elements or URL missing');
+            return;
         }
+        
+        // Prevent rapid transitions
+        if (isTransitioning) {
+            console.log('[VIDEO] Transition in progress, queuing...');
+            setTimeout(() => window.updateVideoSource(videoUrl), 100);
+            return;
+        }
+        
+        isTransitioning = true;
+        console.log('[VIDEO] Starting crossfade to:', videoUrl);
+        
+        // Determine which video to load next
+        const nextVideo = currentVideo === 'A' ? videoB : videoA;
+        const prevVideo = currentVideo === 'A' ? videoA : videoB;
+        
+        // Preload the next video (hidden)
+        nextVideo.src = videoUrl;
+        nextVideo.load();
+        
+        // Wait for video to be ready
+        nextVideo.onloadeddata = function() {
+            console.log('[VIDEO] Next video loaded, starting crossfade');
+            
+            // Ensure audio settings are preserved
+            const overlay = document.getElementById('unmute-overlay');
+            if (!overlay || overlay.style.display === 'none') {
+                nextVideo.muted = false;
+                nextVideo.volume = 1.0;
+            } else {
+                nextVideo.muted = true;
+            }
+            
+            // Set up ended handler before playing
+            nextVideo.onended = notifyPythonVideoEnded;
+            
+            // Start playing the next video
+            nextVideo.play().then(() => {
+                // Crossfade: show next, hide previous
+                nextVideo.style.opacity = '1';
+                prevVideo.style.opacity = '0';
+                
+                // After transition completes, pause and reset the previous video
+                setTimeout(() => {
+                    prevVideo.pause();
+                    prevVideo.currentTime = 0;
+                    prevVideo.src = '';
+                    
+                    // Update current video tracker
+                    currentVideo = currentVideo === 'A' ? 'B' : 'A';
+                    isTransitioning = false;
+                    
+                    console.log('[VIDEO] Crossfade complete, now showing video', currentVideo);
+                }, 100); // Match CSS transition duration
+                
+            }).catch(err => {
+                console.error('[VIDEO] Play failed during crossfade:', err);
+                isTransitioning = false;
+            });
+        };
+        
+        nextVideo.onerror = function() {
+            console.error('[VIDEO] Failed to load:', videoUrl);
+            isTransitioning = false;
+        };
     }
     
     // STREAMING TEXT FUNCTION - Reveals text over video duration

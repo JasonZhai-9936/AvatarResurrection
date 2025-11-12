@@ -321,8 +321,18 @@ class FloatLipSync:
         
         prep_start = time.time()
         vid = vid_target_recon.permute(0, 2, 3, 1)
-        vid = vid.detach().clamp(-1, 1).cpu()
-        vid = ((vid + 1) / 2 * 255).numpy().astype('uint8')
+        
+        
+        
+        # vid = vid.detach().clamp(-1, 1).cpu()
+        # vid = ((vid + 1) / 2 * 255).numpy().astype('uint8')
+        
+        # NEW (transfers only 96 MB - 4x less!):
+        vid = vid.detach().clamp(-1, 1)
+        vid = ((vid + 1) / 2 * 255).to(torch.uint8)  # Convert on GPU!
+        vid = vid.cpu().numpy()  # Then transfer
+        
+        
         print(f"[DAEMON]     - Video tensor prep: {time.time() - prep_start:.3f}s", file=sys.stderr, flush=True)
         
         height, width = vid.shape[1], vid.shape[2]
