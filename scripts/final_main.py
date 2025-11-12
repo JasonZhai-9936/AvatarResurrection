@@ -1,5 +1,5 @@
 # final_main.py - Darwin Chatbot with EMOTIONAL lip-sync and FLOAT support
-# <<< MODIFIED TO SUPPORT SENTENCE-BY-SENTENCE CHUNKING >>>
+# <<< VERSION: Chunking + Pre-gen Toggle (FIXED) >>>
 
 import os
 import sys
@@ -12,7 +12,7 @@ from colorama import Fore, Style, init
 import threading
 import signal
 import queue
-import re  # <<< NEW: Added for splitting sentences >>>
+import re  # For splitting sentences
 
 init(autoreset=True)
 
@@ -34,8 +34,12 @@ from nicegui import ui as nicegui_ui
 # ============================================================================
 
 # Choose lipsync mode: False = Crossfade (default), True = FLOAT
-# <<<<< THIS IS THE NEW CONFIGURATION VARIABLE >>>>>
 USE_FLOAT_LIPSYNC = True
+
+# <<< NEW: Set this to False to disable the pre-generated response >>>
+# The avatar will idle until the first chunk is ready.
+USE_PREGENERATED_RESPONSE = False 
+# Set this back to True if you want the pre-gen video to play again.
 
 # FLOAT model configuration (only used if USE_FLOAT_LIPSYNC = True)
 # This config is passed to the daemon.
@@ -60,11 +64,13 @@ class DarwinChatbot:
     def __init__(self):
         # Use configuration from constants above
         self.use_float = USE_FLOAT_LIPSYNC
+        self.use_pregenerated = USE_PREGENERATED_RESPONSE  # <<< ADDED
         
         print(f"\n{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}DARWIN CHATBOT INITIALIZATION{Style.RESET_ALL}")
         print(f"{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
-        print(f"{Fore.YELLOW}[CONFIG] Lipsync mode: {'FLOAT' if self.use_float else 'Crossfade'}{Style.RESET_ALL}\n")
+        print(f"{Fore.YELLOW}[CONFIG] Lipsync mode: {'FLOAT' if self.use_float else 'Crossfade'}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}[CONFIG] Pre-generated response: {'ENABLED' if self.use_pregenerated else 'DISABLED'}{Style.RESET_ALL}\n") # <<< ADDED
         
         self.video_manager = SimplifiedVideoManager(avatar_name="Darwin")
         
@@ -76,24 +82,24 @@ class DarwinChatbot:
         self.message_manager = None  # Will be initialized in setup_ui
         self.ui_components = None
         
-        self.is_processing = False
+        # This flag means "the producer task is still generating chunks"
+        self.is_processing = False 
         self._shutdown_flag = False
         
         self.video_event_queue = queue.Queue()
         self.current_response_id = 0
 
-        # <<< NEW: State for chunked playback >>>
+        # State for chunked playback
         self.chunk_queue = asyncio.Queue()
         self.current_response_id_playing: Optional[str] = None
+        # This flag means "the consumer is currently playing a video chunk"
         self.is_chunk_playing: bool = False
-        # <<< END NEW >>>
         
         print(f"{Fore.GREEN}[MAIN] Darwin Chatbot initialized{Style.RESET_ALL}")
 
     def initialize_lipsync(self):
         """Initialize lip-sync system based on config"""
         if self.use_float:
-            # <<<<< MODIFIED to call new subprocess-based FLOAT initializer >>>>>
             return self._initialize_float_lipsync()
         else:
             return self._initialize_crossfade_lipsync()
@@ -106,15 +112,10 @@ class DarwinChatbot:
         try:
             print(f"{Fore.CYAN}[MAIN] Initializing FLOAT lipsync system via subprocess...{Style.RESET_ALL}")
             
-            # Import FLOAT module (subprocess-based)
             from float_lipsync_subprocess import FloatLipsync
             
-            # Create instance of the subprocess manager
-            # Pass the project dir and the config dict
             float_lipsync = FloatLipsync(PROJECT_DIR, FLOAT_CONFIG)
             
-            # Pre-initialize model and preprocess image in the daemon
-            # This will block until the daemon is ready
             print(f"{Fore.CYAN}[MAIN] Loading FLOAT model in conda environment... (This is slow){Style.RESET_ALL}")
             if not float_lipsync.initialize():
                 raise RuntimeError("FLOAT daemon failed to initialize.")
@@ -146,7 +147,6 @@ class DarwinChatbot:
         
         system = WhisperAlignedLipSync(
             archive_directory=archive_dir
-            # Add other config from ws_lipsync_crossfade.py __main__ if needed
         )
         
         print(f"{Fore.GREEN}[MAIN] ✓ Crossfade lipsync system ready{Style.RESET_ALL}\n")
@@ -164,8 +164,6 @@ class DarwinChatbot:
             ]
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             duration = float(result.stdout.strip())
-            # <<< MODIFIED: Quieter logging for chunks >>>
-            # print(f"{Fore.CYAN}[MAIN] Video duration: {duration:.2f}s{Style.RESET_ALL}")
             return duration
         except Exception as e:
             print(f"{Fore.YELLOW}[MAIN] Could not get video duration: {e}{Style.RESET_ALL}")
@@ -181,7 +179,6 @@ class DarwinChatbot:
         
         self.chat_log = self.ui_components['chat_log']
         
-        # Initialize the ChatMessageManager
         self.message_manager = ChatMessageManager(self.chat_log)
         
         self.video_manager.set_video_update_callback(self.queue_video_update)
@@ -189,13 +186,10 @@ class DarwinChatbot:
         nicegui_ui.timer(0.1, self.process_video_events)
         nicegui_ui.timer(1.0, self.initialize_video_system, once=True)
         
-        # <<< NEW: Add JavaScript functions for text manipulation >>>
         self.add_custom_javascript()
-        # <<< END NEW >>>
         
         print(f"{Fore.GREEN}[MAIN] UI setup complete{Style.RESET_ALL}")
 
-    # <<< NEW: Helper to inject custom JS for text manipulation >>>
     def add_custom_javascript(self):
         """Adds JS functions to the page for clearing/appending text."""
         js_code = '''
@@ -204,7 +198,6 @@ class DarwinChatbot:
                 const element = document.getElementById(elementId);
                 if (element) {
                     element.innerHTML = '';
-                    // Remove the streaming cursor if it's present
                     element.classList.remove('streaming-cursor');
                 }
             }
@@ -212,8 +205,7 @@ class DarwinChatbot:
             window.appendMessageContent = function(elementId, textToAppend) {
                 const element = document.getElementById(elementId);
                 if (element) {
-                    // Append text. Use textContent to avoid HTML injection issues.
-                    // Add a space if the last char isn't already a space.
+                    // Append text. Add a space if not the first chunk.
                     if (element.textContent.length > 0 && element.textContent.slice(-1) !== ' ') {
                          element.textContent += ' ';
                     }
@@ -223,20 +215,16 @@ class DarwinChatbot:
         </script>
         '''
         nicegui_ui.add_head_html(js_code)
-    # <<< END NEW >>>
 
     def queue_video_update(self, video_url: str):
         """Queue video update"""
         try:
             self.video_event_queue.put(('update_video', video_url))
-            # <<< MODIFIED: Quieter logging for chunks >>>
-            # print(f"{Fore.CYAN}[MAIN] Queued video update: {video_url.split('/')[-1]}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing video update: {e}{Style.RESET_ALL}")
     
-    # <<< MODIFIED: This function is no longer used by the chunking system >>>
     def queue_text_stream(self, element_id: str, text: str, duration: float):
-        """Queue text streaming (Word-by-word)"""
+        """Queue text streaming (Word-by-word) - No longer used by chunking"""
         try:
             self.video_event_queue.put(('stream_text', {
                 'element_id': element_id,
@@ -261,12 +249,9 @@ class DarwinChatbot:
         """Queue video ended event"""
         try:
             self.video_event_queue.put(('video_ended', None))
-            # <<< MODIFIED: Quieter logging for chunks >>>
-            # print(f"{Fore.BLUE}[MAIN] Video ended event queued{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing video ended event: {e}{Style.RESET_ALL}")
     
-    # <<< NEW: Queued functions for new text manipulation >>>
     def queue_clear_message_content(self, element_id: str):
         """Queues a JS call to clear the message bubble content."""
         try:
@@ -280,7 +265,6 @@ class DarwinChatbot:
             self.video_event_queue.put(('append_content', {'id': element_id, 'text': text}))
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing append content: {e}{Style.RESET_ALL}")
-    # <<< END NEW >>>
     
     def process_video_events(self):
         """Process all queued video events"""
@@ -296,12 +280,10 @@ class DarwinChatbot:
                     self.execute_typing_indicator(data)
                 elif event_type == 'video_ended':
                     self.handle_video_ended_in_context()
-                # <<< NEW: Handle new text manipulation events >>>
                 elif event_type == 'clear_content':
                     self.execute_clear_content(data)
                 elif event_type == 'append_content':
                     self.execute_append_content(data)
-                # <<< END NEW >>>
                     
             except queue.Empty:
                 break
@@ -313,8 +295,6 @@ class DarwinChatbot:
         try:
             js_code = f"window.updateVideoSource('{video_url}');"
             nicegui_ui.run_javascript(js_code)
-            # <<< MODIFIED: Quieter logging for chunks >>>
-            # print(f"{Fore.GREEN}[MAIN] Video updated: {video_url.split('/')[-1]}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Video update failed: {e}{Style.RESET_ALL}")
     
@@ -345,12 +325,9 @@ class DarwinChatbot:
                 js_code = f"window.stopTypingIndicator('{element_id}');"
             
             nicegui_ui.run_javascript(js_code)
-            # <<< MODIFIED: Quieter logging for chunks >>>
-            # print(f"{Fore.GREEN}[MAIN] Typing indicator {'started' if show else 'stopped'}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Typing indicator failed: {e}{Style.RESET_ALL}")
 
-    # <<< NEW: Execute new JS functions >>>
     def execute_clear_content(self, element_id: str):
         """Executes the JS to clear a message bubble."""
         try:
@@ -370,9 +347,7 @@ class DarwinChatbot:
             nicegui_ui.run_javascript(js_code)
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Append content failed: {e}{Style.RESET_ALL}")
-    # <<< END NEW >>>
 
-    # <<< CHANGED: FIX 2 - This is now the core playback loop trigger >>>
     def handle_video_ended_in_context(self):
         """
         Handle video ended event.
@@ -397,7 +372,6 @@ class DarwinChatbot:
 
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error handling video ended: {e}{Style.RESET_ALL}")
-    # <<< END CHANGED >>>
 
     def initialize_video_system(self):
         """Initialize video system"""
@@ -407,7 +381,6 @@ class DarwinChatbot:
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error initializing video: {e}{Style.RESET_ALL}")
 
-    # <<< MODIFIED: This function now just starts the background task >>>
     async def handle_user_input(self, user_text: str):
         """Handle user input and generate response"""
         if self.is_processing:
@@ -423,8 +396,10 @@ class DarwinChatbot:
             
             print(f"\n{Fore.CYAN}[USER] {user_text}{Style.RESET_ALL}")
             
-            # Queue pre-generated response IMMEDIATELY after user input
-            self.video_manager.queue_pregenerated_response()
+            # <<< MODIFIED: Only queue pre-gen if enabled in config >>>
+            if self.use_pregenerated:
+                # Queue pre-generated response IMMEDIATELY after user input
+                self.video_manager.queue_pregenerated_response()
             
             # Create unique response ID
             self.current_response_id += 1
@@ -446,9 +421,7 @@ class DarwinChatbot:
             import traceback
             traceback.print_exc()
             self.is_processing = False # Ensure this is reset on error
-    # <<< END MODIFIED >>>
 
-    # <<< NEW: The "Producer" task >>>
     async def generate_response_chunks_task(self, user_text: str, response_id: str):
         """
         [PRODUCER] Runs in background. Gets LLM text, splits it,
@@ -526,9 +499,13 @@ class DarwinChatbot:
                 await self.chunk_queue.put(chunk_data)
                 print(f"{Fore.GREEN}[MAIN]   Chunk {i+1} ready and queued.{Style.RESET_ALL}")
                 
-                # <<< CHANGED: FIX 1 - Remove the "kickstart" logic >>>
-                # (The "if i == 0" block has been deleted)
+                # <<< CHANGED: ADD THIS "KICKSTART" BLOCK BACK IN >>>
+                # If this is the very first chunk, kickstart the player.
+                # This is necessary if pre-gen is disabled and we are idling.
+                if i == 0:
+                    asyncio.create_task(self.play_next_chunk())
                 # <<< END CHANGED >>>
+
 
             # 4. Cleanup old videos
             try:
@@ -543,9 +520,7 @@ class DarwinChatbot:
             self.queue_typing_indicator(response_id, False) # Stop typing on error
         finally:
             self.is_processing = False # Generation is finished
-    # <<< END NEW >>>
             
-    # <<< CHANGED: FIX 3 - The "Consumer" function with polling >>>
     async def play_next_chunk(self):
         """
         [CONSUMER] Checks the queue for a video chunk and plays it.
@@ -613,20 +588,15 @@ class DarwinChatbot:
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error playing chunk: {e}{Style.RESET_ALL}")
             self.is_chunk_playing = False # Allow next attempt
-    # <<< END CHANGED >>>
 
     async def _generate_float_lipsync(self, audio_path: str, text: str) -> Optional[str]:
         """
         Generate lipsync using the new FLOAT subprocess manager.
         'text' is unused but kept for consistent signature.
         """
-        # <<< MODIFIED: Quieter logging >>>
-        # print(f"{Fore.BLUE}[MAIN] Creating FLOAT lipsync...{Style.RESET_ALL}")
         
         def generate_float():
             try:
-                # self.lipsync_system is our FloatLipsync (subprocess manager) instance
-                # The generate_lipsync() method takes audio_path
                 return self.lipsync_system.generate_lipsync(
                     audio_path=audio_path,
                     output_filename=None # Daemon will auto-name
@@ -664,7 +634,6 @@ class DarwinChatbot:
                 return None
         
         try:
-            # Note: Fixed typo here, was generate__crossfade
             return await asyncio.to_thread(generate_crossfade)
         except AttributeError:
             loop = asyncio.get_event_loop()
@@ -684,7 +653,6 @@ class DarwinChatbot:
         """Clean up resources"""
         print(f"{Fore.YELLOW}[MAIN] Cleaning up...{Style.RESET_ALL}")
         self._shutdown_flag = True
-        # <<<<< ADDED CLEANUP FOR SUBPROCESS >>>>>
         if self.use_float and self.lipsync_system:
             try:
                 self.lipsync_system.cleanup()
@@ -697,7 +665,6 @@ class DarwinChatbot:
         def signal_handler(signum, frame):
             print(f"\n{Fore.YELLOW}[MAIN] Shutting down...{Style.RESET_ALL}")
             self.cleanup()
-            # Give a moment for cleanup to try
             time.sleep(1)
             os._exit(0)
         
@@ -775,6 +742,4 @@ def main():
         print(f"{Fore.YELLOW}[MAIN] Shutdown complete{Style.RESET_ALL}")
 
 if __name__ == "__main__":
-    # This ensures that when running 'python scripts/final_main.py',
-    # the PROJECT_DIR is set correctly before anything else runs.
     main()
