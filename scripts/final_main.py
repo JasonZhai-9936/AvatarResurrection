@@ -224,7 +224,7 @@ class DarwinChatbot:
             print(f"{Fore.RED}[MAIN] Error queueing video update: {e}{Style.RESET_ALL}")
     
     def queue_text_stream(self, element_id: str, text: str, duration: float):
-        """Queue text streaming (Word-by-word) - No longer used by chunking"""
+        """Queue text streaming (Word-by-word) to match video duration""" # <<< CHANGED
         try:
             self.video_event_queue.put(('stream_text', {
                 'element_id': element_id,
@@ -557,7 +557,7 @@ class DarwinChatbot:
                 self.video_manager.play_next_idle_video() # Return to idle
             
             return # Stop execution here
-            # <<< END NEW LOGIC >>>
+            # <<< END NEW LOGLOGIC >>>
 
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error getting from chunk queue: {e}{Style.RESET_ALL}")
@@ -580,8 +580,8 @@ class DarwinChatbot:
             # Play the video
             self.video_manager.play_lipsync_video(chunk_data['video_path'])
             
-            # Append this sentence's text to the message bubble
-            self.queue_append_message_content(response_id, chunk_data['text'])
+            # Stream this sentence's text to the message bubble
+            self.queue_text_stream(response_id, chunk_data['text'], chunk_data['duration']) # <<< CHANGED
             
             print(f"{Fore.GREEN}[MAIN] Playing chunk: {chunk_data['text']}{Style.RESET_ALL}")
 

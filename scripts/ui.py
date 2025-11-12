@@ -1,5 +1,6 @@
 # ui.py - UI with TYPING INDICATOR and streaming text
 # FIXED: Proper aspect ratio handling for FLOAT 1:1 videos
+# FIXED: window.streamText now APPENDS text for chunking
 
 from nicegui import ui
 import os
@@ -308,12 +309,10 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 with video_container:
                     ui.html('''
                     <div id="main-video-container" style="width: 100%; height: 100%; position: relative; background: #000; overflow: hidden;">
-                        <!-- Video A - Bottom layer -->
                         <video id="videoA" autoplay playsinline 
                             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 1; transition: opacity 0.1s ease;">
                             <source src="" type="video/mp4">
                         </video>
-                        <!-- Video B - Top layer -->
                         <video id="videoB" autoplay playsinline 
                             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 0; transition: opacity 0.1s ease;">
                             <source src="" type="video/mp4">
@@ -582,9 +581,10 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         };
     }
     
-    // STREAMING TEXT FUNCTION - Reveals text over video duration
-    // *** CHANGE 4: Restored this function to its original state ***
-    window.streamText = function(elementId, fullText, durationSeconds) {
+    // ======================================================================
+    // <<< STREAMING TEXT FUNCTION - MODIFIED TO APPEND CHUNKS >>>
+    // ======================================================================
+    window.streamText = function(elementId, textToStream, durationSeconds) {
         const element = document.getElementById(elementId);
         if (!element) {
             console.error('[STREAM] Element not found:', elementId);
@@ -595,34 +595,55 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         window.stopTypingIndicator(elementId);
         
         console.log('[STREAM] Starting text stream:', {
-            length: fullText.length,
+            text: textToStream,
             duration: durationSeconds
         });
         
-        // Set initial space to establish width
+        // --- NEW LOGIC TO APPEND ---
+        // 1. Get text *already* in the bubble.
+        let existingText = element.textContent;
+        
+        // 2. Add a space if there's already text.
+        if (existingText.length > 0 && existingText.slice(-1) !== ' ') {
+            existingText += ' ';
+        }
+        
+        // 3. The "full text" (for width calculation) is old + new
+        const fullText = existingText + textToStream;
+        // --- END NEW LOGIC ---
+
+        // Set initial space to establish width (using the *complete* new text)
         element.textContent = fullText;
         element.style.visibility = 'hidden';
         const initialWidth = element.offsetWidth;
-        element.style.width = initialWidth + 'px'; // RESTORED
+        element.style.width = initialWidth + 'px';
         element.style.visibility = 'visible';
-        element.textContent = '';
         
-        // Calculate delay between characters
-        const totalChars = fullText.length;
-        const delayPerChar = (durationSeconds * 1000) / totalChars;
+        // Set the text back to what it was *before* this chunk
+        element.textContent = existingText;
+        
+        // Calculate delay between characters for the *new* text
+        const totalCharsToStream = textToStream.length;
+        if (totalCharsToStream === 0) {
+             console.log('[STREAM] No new characters to stream');
+             return;
+        }
+        
+        const delayPerChar = (durationSeconds * 1000) / totalCharsToStream;
         
         // Add cursor class
         element.classList.add('streaming-cursor');
         
         let currentIndex = 0;
-        let displayedText = '';
+        // Start the displayed text from what was already there
+        let displayedText = existingText;
         
         const streamInterval = setInterval(() => {
-            if (currentIndex < totalChars) {
-                const char = fullText[currentIndex];
+            if (currentIndex < totalCharsToStream) {
+                const char = textToStream[currentIndex];
                 displayedText += char;
                 
-                // Update the entire text at once (no individual spans)
+                // Update the entire text at once
                 element.textContent = displayedText;
                 
                 currentIndex++;
@@ -630,8 +651,8 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 // Streaming complete - remove cursor and width constraint
                 clearInterval(streamInterval);
                 element.classList.remove('streaming-cursor');
-                element.style.width = 'fit-content'; // RESTORED
-                console.log('[STREAM] Text streaming complete');
+                element.style.width = 'fit-content';
+                console.log('[STREAM] Text streaming complete for this chunk');
             }
         }, delayPerChar);
         
