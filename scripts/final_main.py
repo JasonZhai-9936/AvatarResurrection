@@ -1,5 +1,5 @@
 # final_main.py - Darwin Chatbot with EMOTIONAL lip-sync and FLOAT support
-# <<< VERSION: Chunking + Pre-gen Toggle (FIXED) >>>
+# <<< VERSION: Chunking + Idle_Chunk "Thinking" Loop (FIXED) >>>
 
 import os
 import sys
@@ -224,7 +224,7 @@ class DarwinChatbot:
             print(f"{Fore.RED}[MAIN] Error queueing video update: {e}{Style.RESET_ALL}")
     
     def queue_text_stream(self, element_id: str, text: str, duration: float):
-        """Queue text streaming (Word-by-word) to match video duration""" # <<< CHANGED
+        """Queue text streaming (Word-by-word) to match video duration"""
         try:
             self.video_event_queue.put(('stream_text', {
                 'element_id': element_id,
@@ -357,16 +357,17 @@ class DarwinChatbot:
             current_mode = self.video_manager.current_mode
             print(f"{Fore.BLUE}[MAIN] Video ended event. Mode was: {current_mode}{Style.RESET_ALL}")
 
-            # If a lipsync video OR a pre-generated response just finished,
+            # <<< CHANGE 1: Added "idle_chunk" to this list >>>
+            # If a lipsync, pre-gen, or "thinking" video just finished,
             # we must check if a lipsync chunk is waiting to be played.
-            if current_mode in ["lipsync", "pregenerated"]:
+            if current_mode in ["lipsync", "pregenerated", "idle_chunk"]:
                 self.is_chunk_playing = False
                 # We must schedule the next check, not call it directly
                 # This will try to play the next chunk.
                 asyncio.create_task(self.play_next_chunk())
                 return  # Stop here, play_next_chunk() will handle what's next
 
-            # If it was an idle video, just run the default logic.
+            # If it was a normal "idle" video, just run the default logic.
             # (This will play another idle, or a pending pre-gen video)
             self.video_manager.on_video_ended()
 
@@ -499,12 +500,11 @@ class DarwinChatbot:
                 await self.chunk_queue.put(chunk_data)
                 print(f"{Fore.GREEN}[MAIN]   Chunk {i+1} ready and queued.{Style.RESET_ALL}")
                 
-                # <<< CHANGED: ADD THIS "KICKSTART" BLOCK BACK IN >>>
-                # If this is the very first chunk, kickstart the player.
-                # This is necessary if pre-gen is disabled and we are idling.
-                if i == 0:
-                    asyncio.create_task(self.play_next_chunk())
-                # <<< END CHANGED >>>
+                # <<< CHANGE 2: Removed "if i == 0" >>>
+                # Kickstart the player *every time* a chunk is ready.
+                # If the player is in an idle_chunk loop, this will
+                # interrupt it immediately and play the new chunk.
+                asyncio.create_task(self.play_next_chunk())
 
 
             # 4. Cleanup old videos
@@ -540,13 +540,12 @@ class DarwinChatbot:
             
             # self.is_processing is True if generate_response_chunks_task is still running.
             if self.is_processing:
-                # The producer is still working on the next chunk.
-                # We must *wait* and *poll* the queue.
-                print(f"{Fore.YELLOW}[MAIN] Chunk queue empty, but producer is still working. Waiting...{Style.RESET_ALL}")
-                
-                # We can't block, so we schedule another check in a moment.
-                await asyncio.sleep(0.5) # Wait 500ms
-                asyncio.create_task(self.play_next_chunk()) # Try again
+                # <<< CHANGE 3: Replaced sleep/poll with idle_chunk video >>>
+                # The producer is still working. Play a "thinking" video.
+                print(f"{Fore.YELLOW}[MAIN] Chunk queue empty, playing idle_chunk video...{Style.RESET_ALL}")
+                self.video_manager.play_next_idle_chunk_video()
+                # We don't re-schedule play_next_chunk.
+                # The 'on_video_ended' handler will call it, creating a loop.
                 
             else:
                 # The queue is empty AND the producer is finished.
@@ -557,7 +556,7 @@ class DarwinChatbot:
                 self.video_manager.play_next_idle_video() # Return to idle
             
             return # Stop execution here
-            # <<< END NEW LOGLOGIC >>>
+            # <<< END NEW LOGIC >>>
 
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error getting from chunk queue: {e}{Style.RESET_ALL}")
@@ -581,7 +580,7 @@ class DarwinChatbot:
             self.video_manager.play_lipsync_video(chunk_data['video_path'])
             
             # Stream this sentence's text to the message bubble
-            self.queue_text_stream(response_id, chunk_data['text'], chunk_data['duration']) # <<< CHANGED
+            self.queue_text_stream(response_id, chunk_data['text'], chunk_data['duration'])
             
             print(f"{Fore.GREEN}[MAIN] Playing chunk: {chunk_data['text']}{Style.RESET_ALL}")
 
