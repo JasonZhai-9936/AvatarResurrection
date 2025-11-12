@@ -1,4 +1,5 @@
 # final_main.py - Darwin Chatbot with EMOTIONAL lip-sync and FLOAT support
+# <<< MODIFIED TO SUPPORT SENTENCE-BY-SENTENCE CHUNKING >>>
 
 import os
 import sys
@@ -11,6 +12,7 @@ from colorama import Fore, Style, init
 import threading
 import signal
 import queue
+import re  # <<< NEW: Added for splitting sentences >>>
 
 init(autoreset=True)
 
@@ -21,7 +23,7 @@ sys.path.insert(0, SCRIPTS_DIR)
 
 # Import existing modules
 from LLM_Groq import generate_darwin_response
-from enhanced_tts_groq import generate_complete_audio
+from enhanced_tts_piper import generate_complete_audio
 from simplified_video_manager import SimplifiedVideoManager
 from ui import build_ui
 from chat_message_manager import ChatMessageManager
@@ -79,6 +81,12 @@ class DarwinChatbot:
         
         self.video_event_queue = queue.Queue()
         self.current_response_id = 0
+
+        # <<< NEW: State for chunked playback >>>
+        self.chunk_queue = asyncio.Queue()
+        self.current_response_id_playing: Optional[str] = None
+        self.is_chunk_playing: bool = False
+        # <<< END NEW >>>
         
         print(f"{Fore.GREEN}[MAIN] Darwin Chatbot initialized{Style.RESET_ALL}")
 
@@ -156,11 +164,12 @@ class DarwinChatbot:
             ]
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             duration = float(result.stdout.strip())
-            print(f"{Fore.CYAN}[MAIN] Video duration: {duration:.2f}s{Style.RESET_ALL}")
+            # <<< MODIFIED: Quieter logging for chunks >>>
+            # print(f"{Fore.CYAN}[MAIN] Video duration: {duration:.2f}s{Style.RESET_ALL}")
             return duration
         except Exception as e:
             print(f"{Fore.YELLOW}[MAIN] Could not get video duration: {e}{Style.RESET_ALL}")
-            return 5.0
+            return 5.0 # Default duration on error
 
     def setup_ui(self):
         """Set up UI"""
@@ -180,25 +189,61 @@ class DarwinChatbot:
         nicegui_ui.timer(0.1, self.process_video_events)
         nicegui_ui.timer(1.0, self.initialize_video_system, once=True)
         
+        # <<< NEW: Add JavaScript functions for text manipulation >>>
+        self.add_custom_javascript()
+        # <<< END NEW >>>
+        
         print(f"{Fore.GREEN}[MAIN] UI setup complete{Style.RESET_ALL}")
+
+    # <<< NEW: Helper to inject custom JS for text manipulation >>>
+    def add_custom_javascript(self):
+        """Adds JS functions to the page for clearing/appending text."""
+        js_code = '''
+        <script>
+            window.clearMessageContent = function(elementId) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.innerHTML = '';
+                    // Remove the streaming cursor if it's present
+                    element.classList.remove('streaming-cursor');
+                }
+            }
+            
+            window.appendMessageContent = function(elementId, textToAppend) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    // Append text. Use textContent to avoid HTML injection issues.
+                    // Add a space if the last char isn't already a space.
+                    if (element.textContent.length > 0 && element.textContent.slice(-1) !== ' ') {
+                         element.textContent += ' ';
+                    }
+                    element.textContent += textToAppend;
+                }
+            }
+        </script>
+        '''
+        nicegui_ui.add_head_html(js_code)
+    # <<< END NEW >>>
 
     def queue_video_update(self, video_url: str):
         """Queue video update"""
         try:
             self.video_event_queue.put(('update_video', video_url))
-            print(f"{Fore.CYAN}[MAIN] Queued video update: {video_url.split('/')[-1]}{Style.RESET_ALL}")
+            # <<< MODIFIED: Quieter logging for chunks >>>
+            # print(f"{Fore.CYAN}[MAIN] Queued video update: {video_url.split('/')[-1]}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing video update: {e}{Style.RESET_ALL}")
     
+    # <<< MODIFIED: This function is no longer used by the chunking system >>>
     def queue_text_stream(self, element_id: str, text: str, duration: float):
-        """Queue text streaming"""
+        """Queue text streaming (Word-by-word)"""
         try:
             self.video_event_queue.put(('stream_text', {
                 'element_id': element_id,
                 'text': text,
                 'duration': duration
             }))
-            print(f"{Fore.CYAN}[MAIN] Queued text stream{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}[MAIN] Queued text stream (word-by-word){Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing text stream: {e}{Style.RESET_ALL}")
     
@@ -216,9 +261,26 @@ class DarwinChatbot:
         """Queue video ended event"""
         try:
             self.video_event_queue.put(('video_ended', None))
-            print(f"{Fore.BLUE}[MAIN] Video ended event queued{Style.RESET_ALL}")
+            # <<< MODIFIED: Quieter logging for chunks >>>
+            # print(f"{Fore.BLUE}[MAIN] Video ended event queued{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error queueing video ended event: {e}{Style.RESET_ALL}")
+    
+    # <<< NEW: Queued functions for new text manipulation >>>
+    def queue_clear_message_content(self, element_id: str):
+        """Queues a JS call to clear the message bubble content."""
+        try:
+            self.video_event_queue.put(('clear_content', element_id))
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error queueing clear content: {e}{Style.RESET_ALL}")
+
+    def queue_append_message_content(self, element_id: str, text: str):
+        """Queues a JS call to append text to the message bubble."""
+        try:
+            self.video_event_queue.put(('append_content', {'id': element_id, 'text': text}))
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error queueing append content: {e}{Style.RESET_ALL}")
+    # <<< END NEW >>>
     
     def process_video_events(self):
         """Process all queued video events"""
@@ -234,6 +296,12 @@ class DarwinChatbot:
                     self.execute_typing_indicator(data)
                 elif event_type == 'video_ended':
                     self.handle_video_ended_in_context()
+                # <<< NEW: Handle new text manipulation events >>>
+                elif event_type == 'clear_content':
+                    self.execute_clear_content(data)
+                elif event_type == 'append_content':
+                    self.execute_append_content(data)
+                # <<< END NEW >>>
                     
             except queue.Empty:
                 break
@@ -243,15 +311,10 @@ class DarwinChatbot:
     def execute_video_update(self, video_url: str):
         """Execute video update"""
         try:
-            js_code = f'''
-                if (window.updateVideoSource) {{
-                    window.updateVideoSource('{video_url}');
-                }} else {{
-                    console.error('[MAIN] updateVideoSource not ready');
-                }}
-            '''
+            js_code = f"window.updateVideoSource('{video_url}');"
             nicegui_ui.run_javascript(js_code)
-            print(f"{Fore.GREEN}[MAIN] Video updated: {video_url.split('/')[-1]}{Style.RESET_ALL}")
+            # <<< MODIFIED: Quieter logging for chunks >>>
+            # print(f"{Fore.GREEN}[MAIN] Video updated: {video_url.split('/')[-1]}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Video update failed: {e}{Style.RESET_ALL}")
     
@@ -263,19 +326,10 @@ class DarwinChatbot:
             duration = data['duration']
             
             escaped_text = text.replace('\\', '\\\\').replace("'", "\\'").replace('\n', '\\n').replace('\r', '')
-            
-            js_code = f'''
-                if (window.streamText) {{
-                    window.streamText('{element_id}', '{escaped_text}', {duration});
-                }} else {{
-                    console.error('[MAIN] streamText function not ready');
-                    const element = document.getElementById('{element_id}');
-                    if (element) element.textContent = '{escaped_text}';
-                }}
-            '''
+            js_code = f"window.streamText('{element_id}', '{escaped_text}', {duration});"
             
             nicegui_ui.run_javascript(js_code)
-            print(f"{Fore.GREEN}[MAIN] Text streaming started: {len(text)} chars{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}[MAIN] Text streaming (word-by-word) started: {len(text)} chars{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Text streaming failed: {e}{Style.RESET_ALL}")
     
@@ -286,33 +340,64 @@ class DarwinChatbot:
             show = data['show']
             
             if show:
-                js_code = f'''
-                    if (window.startTypingIndicator) {{
-                        window.startTypingIndicator('{element_id}');
-                    }} else {{
-                        console.error('[MAIN] startTypingIndicator not ready');
-                    }}
-                '''
+                js_code = f"window.startTypingIndicator('{element_id}');"
             else:
-                js_code = f'''
-                    if (window.stopTypingIndicator) {{
-                        window.stopTypingIndicator('{element_id}');
-                    }} else {{
-                        console.error('[MAIN] stopTypingIndicator not ready');
-                    }}
-                '''
+                js_code = f"window.stopTypingIndicator('{element_id}');"
             
             nicegui_ui.run_javascript(js_code)
-            print(f"{Fore.GREEN}[MAIN] Typing indicator {'started' if show else 'stopped'}{Style.RESET_ALL}")
+            # <<< MODIFIED: Quieter logging for chunks >>>
+            # print(f"{Fore.GREEN}[MAIN] Typing indicator {'started' if show else 'stopped'}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Typing indicator failed: {e}{Style.RESET_ALL}")
 
-    def handle_video_ended_in_context(self):
-        """Handle video ended event"""
+    # <<< NEW: Execute new JS functions >>>
+    def execute_clear_content(self, element_id: str):
+        """Executes the JS to clear a message bubble."""
         try:
+            js_code = f"window.clearMessageContent('{element_id}');"
+            nicegui_ui.run_javascript(js_code)
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Clear content failed: {e}{Style.RESET_ALL}")
+
+    def execute_append_content(self, data: dict):
+        """Executes the JS to append text to a message bubble."""
+        try:
+            element_id = data['id']
+            text = data['text']
+            escaped_text = text.replace('\\', '\\\\').replace("'", "\\'").replace('\n', '\\n').replace('\r', '')
+            
+            js_code = f"window.appendMessageContent('{element_id}', '{escaped_text}');"
+            nicegui_ui.run_javascript(js_code)
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Append content failed: {e}{Style.RESET_ALL}")
+    # <<< END NEW >>>
+
+    # <<< CHANGED: FIX 2 - This is now the core playback loop trigger >>>
+    def handle_video_ended_in_context(self):
+        """
+        Handle video ended event.
+        This is the main driver for the chunked playback loop.
+        """
+        try:
+            current_mode = self.video_manager.current_mode
+            print(f"{Fore.BLUE}[MAIN] Video ended event. Mode was: {current_mode}{Style.RESET_ALL}")
+
+            # If a lipsync video OR a pre-generated response just finished,
+            # we must check if a lipsync chunk is waiting to be played.
+            if current_mode in ["lipsync", "pregenerated"]:
+                self.is_chunk_playing = False
+                # We must schedule the next check, not call it directly
+                # This will try to play the next chunk.
+                asyncio.create_task(self.play_next_chunk())
+                return  # Stop here, play_next_chunk() will handle what's next
+
+            # If it was an idle video, just run the default logic.
+            # (This will play another idle, or a pending pre-gen video)
             self.video_manager.on_video_ended()
+
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error handling video ended: {e}{Style.RESET_ALL}")
+    # <<< END CHANGED >>>
 
     def initialize_video_system(self):
         """Initialize video system"""
@@ -322,16 +407,18 @@ class DarwinChatbot:
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error initializing video: {e}{Style.RESET_ALL}")
 
+    # <<< MODIFIED: This function now just starts the background task >>>
     async def handle_user_input(self, user_text: str):
         """Handle user input and generate response"""
         if self.is_processing:
+            print(f"{Fore.YELLOW}[MAIN] Dropping request, already processing.{Style.RESET_ALL}")
             return
         
-        self.is_processing = True
-        response_id = f"response_{self.current_response_id + 1}" # Define here for finally block
+        self.is_processing = True # This flag now means "generation is happening"
         
         try:
             if not user_text or not user_text.strip():
+                self.is_processing = False
                 return
             
             print(f"\n{Fore.CYAN}[USER] {user_text}{Style.RESET_ALL}")
@@ -341,100 +428,200 @@ class DarwinChatbot:
             
             # Create unique response ID
             self.current_response_id += 1
+            response_id = f"response_{self.current_response_id}"
             
             # Use ChatMessageManager for consistent message structure
             self.message_manager.add_user_message(user_text)
-            response_id = self.message_manager.add_bot_message(response_id)
+            self.message_manager.add_bot_message(response_id)
             
             # Start typing indicator
             self.queue_typing_indicator(response_id, True)
             
-            # Generate response
-            print(f"{Fore.BLUE}[MAIN] Generating response...{Style.RESET_ALL}")
+            # Start the background task to generate all chunks
+            # We don't await this; it runs in the background
+            asyncio.create_task(self.generate_response_chunks_task(user_text, response_id))
             
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error in handle_user_input: {e}{Style.RESET_ALL}")
+            import traceback
+            traceback.print_exc()
+            self.is_processing = False # Ensure this is reset on error
+    # <<< END MODIFIED >>>
+
+    # <<< NEW: The "Producer" task >>>
+    async def generate_response_chunks_task(self, user_text: str, response_id: str):
+        """
+        [PRODUCER] Runs in background. Gets LLM text, splits it,
+        and generates TTS/Lipsync for each chunk, adding them to the queue.
+        """
+        try:
+            # 1. Generate LLM response
+            print(f"{Fore.BLUE}[MAIN] Generating response...{Style.RESET_ALL}")
             try:
                 response_data = await asyncio.to_thread(generate_darwin_response, user_text)
             except AttributeError:
                 loop = asyncio.get_event_loop()
                 response_data = await loop.run_in_executor(None, generate_darwin_response, user_text)
             
-            # Extract text and emotion
-            if isinstance(response_data, dict):
-                darwin_response = response_data['text']
-                emotion = response_data['emotion']
-            else:
-                darwin_response = response_data
-                emotion = 'neutral'
+            if self._shutdown_flag: return
+
+            full_text = response_data['text']
+            emotion = response_data['emotion'] # Used for crossfade fallback
+            print(f"{Fore.GREEN}[MAIN] LLM Response: {full_text}{Style.RESET_ALL}")
+
+            # 2. Split response into sentences (chunks)
+            # This regex splits *after* punctuation, keeping the punctuation.
+            sentences = re.split(r'(?<=[.!?])\s+', full_text)
+            chunks = [s.strip() for s in sentences if s.strip()]
             
-            if not darwin_response or self._shutdown_flag:
+            if not chunks:
+                print(f"{Fore.YELLOW}[MAIN] No text chunks to process.{Style.RESET_ALL}")
                 self.queue_typing_indicator(response_id, False)
                 return
-            
-            print(f"{Fore.GREEN}[MAIN] Response: {darwin_response}{Style.RESET_ALL}")
-            print(f"{Fore.MAGENTA}[MAIN] Emotion: {emotion}{Style.RESET_ALL}")
-            
-            # Generate audio
-            print(f"{Fore.BLUE}[MAIN] Generating audio...{Style.RESET_ALL}")
-            default_voice = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
-            
-            try:
-                audio_path = await asyncio.to_thread(generate_complete_audio, darwin_response, None, default_voice)
-            except AttributeError:
-                loop = asyncio.get_event_loop()
-                audio_path = await loop.run_in_executor(None, generate_complete_audio, darwin_response, None, default_voice)
-            
-            if not audio_path or not os.path.exists(audio_path) or self._shutdown_flag:
-                self.queue_typing_indicator(response_id, False)
-                return
-            
-            print(f"{Fore.GREEN}[MAIN] Audio generated: {audio_path}{Style.RESET_ALL}")
-            
-            # Generate lipsync
-            if self.use_float:
-                lipsync_video = await self._generate_float_lipsync(audio_path, darwin_response)
-            else:
-                lipsync_video = await self._generate_crossfade_lipsync(audio_path, darwin_response, emotion)
-            
-            if not lipsync_video or not os.path.exists(lipsync_video) or self._shutdown_flag:
-                self.queue_typing_indicator(response_id, False)
-                return
-            
-            print(f"{Fore.GREEN}[MAIN] Lipsync video: {lipsync_video}{Style.RESET_ALL}")
-            
-            # Get video duration
-            video_duration = self.get_video_duration(lipsync_video)
-            
-            # Play the lipsync video
-            self.video_manager.play_lipsync_video(lipsync_video)
-            print(f"{Fore.CYAN}[MAIN] Playing lipsync video{Style.RESET_ALL}")
-            
-            # Stop typing indicator and start text streaming
-            self.queue_typing_indicator(response_id, False)
-            
-            # Queue text streaming
-            print(f"{Fore.MAGENTA}[MAIN] Queueing text stream over {video_duration:.2f}s{Style.RESET_ALL}")
-            self.queue_text_stream(response_id, darwin_response, video_duration)
-            
-            # Cleanup old files
+
+            print(f"{Fore.CYAN}[MAIN] Split into {len(chunks)} chunk(s).{Style.RESET_ALL}")
+
+            # 3. Loop and generate each chunk
+            for i, sentence_text in enumerate(chunks):
+                if self._shutdown_flag: return
+                
+                print(f"{Fore.BLUE}[MAIN] Processing chunk {i+1}/{len(chunks)}: {sentence_text}{Style.RESET_ALL}")
+                
+                # a. Generate audio
+                print(f"{Fore.BLUE}[MAIN]   Generating audio for chunk...{Style.RESET_ALL}")
+                default_voice = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
+                try:
+                    audio_path = await asyncio.to_thread(generate_complete_audio, sentence_text, None, default_voice)
+                except AttributeError:
+                    loop = asyncio.get_event_loop()
+                    audio_path = await loop.run_in_executor(None, generate_complete_audio, sentence_text, None, default_voice)
+
+                if not audio_path or not os.path.exists(audio_path) or self._shutdown_flag:
+                    print(f"{Fore.RED}[MAIN] Audio generation failed for chunk.{Style.RESET_ALL}")
+                    continue
+
+                # b. Generate lipsync
+                print(f"{Fore.BLUE}[MAIN]   Generating lipsync for chunk...{Style.RESET_ALL}")
+                if self.use_float:
+                    lipsync_video = await self._generate_float_lipsync(audio_path, sentence_text)
+                else:
+                    lipsync_video = await self._generate_crossfade_lipsync(audio_path, sentence_text, emotion)
+                
+                if not lipsync_video or not os.path.exists(lipsync_video) or self._shutdown_flag:
+                    print(f"{Fore.RED}[MAIN] Lipsync generation failed for chunk.{Style.RESET_ALL}")
+                    continue
+                
+                # c. Get duration
+                video_duration = self.get_video_duration(lipsync_video)
+                
+                # d. Create chunk data and add to queue
+                chunk_data = {
+                    'id': response_id,
+                    'text': sentence_text,
+                    'video_path': lipsync_video,
+                    'duration': video_duration,
+                    'is_first': (i == 0),
+                }
+                
+                await self.chunk_queue.put(chunk_data)
+                print(f"{Fore.GREEN}[MAIN]   Chunk {i+1} ready and queued.{Style.RESET_ALL}")
+                
+                # <<< CHANGED: FIX 1 - Remove the "kickstart" logic >>>
+                # (The "if i == 0" block has been deleted)
+                # <<< END CHANGED >>>
+
+            # 4. Cleanup old videos
             try:
                 self.video_manager.cleanup_old_lipsync_videos(keep_last=5)
             except:
                 pass
-                
+
         except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error processing response: {e}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[MAIN] Error in generation task: {e}{Style.RESET_ALL}")
             import traceback
             traceback.print_exc()
-            self.queue_typing_indicator(response_id, False)
+            self.queue_typing_indicator(response_id, False) # Stop typing on error
         finally:
-            self.is_processing = False
+            self.is_processing = False # Generation is finished
+    # <<< END NEW >>>
+            
+    # <<< CHANGED: FIX 3 - The "Consumer" function with polling >>>
+    async def play_next_chunk(self):
+        """
+        [CONSUMER] Checks the queue for a video chunk and plays it.
+        This is called after the first chunk is made, and by the
+        'video_ended' handler.
+        """
+        # Prevent two play calls from running at once
+        if self.is_chunk_playing:
+            return
+            
+        try:
+            # Try to get the next chunk
+            chunk_data = self.chunk_queue.get_nowait()
+        
+        except asyncio.QueueEmpty:
+            # <<< NEW LOGIC: Queue is empty, but is the producer done? >>>
+            
+            # self.is_processing is True if generate_response_chunks_task is still running.
+            if self.is_processing:
+                # The producer is still working on the next chunk.
+                # We must *wait* and *poll* the queue.
+                print(f"{Fore.YELLOW}[MAIN] Chunk queue empty, but producer is still working. Waiting...{Style.RESET_ALL}")
+                
+                # We can't block, so we schedule another check in a moment.
+                await asyncio.sleep(0.5) # Wait 500ms
+                asyncio.create_task(self.play_next_chunk()) # Try again
+                
+            else:
+                # The queue is empty AND the producer is finished.
+                # The *entire* response is done.
+                print(f"{Fore.GREEN}[MAIN] Chunk queue empty and producer finished. Returning to idle.{Style.RESET_ALL}")
+                self.is_chunk_playing = False
+                self.current_response_id_playing = None
+                self.video_manager.play_next_idle_video() # Return to idle
+            
+            return # Stop execution here
+            # <<< END NEW LOGIC >>>
+
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error getting from chunk queue: {e}{Style.RESET_ALL}")
+            self.is_chunk_playing = False
+            return
+
+        # We have a chunk!
+        self.is_chunk_playing = True
+        response_id = chunk_data['id']
+
+        try:
+            # Check if this is the first chunk of a *new* response
+            if response_id != self.current_response_id_playing:
+                self.current_response_id_playing = response_id
+                # Stop the typing indicator
+                self.queue_typing_indicator(response_id, False)
+                # Clear the "typing..." text from the bubble
+                self.queue_clear_message_content(response_id)
+            
+            # Play the video
+            self.video_manager.play_lipsync_video(chunk_data['video_path'])
+            
+            # Append this sentence's text to the message bubble
+            self.queue_append_message_content(response_id, chunk_data['text'])
+            
+            print(f"{Fore.GREEN}[MAIN] Playing chunk: {chunk_data['text']}{Style.RESET_ALL}")
+
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error playing chunk: {e}{Style.RESET_ALL}")
+            self.is_chunk_playing = False # Allow next attempt
+    # <<< END CHANGED >>>
 
     async def _generate_float_lipsync(self, audio_path: str, text: str) -> Optional[str]:
         """
         Generate lipsync using the new FLOAT subprocess manager.
         'text' is unused but kept for consistent signature.
         """
-        print(f"{Fore.BLUE}[MAIN] Creating FLOAT lipsync...{Style.RESET_ALL}")
+        # <<< MODIFIED: Quieter logging >>>
+        # print(f"{Fore.BLUE}[MAIN] Creating FLOAT lipsync...{Style.RESET_ALL}")
         
         def generate_float():
             try:
