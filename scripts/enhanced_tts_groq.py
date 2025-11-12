@@ -1,4 +1,4 @@
-# enhanced_tts_groq.py - TTS using Groq API with Fritz-PlayAI voice
+# enhanced_tts_groq.py - TTS using Groq API with Basil-PlayAI voice + speed control
 
 import time
 import os
@@ -14,6 +14,9 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Global Groq client
 _groq_client = None
+
+# Speed multiplier setting (1.0 = normal, 1.15 = 15% faster)
+SPEECH_SPEED_MULTIPLIER = 1.00
 
 def load_groq_api_key():
     """Load Groq API key from file in project root"""
@@ -33,10 +36,11 @@ def load_config():
         with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
             return {
-                'max_words': config.get("maxWords", 50)
+                'max_words': config.get("maxWords", 50),
+                'speech_speed': config.get("speechSpeed", 1.05)
             }
     except (FileNotFoundError, json.JSONDecodeError):
-        return {'max_words': 50}
+        return {'max_words': 50, 'speech_speed': 1.05}
 
 def get_groq_client():
     """Get or create Groq client instance"""
@@ -59,8 +63,62 @@ def set_voice_model(voice_name: str):
     """Set voice model (for compatibility - Groq uses Basil-PlayAI)"""
     print(f"{Fore.CYAN}[TTS] Voice setting: {voice_name} (using Basil-PlayAI){Style.RESET_ALL}")
 
+def speedup_audio(input_path: str, speed_multiplier: float = 1.15) -> str:
+    """
+    Speed up audio file using pydub (fast and efficient).
+    
+    Args:
+        input_path: Path to input audio file
+        speed_multiplier: Speed multiplier (1.15 = 15% faster)
+    
+    Returns:
+        Path to the sped-up audio file (or original if speedup fails/disabled)
+    """
+    # If speed is 1.0, no processing needed
+    if abs(speed_multiplier - 1.0) < 0.01:
+        return input_path
+    
+    try:
+        from pydub import AudioSegment
+        from pydub.effects import speedup
+        
+        print(f"{Fore.CYAN}[TTS] Speeding up audio by {speed_multiplier}x...{Style.RESET_ALL}")
+        
+        # Load audio
+        audio = AudioSegment.from_wav(input_path)
+        
+        # Speed up (this changes both tempo and pitch)
+        sped_up = audio._spawn(audio.raw_data, overrides={
+            "frame_rate": int(audio.frame_rate * speed_multiplier)
+        })
+        
+        # Resample back to original frame rate (maintains speed, adjusts pitch slightly)
+        sped_up = sped_up.set_frame_rate(audio.frame_rate)
+        
+        # Create output path
+        base, ext = os.path.splitext(input_path)
+        output_path = f"{base}_sped{ext}"
+        
+        # Export
+        sped_up.export(output_path, format="wav")
+        
+        # Delete original and rename sped-up version
+        os.remove(input_path)
+        os.rename(output_path, input_path)
+        
+        print(f"{Fore.GREEN}[TTS] Audio sped up successfully ({speed_multiplier}x){Style.RESET_ALL}")
+        return input_path
+        
+    except ImportError:
+        print(f"{Fore.YELLOW}[TTS] pydub not installed. Install with: pip install pydub{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}[TTS] Also ensure ffmpeg is installed on your system{Style.RESET_ALL}")
+        return input_path
+    except Exception as e:
+        print(f"{Fore.RED}[TTS] Error speeding up audio: {e}{Style.RESET_ALL}")
+        return input_path
+
 def generate_complete_audio(text: str, output_filename: str = None, voice_path: str = None) -> str:
-    """Generate complete audio file using Groq TTS API"""
+    """Generate complete audio file using Groq TTS API with optional speedup"""
     if not text or not text.strip():
         return None
     
@@ -92,6 +150,14 @@ def generate_complete_audio(text: str, output_filename: str = None, voice_path: 
         response.write_to_file(output_path)
         
         print(f"{Fore.GREEN}[TTS] Audio saved: {output_path}{Style.RESET_ALL}")
+        
+        # Apply speedup if configured
+        config = load_config()
+        speed_multiplier = config.get('speech_speed', SPEECH_SPEED_MULTIPLIER)
+        
+        if speed_multiplier != 1.0:
+            output_path = speedup_audio(output_path, speed_multiplier)
+        
         return output_path
         
     except Exception as e:
@@ -105,7 +171,7 @@ def test_tts_system():
         print(f"{Fore.GREEN}[TTS] Groq client initialized{Style.RESET_ALL}")
         
         # Try a simple test generation
-        test_text = "Testing Groq TTS system with Fritz voice."
+        test_text = "Testing Groq TTS system with Basil voice and speedup."
         result = generate_complete_audio(test_text, "test_audio")
         
         if result and os.path.exists(result):
@@ -129,11 +195,11 @@ def get_voice_instance(voice_path: str = None):
 if __name__ == "__main__":
     """Test the TTS system when run directly"""
     print(f"\n{Fore.GREEN}{'=' * 60}")
-    print(f"{Fore.YELLOW}Testing Groq TTS with Fritz-PlayAI voice")
+    print(f"{Fore.YELLOW}Testing Groq TTS with Basil-PlayAI voice + Speedup")
     print(f"{Fore.GREEN}{'=' * 60}{Style.RESET_ALL}\n")
     
     # Sample sentence for testing
-    test_sentence = "Hmmm...That's a good question."
+    test_sentence = "Hmmm...That's a good question. Let me think about that for a moment."
     
     print(f"{Fore.CYAN}Test sentence: {test_sentence}{Style.RESET_ALL}\n")
     
