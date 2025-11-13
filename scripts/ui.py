@@ -298,7 +298,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         with ui.row().classes('w-full flex-grow items-start justify-start gap-4 p-4'):
             
             # === LEFT VIDEO PLAYER (FIXED 512x512 FOR SEAMLESS TRANSITIONS) ===
-            with ui.column().classes('items-start shrink-0').style('width: 35%; height: auto;'):
+            with ui.column().classes('items-start shrink-0').style('width: fit-content; height: auto;'):
                 # FIXED: Set to exact 512x512 to match FLOAT output
                 # object-fit: cover crops larger idle videos to show center 512x512
                 video_container = ui.card().classes('p-0 overflow-hidden').style(
