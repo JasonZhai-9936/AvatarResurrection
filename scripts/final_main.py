@@ -48,7 +48,7 @@ FLOAT_CONFIG = {
     "ckpt_path": "./checkpoints/float.pth",
     "wav2vec_model_path": "./checkpoints/wav2vec2-base-960h",
     "audio2emotion_path": "./checkpoints/wav2vec-english-speech-emotion-recognition",
-    "nfe": 4,              # Number of function evaluations (higher = better quality, slower)
+    "nfe": 7,              # Number of function evaluations (higher = better quality, slower)
     "fps": 25,              # Frames per second
     "a_cfg_scale": 2.0,     # Audio guidance scale
     "r_cfg_scale": 1.0,     # Reference image guidance scale
