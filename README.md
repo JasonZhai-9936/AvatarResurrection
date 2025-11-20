@@ -1,26 +1,21 @@
 # Darwin Avatar Chatbot
 
-### Verify CUDA Installation
-```bash
-nvcc --version
-# Should show CUDA version 11.8 or 12.x
-```
 ## Installation 
 
 #### Step 1: Prerequisites
 Ensure you have:
 - [Git](https://git-scm.com/)
-- [Miniconda/Anaconda](https://docs.anaconda.com/miniconda/)
-- [FFmpeg](https://ffmpeg.org/download.html)
-- NVIDIA GPU with CUDA drivers
+- [Miniconda](https://docs.anaconda.com/miniconda/)
+- [FFmpeg in PATH](https://www.gyan.dev/ffmpeg/builds/)
+- NVIDIA GPU with CUDA drivers(11.8-12.x)
 
 #### Step 2: Clone Repository
 ```bash
-git clone https://github.com/YourUsername/DarwinChatbot.git
-cd DarwinChatbot
+git clone https://github.com/JasonZhai-9936/AvatarResurrection
+cd  AvatarResurrection
 ```
 
-### Option 1: One-Click Install (Recommended for Windows + CUDA)
+### Option 1: One-Click Install
 
 1. **Run the one-click installer:**
    ```bash
@@ -31,7 +26,6 @@ cd DarwinChatbot
    - Installs all dependencies (PyTorch, FLOAT, Piper, etc.)
    - Downloads FLOAT checkpoints (~2GB)
    - Sets up project structure
-   - Configures API keys (interactive)
 
 ---
 
@@ -97,7 +91,7 @@ https://huggingface.co/r-f/wav2vec-english-speech-emotion-recognition
 #### Step 4: Launch Application
 ```bash
 conda activate DarwinChatbot
-python scripts/final_main.py
+python scripts/main.py
 ```
 
 #### Additional Settings
