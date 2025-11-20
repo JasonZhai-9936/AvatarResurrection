@@ -62,22 +62,34 @@ pip install -r requirements.txt
 sh download_checkpoints.sh
 # or download checkpoints manually from https://drive.google.com/file/d/1rvWuM12cyvNvBQNCLmG4Fr2L1rpjQBF0/view
 
-# D. Download both supporting W2V models at
+# D. Download both supporting W2V models and place folders in /checkpoints
 https://huggingface.co/facebook/wav2vec2-base-960h
 https://huggingface.co/r-f/wav2vec-english-speech-emotion-recognition
 
 # E. Verify Structure
 # The checkpoints should be organized as follows:
-./checkpoints/
-├── float.pth
-├── wav2vec2-base-960h/
-│   ├── config.json
-│   ├── pytorch_model.bin
-│   └── ...
-└── wav2vec-english-speech-emotion-recognition/
-    ├── config.json
-    ├── pytorch_model.bin
-    └── ...
+./checkpoints
+|-- checkpoints_here
+|-- float.pth                                       # main model
+|-- wav2vec2-base-960h/                             # audio encoder
+|   |-- .gitattributes
+|   |-- config.json
+|   |-- feature_extractor_config.json
+|   |-- model.safetensors
+|   |-- preprocessor_config.json
+|   |-- pytorch_model.bin
+|   |-- README.md
+|   |-- special_tokens_map.json
+|   |-- tf_model.h5
+|   |-- tokenizer_config.json
+|   '-- vocab.json
+'-- wav2vec-english-speech-emotion-recognition/     # emotion encoder
+    |-- .gitattributes
+    |-- config.json
+    |-- preprocessor_config.json
+    |-- pytorch_model.bin
+    |-- README.md
+    '-- training_args.bin
 
 ```
 
@@ -160,8 +172,6 @@ DarwinChatbot/
 
 ## Acknowledgments
 
-- **FLOAT**: Advanced lip-sync technology
-- **Groq**: Fast LLM inference and TTS
-- **Piper**: High-quality offline TTS
-- **NiceGUI**: Modern web interface framework
+- **FLOAT**: https://github.com/deepbrainai-research/float
+- **Piper**: https://github.com/rhasspy/piper
 
