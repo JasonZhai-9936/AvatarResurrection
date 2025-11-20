@@ -1,11 +1,15 @@
-# Requirements for LLM, UI, and TTS (CUDA version)
-
 # === Core LangChain ecosystem ===
 langchain
 langchain-core
 langchain-community
 langchain-huggingface
 langchain-groq
+sentence-transformers 
+
+# === APIs & Models ===
+groq                   
+faster-whisper        
+spacy                
 
 # === Embeddings and vector stores ===
 faiss-cpu
@@ -16,14 +20,10 @@ tqdm
 nicegui
 colorama
 
-# === Text-to-Speech (Piper) ===
+# === Audio Processing ===
 piper-tts
 simpleaudio
+pydub                  
 
 # === ONNX runtime (GPU build) ===
-# Use this version only if you have CUDA installed and configured.
 onnxruntime-gpu
-
-docker>=6.0.0
-asyncio
-pathlib
