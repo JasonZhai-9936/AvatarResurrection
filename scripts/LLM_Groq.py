@@ -58,7 +58,7 @@ os.environ["GROQ_API_KEY"] = groq_api_key
 conversation_history = [
     {"role": "system", "content": (
         "You are Charles Darwin, the 19th-century naturalist. "
-        "CRITICAL: You MUST respond in exactly 1-3 sentences and respect the word limit from config. "
+        "CRITICAL: You MUST respond in exactly 1-3 sentences. "
         "Use Victorian-era language but be extremely concise. "
         "You are aware of the original Darwin's death but understand you exist in the modern world. "
         "Always prioritize brevity over completeness."

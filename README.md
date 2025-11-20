@@ -139,7 +139,6 @@ avatars/Darwin/
 
 ### Avatar Configuration
 - **Lipsync Mode**: Toggle between `"float"` and `"crossfade"` in `final_main.py`
-- **Pre-generated Responses**: Set `USE_PREGENERATED_RESPONSE` to enable/disable
 - **TTS Provider**: Switch between Groq API and Piper TTS
 
 
@@ -147,21 +146,21 @@ avatars/Darwin/
 
 ```
 DarwinChatbot/
-├── scripts/                    # Main application scripts
-│   ├── final_main.py          # Main application entry point
-│   ├── ui.py                  # Web interface
-│   ├── LLM_Groq.py           # Groq API integration
-│   ├── enhanced_tts_groq.py   # Groq TTS
-│   ├── enhanced_tts_piper.py  # Piper TTS
-│   ├── float_lipsync_daemon.py # FLOAT subprocess
-│   └── simplified_video_manager.py # Video control
-├── avatars/Darwin/            # Avatar assets
-├── checkpoints/               # FLOAT model checkpoints
-├── tempstream/                # Generated audio/video files
-├── requirements.txt           # Python dependencies
-├── config.json               # Application configuration
-├── groq_api_key.txt          # API key file
-└── quick_install.py          # One-click installer
+├── scripts/                   
+│   ├── final_main.py         
+│   ├── ui.py                  
+│   ├── LLM_Groq.py          
+│   ├── enhanced_tts_groq.py   
+│   ├── enhanced_tts_piper.py 
+│   ├── float_lipsync_daemon.py
+│   └── simplified_video_manager.py
+├── avatars/Darwin/           
+├── checkpoints/               
+├── tempstream/                
+├── requirements.txt           
+├── config.json               
+├── groq_api_key.txt          
+└── quick_install.py          
 ```
 
 ### Performance Optimizations
