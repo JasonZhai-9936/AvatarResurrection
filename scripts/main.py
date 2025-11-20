@@ -48,13 +48,13 @@ FLOAT_CONFIG = {
     "ckpt_path": "./checkpoints/float.pth",
     "wav2vec_model_path": "./checkpoints/wav2vec2-base-960h",
     "audio2emotion_path": "./checkpoints/wav2vec-english-speech-emotion-recognition",
-    "nfe": 7,              # Number of function evaluations (higher = better quality, slower)
-    "fps": 25,              # Frames per second
-    "a_cfg_scale": 2.0,     # Audio guidance scale
-    "r_cfg_scale": 1.0,     # Reference image guidance scale
-    "e_cfg_scale": 1.0,     # Emotion guidance scale
-    "seed": 15,             # Random seed
-    "no_crop": False         # Use no_crop
+    "nfe": 7,              #can change, but doesn't really affect output unless very low(3-4)
+    "fps": 25,              #dont change, will break code
+    "a_cfg_scale": 2.0,     
+    "r_cfg_scale": 1.0,     
+    "e_cfg_scale": 1.0,     # set around 1-5, if setting above 1, a_cfg must be raised higher as well
+    "seed": 15,            
+    "no_crop": False         # ALWAYS set to false, otherwise the output is warped
 }
 
 

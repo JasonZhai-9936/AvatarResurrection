@@ -19,7 +19,7 @@ tqdm
 # === UI framework ===
 nicegui
 colorama
-
+asyncio
 # === Audio Processing ===
 piper-tts
 simpleaudio
