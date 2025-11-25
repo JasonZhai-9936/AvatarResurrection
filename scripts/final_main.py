@@ -1,5 +1,5 @@
 # final_main.py - Darwin Chatbot with EMOTIONAL lip-sync and FLOAT support
-# <<< VERSION: Chunking + Idle_Chunk "Thinking" Loop (FIXED) >>>
+# <<< VERSION: Chunking + Idle_Chunk "Thinking" Loop + VOICE INPUT >>>
 
 import os
 import sys
@@ -27,6 +27,7 @@ from enhanced_tts_groq import generate_complete_audio
 from simplified_video_manager import SimplifiedVideoManager
 from ui import build_ui
 from chat_message_manager import ChatMessageManager
+from voice_input_manager import VoiceInputManager # <<< NEW IMPORT
 from nicegui import ui as nicegui_ui
 
 # ============================================================================
@@ -64,15 +65,21 @@ class DarwinChatbot:
     def __init__(self):
         # Use configuration from constants above
         self.use_float = USE_FLOAT_LIPSYNC
-        self.use_pregenerated = USE_PREGENERATED_RESPONSE  # <<< ADDED
+        self.use_pregenerated = USE_PREGENERATED_RESPONSE
         
         print(f"\n{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}DARWIN CHATBOT INITIALIZATION{Style.RESET_ALL}")
         print(f"{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}[CONFIG] Lipsync mode: {'FLOAT' if self.use_float else 'Crossfade'}{Style.RESET_ALL}")
-        print(f"{Fore.YELLOW}[CONFIG] Pre-generated response: {'ENABLED' if self.use_pregenerated else 'DISABLED'}{Style.RESET_ALL}\n") # <<< ADDED
+        print(f"{Fore.YELLOW}[CONFIG] Pre-generated response: {'ENABLED' if self.use_pregenerated else 'DISABLED'}{Style.RESET_ALL}\n")
         
         self.video_manager = SimplifiedVideoManager(avatar_name="Darwin")
+        
+        # Initialize Voice Manager
+        self.voice_manager = VoiceInputManager(PROJECT_DIR)
+        self.is_recording = False
+        self.current_voice_msg_id = None
+        self.final_voice_text = ""
         
         # This will call either _initialize_float_lipsync or _initialize_crossfade_lipsync
         # based on the USE_FLOAT_LIPSYNC flag.
@@ -171,10 +178,15 @@ class DarwinChatbot:
 
     def setup_ui(self):
         """Set up UI"""
+        # Get microphones for dropdown
+        available_mics = self.voice_manager.get_available_microphones()
+        
         self.ui_components = build_ui(
-            trigger_response_callback=self.handle_user_input,
+            trigger_response_callback=self.handle_ui_interaction, # <<< Router for UI events
             voice_change_callback=self.handle_voice_change,
-            video_manager=self.video_manager
+            video_manager=self.video_manager,
+            available_mics=available_mics,       # <<< Pass mics
+            mic_change_callback=self.handle_mic_select # <<< Pass callback
         )
         
         self.chat_log = self.ui_components['chat_log']
@@ -192,29 +204,113 @@ class DarwinChatbot:
 
     def add_custom_javascript(self):
         """Adds JS functions to the page for clearing/appending text."""
-        js_code = '''
-        <script>
-            window.clearMessageContent = function(elementId) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.innerHTML = '';
-                    element.classList.remove('streaming-cursor');
-                }
-            }
+        # Note: Most logic is now in ui.py, but this is kept for redundancy or specific extra scripts
+        pass
+
+    # ============================================================================
+    # VOICE & MIC HANDLERS (NEW)
+    # ============================================================================
+
+    def handle_mic_select(self, device_index):
+        """Handle microphone selection from UI"""
+        try:
+            self.voice_manager.set_input_device(device_index)
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error setting input device: {e}{Style.RESET_ALL}")
+
+    async def handle_ui_interaction(self, content, mode="text"):
+        """Router for UI events (Text Submit, Mic Toggle, Cancel)"""
+        if mode == "text":
+            # Standard text input
+            await self.process_llm_response(content)
             
-            window.appendMessageContent = function(elementId, textToAppend) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    // Append text. Add a space if not the first chunk.
-                    if (element.textContent.length > 0 && element.textContent.slice(-1) !== ' ') {
-                         element.textContent += ' ';
-                    }
-                    element.textContent += textToAppend;
-                }
-            }
-        </script>
-        '''
-        nicegui_ui.add_head_html(js_code)
+        elif mode == "voice_toggle":
+            # Mic button clicked
+            if self.is_recording:
+                await self.stop_voice_recording_and_submit()
+            else:
+                self.start_voice_recording()
+                
+        elif mode == "voice_cancel":
+            # Cancel button clicked
+            self.cancel_voice_recording()
+
+    def start_voice_recording(self):
+        """Start listening and create a placeholder bubble"""
+        if self.is_recording: return
+        
+        self.is_recording = True
+        self.final_voice_text = ""
+        
+        # 1. Disable text input
+        self.ui_components['prompt_input'].disable()
+        self.ui_components['submit_btn'].disable()
+        
+        # 2. Update Buttons: Make Mic Red (Stop), Show Cancel
+        self.ui_components['mic_btn'].props('color=red icon=stop')
+        self.ui_components['cancel_btn'].classes(remove='hidden')
+        
+        # 3. Create the User Bubble immediately
+        # We pass an empty string first, then update it live
+        self.current_voice_msg_id = self.message_manager.add_user_message("...")
+        
+        # 4. Start the thread with a lambda to handle partials
+        def update_ui_text(text):
+            self.final_voice_text = text
+            # Queue the JS update
+            self.video_event_queue.put(('update_user_bubble', {
+                'id': self.current_voice_msg_id,
+                'text': text
+            }))
+            
+        self.voice_manager.start_listening(update_ui_text)
+        print(f"{Fore.CYAN}[VOICE] Recording started...{Style.RESET_ALL}")
+
+    async def stop_voice_recording_and_submit(self):
+        """Stop listening and submit the text to LLM"""
+        if not self.is_recording: return
+        
+        self.is_recording = False
+        self.voice_manager.stop_listening()
+        
+        # Reset UI
+        self.ui_components['prompt_input'].enable()
+        self.ui_components['submit_btn'].enable()
+        self.ui_components['mic_btn'].props('color=blue icon=mic')
+        self.ui_components['cancel_btn'].classes(add='hidden')
+        
+        text_to_process = self.final_voice_text
+        print(f"{Fore.CYAN}[VOICE] Final text: {text_to_process}{Style.RESET_ALL}")
+        
+        if text_to_process and text_to_process.strip():
+            # Process exactly like text input
+            await self.process_llm_response(text_to_process)
+        else:
+            # If nothing was said, remove the bubble
+            self.cancel_voice_recording()
+
+    def cancel_voice_recording(self):
+        """Cancel recording and delete the bubble"""
+        self.is_recording = False
+        self.voice_manager.stop_listening()
+        self.final_voice_text = ""
+        
+        # Remove the bubble from UI
+        if self.current_voice_msg_id:
+            self.video_event_queue.put(('remove_bubble', self.current_voice_msg_id))
+            self.current_voice_msg_id = None
+            
+        # Reset UI
+        self.ui_components['prompt_input'].enable()
+        self.ui_components['submit_btn'].enable()
+        self.ui_components['mic_btn'].props('color=blue icon=mic')
+        self.ui_components['cancel_btn'].classes(add='hidden')
+        
+        print(f"{Fore.YELLOW}[VOICE] Recording cancelled{Style.RESET_ALL}")
+
+    # ============================================================================
+    # QUEUE & EVENT HANDLING
+    # ============================================================================
 
     def queue_video_update(self, video_url: str):
         """Queue video update"""
@@ -284,6 +380,13 @@ class DarwinChatbot:
                     self.execute_clear_content(data)
                 elif event_type == 'append_content':
                     self.execute_append_content(data)
+                
+                # NEW VOICE EVENTS
+                elif event_type == 'update_user_bubble':
+                    escaped = data['text'].replace("'", "\\'")
+                    nicegui_ui.run_javascript(f"window.updateUserMessage('{data['id']}', '{escaped}');")
+                elif event_type == 'remove_bubble':
+                    nicegui_ui.run_javascript(f"window.removeMessageElement('{data}');")
                     
             except queue.Empty:
                 break
@@ -357,7 +460,6 @@ class DarwinChatbot:
             current_mode = self.video_manager.current_mode
             print(f"{Fore.BLUE}[MAIN] Video ended event. Mode was: {current_mode}{Style.RESET_ALL}")
 
-            # <<< CHANGE 1: Added "idle_chunk" to this list >>>
             # If a lipsync, pre-gen, or "thinking" video just finished,
             # we must check if a lipsync chunk is waiting to be played.
             if current_mode in ["lipsync", "pregenerated", "idle_chunk"]:
@@ -382,8 +484,11 @@ class DarwinChatbot:
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error initializing video: {e}{Style.RESET_ALL}")
 
-    async def handle_user_input(self, user_text: str):
-        """Handle user input and generate response"""
+    async def process_llm_response(self, user_text: str):
+        """
+        [RENAMED] The core logic: LLM -> TTS -> Video
+        Previously called 'handle_user_input'
+        """
         if self.is_processing:
             print(f"{Fore.YELLOW}[MAIN] Dropping request, already processing.{Style.RESET_ALL}")
             return
@@ -406,8 +511,13 @@ class DarwinChatbot:
             self.current_response_id += 1
             response_id = f"response_{self.current_response_id}"
             
-            # Use ChatMessageManager for consistent message structure
-            self.message_manager.add_user_message(user_text)
+            # IMPORTANT: ONLY add message if it wasn't already added by voice logic
+            if not self.current_voice_msg_id:
+                self.message_manager.add_user_message(user_text)
+            
+            # Reset voice ID tracking for next turn
+            self.current_voice_msg_id = None
+            
             self.message_manager.add_bot_message(response_id)
             
             # Start typing indicator
@@ -418,7 +528,7 @@ class DarwinChatbot:
             asyncio.create_task(self.generate_response_chunks_task(user_text, response_id))
             
         except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error in handle_user_input: {e}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[MAIN] Error in process_llm_response: {e}{Style.RESET_ALL}")
             import traceback
             traceback.print_exc()
             self.is_processing = False # Ensure this is reset on error
@@ -500,10 +610,7 @@ class DarwinChatbot:
                 await self.chunk_queue.put(chunk_data)
                 print(f"{Fore.GREEN}[MAIN]   Chunk {i+1} ready and queued.{Style.RESET_ALL}")
                 
-                # <<< CHANGE 2: Removed "if i == 0" >>>
                 # Kickstart the player *every time* a chunk is ready.
-                # If the player is in an idle_chunk loop, this will
-                # interrupt it immediately and play the new chunk.
                 asyncio.create_task(self.play_next_chunk())
 
 
@@ -524,8 +631,6 @@ class DarwinChatbot:
     async def play_next_chunk(self):
         """
         [CONSUMER] Checks the queue for a video chunk and plays it.
-        This is called after the first chunk is made, and by the
-        'video_ended' handler.
         """
         # Prevent two play calls from running at once
         if self.is_chunk_playing:
@@ -536,27 +641,20 @@ class DarwinChatbot:
             chunk_data = self.chunk_queue.get_nowait()
         
         except asyncio.QueueEmpty:
-            # <<< NEW LOGIC: Queue is empty, but is the producer done? >>>
-            
             # self.is_processing is True if generate_response_chunks_task is still running.
             if self.is_processing:
-                # <<< CHANGE 3: Replaced sleep/poll with idle_chunk video >>>
                 # The producer is still working. Play a "thinking" video.
                 print(f"{Fore.YELLOW}[MAIN] Chunk queue empty, playing idle_chunk video...{Style.RESET_ALL}")
                 self.video_manager.play_next_idle_chunk_video()
-                # We don't re-schedule play_next_chunk.
-                # The 'on_video_ended' handler will call it, creating a loop.
                 
             else:
                 # The queue is empty AND the producer is finished.
-                # The *entire* response is done.
                 print(f"{Fore.GREEN}[MAIN] Chunk queue empty and producer finished. Returning to idle.{Style.RESET_ALL}")
                 self.is_chunk_playing = False
                 self.current_response_id_playing = None
                 self.video_manager.play_next_idle_video() # Return to idle
             
             return # Stop execution here
-            # <<< END NEW LOGIC >>>
 
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Error getting from chunk queue: {e}{Style.RESET_ALL}")
@@ -591,7 +689,6 @@ class DarwinChatbot:
     async def _generate_float_lipsync(self, audio_path: str, text: str) -> Optional[str]:
         """
         Generate lipsync using the new FLOAT subprocess manager.
-        'text' is unused but kept for consistent signature.
         """
         
         def generate_float():
@@ -657,6 +754,13 @@ class DarwinChatbot:
                 self.lipsync_system.cleanup()
             except Exception as e:
                 print(f"{Fore.RED}[MAIN] Error during lipsync cleanup: {e}{Style.RESET_ALL}")
+        
+        # Cleanup voice manager
+        if hasattr(self, 'voice_manager'):
+            try:
+                self.voice_manager.stop_listening()
+            except Exception as e:
+                print(f"{Fore.RED}[MAIN] Error stopping voice manager: {e}{Style.RESET_ALL}")
 
 
     def setup_signal_handlers(self):

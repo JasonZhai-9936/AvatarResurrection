@@ -1,6 +1,8 @@
-# ui.py - UI with TYPING INDICATOR and streaming text
+# ui.py - UI with TYPING INDICATOR, streaming text, and VOICE INPUT
 # FIXED: Proper aspect ratio handling for FLOAT 1:1 videos
 # FIXED: window.streamText now APPENDS text for chunking
+# ADDED: Microphone Buttons, Selector, and Refresh logic
+# FIXED: Microphone dropdown showing [object Object]
 
 from nicegui import ui
 import os
@@ -117,8 +119,14 @@ def settings_page():
             
             ui.button('Save Settings', on_click=save_settings).classes('w-full bg-blue-600 text-white py-3 rounded-lg mt-4 hover:bg-blue-700')
 
-def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None):
-    """Build the main UI with TYPING INDICATOR and streaming text."""
+def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None, available_mics=None, mic_change_callback=None, mic_refresh_callback=None):
+    """
+    Build the main UI with TYPING INDICATOR and streaming text.
+    Updated arguments: 
+      - available_mics: List of dicts for mic selection
+      - mic_change_callback: Function to handle mic changes
+      - mic_refresh_callback: Function to refresh mic list
+    """
     
     ui.add_head_html('''
     <style>
@@ -198,11 +206,10 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             color: #e2e8f0;
             border: 1px solid rgba(59, 130, 246, 0.2);
             min-height: 40px;
-            /* *** CHANGE 1: Set final width *** */
             width: 85%;
         }
         
-        /* *** CHANGE 2: New rule to override width ONLY during streaming *** */
+        /* New rule to override width ONLY during streaming */
         .darwin-bubble.streaming-cursor {
             width: fit-content; /* Let JS control the width */
         }
@@ -219,7 +226,6 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             background: rgba(30, 41, 59, 0.9);
             border: 1px solid rgba(59, 130, 246, 0.2);
             padding: 12px 20px;
-            /* *** CHANGE 1: Set final width *** */
             width: 85%;
         }
         
@@ -242,31 +248,6 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             border: 1px solid rgba(100, 116, 139, 0.3);
             text-align: center;
             font-size: 0.9em;
-        }
-        
-        /* Legacy class support (for backward compatibility) */
-        .user-message {
-            background: linear-gradient(135deg, #1e3a5f, #2563eb);
-            color: white;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin: 8px 0;
-            max-width: 70%;
-            word-wrap: break-word;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .darwin-message {
-            background: rgba(30, 41, 59, 0.9);
-            color: #e2e8f0;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin: 8px 0;
-            max-width: 70%;
-            word-wrap: break-word;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            min-height: 40px;
         }
         
         /* Streaming text cursor effect */
@@ -332,7 +313,6 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             # === CENTER PANEL ===
             with ui.column().classes('items-center gap-4 h-full').style('width: 45%;'):
                 # === CHAT LOG ===
-                # *** CHANGE 3: Changed overflow-y-auto to overflow-y-scroll ***
                 chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-scroll rounded-lg').style('background: rgba(15, 23, 42, 0.6); max-height: 60vh; border: 1px solid rgba(59, 130, 246, 0.1);')
                 with chat_log:
                     with ui.row().classes('w-full justify-center'):
@@ -345,16 +325,28 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                         placeholder='Ask Charles Darwin anything...'
                     ).props('outlined dark').classes('w-full').style('min-height: 120px; font-size: 16px;')
 
-                    async def submit_prompt():
-                        user_text = prompt_input.value
-                        if user_text and user_text.strip():
-                            await trigger_response_callback(user_text)
-                            prompt_input.value = ""
-                        else:
-                            ui.notify("Please enter a question first", color="warning")
+                    # === BUTTON ROW (Ask + Mic + Cancel) ===
+                    with ui.row().classes('w-full gap-2 items-center'):
+                        
+                        # SEND BUTTON
+                        async def submit_prompt():
+                            user_text = prompt_input.value
+                            if user_text and user_text.strip():
+                                await trigger_response_callback(user_text, mode="text")
+                                prompt_input.value = ""
+                            else:
+                                ui.notify("Please enter a question first", color="warning")
 
-                    ui.button('Ask Darwin', on_click=submit_prompt).classes('w-full text-lg py-3 px-6 rounded-lg primary-button').style('font-weight: 600;')
-                    
+                        submit_btn = ui.button('Ask Darwin', on_click=submit_prompt).classes('flex-grow text-lg py-3 px-6 rounded-lg primary-button').style('font-weight: 600;')
+                        
+                        # MICROPHONE BUTTON
+                        # Callback sends "voice_toggle" mode
+                        mic_btn = ui.button(icon='mic', on_click=lambda: trigger_response_callback(None, mode="voice_toggle")).props('round color=blue').classes('w-12 h-12')
+                        
+                        # CANCEL RECORDING BUTTON (Initially hidden)
+                        # Callback sends "voice_cancel" mode
+                        cancel_btn = ui.button(icon='close', on_click=lambda: trigger_response_callback(None, mode="voice_cancel")).props('round color=red').classes('w-12 h-12 hidden')
+
                     # Clear chat button
                     def clear_chat():
                         chat_log.clear()
@@ -390,11 +382,13 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                     ui.label(f"Max Words: {config.get('maxWords', 50)}").classes('text-xs').style('color: #475569;')
                     ui.label(f"CUDA: {'On' if config.get('useCuda') else 'Off'}").classes('text-xs').style('color: #475569;')
 
-        # === VOICE SELECTION ===
+        # === VOICE SELECTION & MICROPHONE SELECTION ===
         ui.separator().style('background: rgba(59, 130, 246, 0.1);')
         
         with ui.row().classes('w-full p-4 items-center justify-center gap-8').style('background: rgba(15, 23, 42, 0.8); border-top: 1px solid rgba(59, 130, 246, 0.1);'):
-            ui.label('Voice Selection').classes('text-lg font-semibold').style('color: #e2e8f0;')
+            
+            # --- VOICE MODEL ---
+            ui.label('Voice Model:').classes('text-lg font-semibold').style('color: #e2e8f0;')
             
             available_voices = get_available_voices()
             current_voice = available_voices[0] if available_voices else 'en_GB-semaine-medium'
@@ -412,7 +406,54 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                     voice_change_callback(selected_voice)
             
             voice_dropdown.on('update:model-value', on_voice_change)
-            ui.label(f'Available voices: {len(available_voices)}').classes('text-sm').style('color: #64748b;')
+            
+            # --- MICROPHONE SELECTOR (With Refresh) ---
+            ui.label('Microphone:').classes('text-lg font-semibold ml-4').style('color: #e2e8f0;')
+            
+            # Helper: Convert list of dicts [{'label':'X', 'value':1}] -> {1: 'X'} for NiceGUI Select
+            # This fixes the [object Object] issue
+            def convert_mics_to_dict(mic_list):
+                if not mic_list:
+                    return {None: 'Default Microphone'}
+                result = {}
+                for m in mic_list:
+                    result[m['value']] = m['label']
+                return result
+            
+            # Initial load options
+            initial_mic_options = convert_mics_to_dict(available_mics if available_mics else None)
+            
+            with ui.row().classes('items-center gap-2'):
+                mic_dropdown = ui.select(
+                    options=initial_mic_options,
+                    value=list(initial_mic_options.keys())[0], # Default to first key
+                    label='Input Device'
+                ).props('dark outlined').classes('min-w-64')
+                
+                # Refresh Button Logic
+                def on_mic_refresh():
+                    if mic_refresh_callback:
+                        ui.notify('Scanning for microphones...', type='info')
+                        # Call backend to get fresh list
+                        new_mic_list = mic_refresh_callback()
+                        # Convert to dict for UI
+                        new_options = convert_mics_to_dict(new_mic_list)
+                        # Update the UI element
+                        mic_dropdown.options = new_options
+                        mic_dropdown.update()
+                        ui.notify(f'Found {len(new_options)} input devices', type='positive')
+                    else:
+                        ui.notify('Refresh not available', type='warning')
+                
+                ui.button(icon='refresh', on_click=on_mic_refresh).props('flat dense rounded').classes('text-blue-400')
+            
+            def on_mic_select():
+                selected_mic = mic_dropdown.value
+                ui.notify(f'Microphone changed', type='info')
+                if mic_change_callback:
+                    mic_change_callback(selected_mic)
+            
+            mic_dropdown.on('update:model-value', on_mic_select)
 
     # === JAVASCRIPT with TYPING INDICATOR & STREAMING TEXT ===
     ui.add_body_html('''
@@ -660,12 +701,70 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         element.dataset.streamInterval = streamInterval;
     }
     
+    // ======================================================================
+    // <<< VOICE INPUT HELPER FUNCTIONS (NEW) >>>
+    // ======================================================================
+    
+    // Update user message content immediately (for voice streaming)
+    window.updateUserMessage = function(elementId, text) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            // We look for the strong tag "You:"
+            const prefix = '<strong>You:</strong> ';
+            element.innerHTML = prefix + text;
+            
+            // Auto-scroll to keep it visible
+            element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+    }
+
+    // Delete a specific message bubble (for cancel button)
+    window.removeMessageElement = function(elementId) {
+        // We need to remove the Wrapper, not just the bubble
+        const bubble = document.getElementById(elementId);
+        if (bubble) {
+            // Find the parent wrapper (ui.row)
+            const wrapper = bubble.closest('.chat-message-wrapper');
+            if (wrapper) {
+                wrapper.remove();
+            } else {
+                bubble.remove();
+            }
+        }
+    }
+
+    // ======================================================================
+    // <<< EXTRA UTILS FOR RECOVERING STATE IF NEEDED >>>
+    // ======================================================================
+    
+    window.clearMessageContent = function(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = '';
+            element.classList.remove('streaming-cursor');
+        }
+    }
+    
+    window.appendMessageContent = function(elementId, textToAppend) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            if (element.textContent.length > 0 && element.textContent.slice(-1) !== ' ') {
+                 element.textContent += ' ';
+            }
+            element.textContent += textToAppend;
+        }
+    }
+    
     console.log('[UI] All functions ready');
     </script>
     ''')
 
     return {
         'chat_log': chat_log,
+        'prompt_input': prompt_input,
+        'submit_btn': submit_btn,
+        'mic_btn': mic_btn,
+        'cancel_btn': cancel_btn,
         'video_status_label': video_status_label if 'video_status_label' in locals() else None,
         'state_label': state_label if 'state_label' in locals() else None,
         'mode_label': mode_label if 'mode_label' in locals() else None,
