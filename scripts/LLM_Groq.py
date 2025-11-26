@@ -1,6 +1,6 @@
 #LLM_Groq.py - Enhanced with emotion classification
 """
-The main function for external use is now:
+The main function for external use is:
     generate_darwin_response(user_input: str) -> dict
     Returns: {'text': str, 'emotion': str}
     
@@ -20,6 +20,14 @@ import json
 import re
 from textwrap import fill
 from colorama import Fore, Style, init
+
+# ==============================================================================
+# CONFIGURATION FLAG
+# ==============================================================================
+# Set to True if using the old Crossfade lip-sync (which needs specific emotions).
+# Set to False if using FLOAT lip-sync (saves 1 API call per message).
+ENABLE_EMOTION_ANALYSIS = False
+# ==============================================================================
 
 # Set project directory (one folder above scripts)
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -333,8 +341,8 @@ class EmotionClassifier:
 
 def generate_darwin_response(user_input):
     """
-    Generate Darwin's response WITH emotion classification.
-    NOW RETURNS: {'text': str, 'emotion': str}
+    Generate Darwin's response.
+    Returns: {'text': str, 'emotion': str}
     """
     config = load_config()
     use_rag = config['useRAG']
@@ -342,6 +350,7 @@ def generate_darwin_response(user_input):
     
     print(f"{Fore.CYAN}[CONFIG] RAG search is currently {'ENABLED' if use_rag else 'DISABLED'}.{Style.RESET_ALL}")
     print(f"{Fore.CYAN}[CONFIG] Max words limit: {max_words}{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}[CONFIG] Emotion Classification: {'ENABLED' if ENABLE_EMOTION_ANALYSIS else 'DISABLED (Optimization)'}{Style.RESET_ALL}")
 
     llm = DarwinLLM()
     messages = conversation_history.copy()
@@ -385,14 +394,18 @@ def generate_darwin_response(user_input):
     if len(reply) != original_length:
         print(f"{Fore.YELLOW}[LLM] Response was truncated from {original_length} to {len(reply)} characters{Style.RESET_ALL}")
     
-    # Classify emotion
-    emotion_classifier = EmotionClassifier()
-    emotion = emotion_classifier.classify_emotion(reply)
+    # Classify emotion OR Skip based on global flag
+    emotion = 'neutral'
+    if ENABLE_EMOTION_ANALYSIS:
+        emotion_classifier = EmotionClassifier()
+        emotion = emotion_classifier.classify_emotion(reply)
+        print(f"{Fore.MAGENTA}[LLM] Response emotion: {emotion}{Style.RESET_ALL}")
+    else:
+        print(f"{Fore.MAGENTA}[LLM] Emotion check skipped (ENABLE_EMOTION_ANALYSIS=False){Style.RESET_ALL}")
     
     word_count = len(reply.split())
     sentence_count = len([s for s in re.split(r'[.!?]+', reply) if s.strip()])
     print(f"{Fore.BLUE}[LLM] Final response: {len(reply)} chars, {word_count} words, {sentence_count} sentences{Style.RESET_ALL}")
-    print(f"{Fore.MAGENTA}[LLM] Response emotion: {emotion}{Style.RESET_ALL}")
     
     conversation_history.append({"role": "user", "content": user_input})
     conversation_history.append({"role": "assistant", "content": reply})
