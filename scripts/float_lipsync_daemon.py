@@ -7,8 +7,6 @@ conda environment.
 It listens for JSON commands on stdin and writes JSON responses to stdout.
 """
 
-# --- START OF FIX ---
-# This block MUST be before all other imports
 import sys
 import os
 
@@ -26,9 +24,9 @@ try:
         sys.path.insert(0, PROJECT_DIR)
 except Exception as e:
     # If this fails, we can't run. Send error as JSON.
+    import json
     print(json.dumps({"status": "error", "message": f"Daemon sys.path setup failed: {e}"}), flush=True)
     sys.exit(1)
-# --- END OF FIX ---
 
 
 import json
@@ -117,11 +115,6 @@ class FloatLipSync:
         # 1. --- Build options from config ---
         self.opt = types.SimpleNamespace()
 
-        # --- PATH FIX ---
-        # Wrap all os.path.join calls with os.path.abspath()
-        # This cleans the paths (e.g., C:\path\./sub -> C:\path\sub)
-        # and prevents the Hugging Face library from misinterpreting them.
-
         # Paths (relative to project_dir)
         self.opt.ref_path = os.path.abspath(os.path.join(project_dir, config.get("ref_path", "assets/main2.png")))
         self.opt.ckpt_path = os.path.abspath(os.path.join(project_dir, config.get("ckpt_path", "checkpoints/float.pth")))
@@ -145,10 +138,9 @@ class FloatLipSync:
 
         # Options from base_options.py
         self.opt.pretrained_dir = os.path.abspath(os.path.join(project_dir, 'checkpoints'))
-        # --- END OF PATH FIX ---
-
+        
         self.opt.fix_noise_seed = False
-        self.opt.input_size = 512  # FIXED: Was 256, should be 512 to match checkpoint
+        self.opt.input_size = 512
         self.opt.input_nc = 3
         self.opt.sampling_rate = 16000
         self.opt.audio_marcing = 2
@@ -191,7 +183,6 @@ class FloatLipSync:
         print(f"[DAEMON]   ✓ Face alignment model loaded: {time.time() - start:.3f}s", file=sys.stderr, flush=True)
 
         start = time.time()
-        # This call will now use the cleaned path
         self.wav2vec_preprocessor = Wav2Vec2FeatureExtractor.from_pretrained(
             self.opt.wav2vec_model_path, local_files_only=True
         )
@@ -289,7 +280,11 @@ class FloatLipSync:
         my = int((bboxes[1] + bboxes[3]) / 2)
         mx = int((bboxes[0] + bboxes[2]) / 2)
         bs = int(max(bsy, bsx) * 1.6)
-        img = cv2.copyMakeBorder(img, bs, bs, bs, bs, cv2.BORDER_CONSTANT, value=0)
+        
+        # --- FIX: Changed from BORDER_CONSTANT to BORDER_REPLICATE ---
+        img = cv2.copyMakeBorder(img, bs, bs, bs, bs, cv2.BORDER_REPLICATE)
+        # -----------------------------------------------------------
+        
         my, mx = my + bs, mx + bs
         crop_img = img[my - bs:my + bs, mx - bs:mx + bs]
         crop_img = cv2.resize(crop_img, dsize=(self.opt.input_size, self.opt.input_size), interpolation=cv2.INTER_AREA if mult < 1. else cv2.INTER_CUBIC)
@@ -308,30 +303,17 @@ class FloatLipSync:
     def save_video(self, vid_target_recon: torch.Tensor, video_path: str, audio_path: str) -> str:
         """
         GPU-ACCELERATED variant: Uses NVIDIA NVENC hardware encoder.
-        
-        OPTIMIZATION 3: Hardware acceleration (requires NVIDIA GPU with NVENC)
-        - Uses h264_nvenc for GPU encoding
-        - Bypasses CPU encoding entirely
-        - Fastest option if you have compatible GPU
-        
-        Expected speedup: 60-80% faster than original method
-        Note: Requires NVIDIA GPU and ffmpeg built with nvenc support
         """
         save_start = time.time()
         
         prep_start = time.time()
         vid = vid_target_recon.permute(0, 2, 3, 1)
         
-        
-        
-        # vid = vid.detach().clamp(-1, 1).cpu()
-        # vid = ((vid + 1) / 2 * 255).numpy().astype('uint8')
-        
-        # NEW (transfers only 96 MB - 4x less!):
-        vid = vid.detach().clamp(-1, 1)
-        vid = ((vid + 1) / 2 * 255).to(torch.uint8)  # Convert on GPU!
-        vid = vid.cpu().numpy()  # Then transfer
-        
+        # OPTIMIZATION: Ensure tensor is contiguous before converting to bytes
+        # This prevents stride issues that can cause diagonal warping/artifacts
+        vid = vid.detach().clamp(-1, 1).contiguous()
+        vid = ((vid + 1) / 2 * 255).to(torch.uint8)
+        vid = vid.cpu().numpy()
         
         print(f"[DAEMON]     - Video tensor prep: {time.time() - prep_start:.3f}s", file=sys.stderr, flush=True)
         
@@ -346,10 +328,10 @@ class FloatLipSync:
                 '-s', f'{width}x{height}', '-pix_fmt', 'rgb24', '-r', str(self.opt.fps),
                 '-i', '-',
                 '-i', audio_path,
-                '-c:v', 'h264_nvenc',  # OPTIMIZATION: GPU encoding
-                '-preset', 'p1',  # Fastest NVENC preset (p1-p7)
-                '-tune', 'll',  # Low latency
-                '-cq', '28',  # Constant quality for NVENC
+                '-c:v', 'h264_nvenc',
+                '-preset', 'p1',
+                '-tune', 'll',
+                '-cq', '28',
                 '-pix_fmt', 'yuv420p',
                 '-c:a', 'aac', '-b:a', '128k',
                 '-shortest',
@@ -378,17 +360,37 @@ class FloatLipSync:
             
             if process.returncode != 0:
                 print(f"[DAEMON]     ! NVENC failed, falling back to CPU encoding", file=sys.stderr, flush=True)
-                # Fallback to optimized CPU method
-                return save_video_optimized(self, vid_target_recon, video_path, audio_path)
+                return self.save_video_optimized(vid_target_recon, video_path, audio_path)
             
         except Exception as e:
             print(f"[DAEMON]     ! NVENC error: {e}, falling back to CPU encoding", file=sys.stderr, flush=True)
-            return save_video_optimized(self, vid_target_recon, video_path, audio_path)
+            return self.save_video_optimized(vid_target_recon, video_path, audio_path)
         
         print(f"[DAEMON]     - GPU encode + mux: {time.time() - encode_start:.3f}s", file=sys.stderr, flush=True)
         print(f"[DAEMON]   ✓ Total saving time: {time.time() - save_start:.3f}s", file=sys.stderr, flush=True)
         
         return video_path
+        
+    def save_video_optimized(self, vid_target_recon: torch.Tensor, video_path: str, audio_path: str) -> str:
+        """
+        Fallback CPU encoding method.
+        """
+        import torchvision
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_video:
+            temp_filename = temp_video.name
+            vid = vid_target_recon.permute(0, 2, 3, 1)
+            vid = vid.detach().clamp(-1, 1).cpu()
+            vid = ((vid + 1) / 2 * 255).type('torch.ByteTensor')
+            torchvision.io.write_video(temp_filename, vid, fps=self.opt.fps)            
+            if audio_path is not None:
+                with open(os.devnull, 'wb') as f:
+                    command =  "ffmpeg -i {} -i {} -c:v copy -c:a aac {} -y".format(temp_filename, audio_path, video_path)
+                    subprocess.call(command, shell=True, stdout=f, stderr=f)
+                if os.path.exists(video_path):
+                    os.remove(temp_filename)
+            else:
+                os.rename(temp_filename, video_path)
+            return video_path
 
     @torch.no_grad()
     def generate(self, audio_path: str, res_video_path: str = None, emo: str = 'S2E') -> str:

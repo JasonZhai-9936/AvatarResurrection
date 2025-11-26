@@ -24,7 +24,7 @@ sys.path.insert(0, SCRIPTS_DIR)
 
 # Import existing modules
 from LLM_Groq import generate_darwin_response
-from enhanced_tts_groq import generate_complete_audio
+from enhanced_tts_piper import generate_complete_audio
 from simplified_video_manager import SimplifiedVideoManager
 from ui import build_ui
 from chat_message_manager import ChatMessageManager
