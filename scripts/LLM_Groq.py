@@ -122,6 +122,42 @@ class KnowledgeChecker:
             return "SEARCH"
         return "KNOW"
 
+class SearchQueryOptimizer:
+    """
+    Translates conversational user input into an optimized search string.
+    """
+    def __init__(self):
+        self.llm = ChatGroq(
+            model_name="llama-3.1-8b-instant", 
+            api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0.3 
+        )
+
+    def optimize_query(self, user_input):
+        prompt = [
+            SystemMessage(content=(
+                "You are a search query optimizer. Your goal is to convert conversational user questions "
+                "into concise, effective search engine keywords (like for Google or DuckDuckGo)."
+                "\n\nRules:"
+                "\n1. Remove conversational fillers (e.g., 'Hey Darwin', 'I was wondering', 'can you tell me')."
+                "\n2. Focus on the core entities and timeframes."
+                "\n3. Do not answer the question. Only output the search string."
+                "\n\nExamples:"
+                "\n- Input: 'Who won the Cowboys game last night?' -> Output: Dallas Cowboys game results yesterday"
+                "\n- Input: 'What is the current stock price of Apple?' -> Output: Apple stock price today"
+                "\n- Input: 'latest cowboys game' -> Output: latest cowboys game"
+            )),
+            HumanMessage(content=user_input)
+        ]
+        
+        # Invoke and clean up the result
+        optimized_query = self.llm.invoke(prompt).content.strip()
+        
+        # Remove quotes if the LLM accidentally added them
+        optimized_query = optimized_query.replace('"', '').replace("'", "")
+        
+        return optimized_query
+
 class SearchResultSummarizer:
     """Summarizes search results into a Darwin-style response."""
     def __init__(self):
@@ -219,17 +255,23 @@ def generate_darwin_response(user_input):
             if is_affirmative_response(user_input):
                 print(f"{Fore.MAGENTA}[SEARCH] User confirmed search.{Style.RESET_ALL}")
                 
-                # Retrieve the original question
-                original_query = conversation_history[-2]['content']
+                # Retrieve the original question from conversation history
+                original_user_msg = conversation_history[-2]['content']
+                
+                # --- NEW STEP: OPTIMIZE QUERY ---
+                print(f"{Fore.MAGENTA}[SEARCH] Optimizing query...{Style.RESET_ALL}")
+                optimizer = SearchQueryOptimizer()
+                search_query = optimizer.optimize_query(original_user_msg)
                 
                 # --- LOGGING START ---
                 print(f"{Fore.MAGENTA}{'='*60}{Style.RESET_ALL}")
-                print(f"{Fore.MAGENTA}[SEARCH] Query sent to scraper: '{original_query}'{Style.RESET_ALL}")
+                print(f"{Fore.MAGENTA}[SEARCH] Conversational: '{original_user_msg}'{Style.RESET_ALL}")
+                print(f"{Fore.MAGENTA}[SEARCH] Optimized Query: '{search_query}'{Style.RESET_ALL}")
                 print(f"{Fore.MAGENTA}{'='*60}{Style.RESET_ALL}")
                 # --- LOGGING END ---
                 
-                # EXECUTE SEARCH
-                results = run_ddg_search(original_query, max_results=15)
+                # EXECUTE SEARCH using the OPTIMIZED query
+                results = run_ddg_search(search_query, max_results=15)
                 
                 # --- DETAILED RESULT LOGGING ---
                 print(f"{Fore.MAGENTA}[SEARCH] Raw Results Found: {len(results)}{Style.RESET_ALL}")
@@ -250,7 +292,9 @@ def generate_darwin_response(user_input):
 
                 # SUMMARIZE
                 summarizer = SearchResultSummarizer()
-                reply = summarizer.generate_answer_from_search(original_query, results, max_words)
+                # We pass original_user_msg here so the summarizer knows what question to answer
+                # but it uses the results derived from search_query
+                reply = summarizer.generate_answer_from_search(original_user_msg, results, max_words)
                 
                 reply = truncate_response(reply, max_words=max_words)
                 
