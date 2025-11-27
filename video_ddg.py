@@ -8,7 +8,7 @@ from ddgs import DDGS
 # ==========================================
 # CONFIGURATION
 # ==========================================
-SEARCH_QUERY = "Charles Darwin"
+SEARCH_QUERY = "Charles Darwin #shorts"  #use #shorts to filter for shorts only
 MAX_RESULTS = 4
 VIDEO_DURATION = "short"  # Options: 'short', 'medium', 'long'
 # ==========================================
