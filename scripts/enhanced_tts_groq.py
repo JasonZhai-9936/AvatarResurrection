@@ -199,7 +199,9 @@ if __name__ == "__main__":
     print(f"{Fore.GREEN}{'=' * 60}{Style.RESET_ALL}\n")
     
     # Sample sentence for testing
-    test_sentence = "Hmmm...That's a good question. Let me think about that for a moment."
+    test_sentence =  "This is a neutral sentence for testing voice consistency. I am feeling very happy and excited about the results today! I am sad and disappointed that things didn’t go the way I hoped. I am angry and frustrated because nothing is working correctly."
+
+
     
     print(f"{Fore.CYAN}Test sentence: {test_sentence}{Style.RESET_ALL}\n")
     

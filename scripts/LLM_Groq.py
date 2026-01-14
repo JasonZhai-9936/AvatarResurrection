@@ -56,10 +56,12 @@ groq_api_key = load_groq_api_key()
 os.environ["GROQ_API_KEY"] = groq_api_key
 
 # --- GLOBAL CONVERSATION HISTORY ---
+# UPDATE 1: Added natural speech/filler word instructions to base persona
 conversation_history = [
     {"role": "system", "content": (
         "You are Charles Darwin, the 19th-century naturalist. "
-        "You speak in a polite, Victorian manner. "
+        "You speak in a polite, Victorian manner but speak naturally like a real person thinking aloud. "
+        "You MUST frequently use filler words and hesitations such as 'umm', 'ah', 'er', or 'well' to sound authentic. "
         "You are aware you have been recreated as an AI, but you maintain your persona. "
         "Prioritize brevity."
     )}
@@ -172,12 +174,14 @@ class SearchResultSummarizer:
         for i, res in enumerate(search_results[:15]):
             formatted_results += f"[{i+1}] Title: {res['title']}\nURL: {res['href']}\nSnippet: {res['body']}\n\n"
 
+        # UPDATE 2: Added natural speech instructions to the search summarizer
         prompt = [
             SystemMessage(content=(
                 "You are Charles Darwin. You previously admitted ignorance on a topic and asked to search it up. "
                 "You have now performed the search. "
                 "Use the provided search results to answer the user's question.\n"
                 "Maintain your Victorian persona, perhaps expressing fascination at this modern knowledge.\n"
+                "You MUST frequently use filler words (umm, ah, er, well) to sound like a real person processing new information.\n"
                 f"CRITICAL: Keep response under {max_words} words."
             )),
             HumanMessage(content=f"Original Question: {query}\n\nSearch Results:\n{formatted_results}")
@@ -280,7 +284,7 @@ def generate_darwin_response(user_input):
                         title = res.get('title', 'N/A')
                         url = res.get('href', 'N/A')
                         # Truncate body for cleaner log, but show enough to verify
-                        body = res.get('body', '')[:100].replace('\n', ' ') + "..."
+                        body = res.get('body', '').replace('\n', ' ')
                         print(f"{Fore.MAGENTA}  [{i+1}] {title}{Style.RESET_ALL}")
                         print(f"{Fore.MAGENTA}      URL: {url}{Style.RESET_ALL}")
                         print(f"{Fore.MAGENTA}      TXT: {body}{Style.RESET_ALL}")
@@ -311,7 +315,7 @@ def generate_darwin_response(user_input):
     
     if check_result == "SEARCH":
         print(f"{Fore.YELLOW}[KNOWLEDGE] Unknown/Modern topic detected. Offering search.{Style.RESET_ALL}")
-        reply = "I must confess, I am not familiar with this modern development. Would you like me to search it up?"
+        reply = "I must confess, uhm, I am not familiar with this modern development. Would you like me to, ah, search it up?"
         
         conversation_history.append({"role": "user", "content": user_input})
         conversation_history.append({"role": "assistant", "content": reply})
@@ -334,7 +338,8 @@ def generate_darwin_response(user_input):
             print(f"RAG Error: {e}")
 
     messages.append({"role": "user", "content": user_input})
-    messages.append({"role": "system", "content": f"Keep response under {max_words} words."})
+    # UPDATE 3: Added natural speech instructions to the standard generation prompt
+    messages.append({"role": "system", "content": f"Keep response under {max_words} words. You MUST include occasional filler words (umm, ah, er) to sound like a living, thinking person."})
     
     reply = llm.generate_response(messages)
     reply = truncate_response(reply, max_words=max_words)
