@@ -1,5 +1,5 @@
-# final_main.py - Darwin Chatbot with EMOTIONAL lip-sync and FLOAT support
-# <<< VERSION: Robust Connection Handling + Error Suppression >>>
+# final_main.py - Darwin Chatbot with SPEECH REACTION support
+# Added: User activity tracking for typing and voice input
 
 import os
 import sys
@@ -13,16 +13,14 @@ import threading
 import signal
 import queue
 import re
-import socket # Used for handling socket errors
+import socket
 
 init(autoreset=True)
 
-# Set PROJECT_DIR to be the parent directory of 'scripts'
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS_DIR = os.path.join(PROJECT_DIR, "scripts")
 sys.path.insert(0, SCRIPTS_DIR)
 
-# Import existing modules
 from LLM_Groq import generate_darwin_response
 from enhanced_tts_piper import generate_complete_audio
 from simplified_video_manager import SimplifiedVideoManager
@@ -36,13 +34,9 @@ from nicegui import app as nicegui_app
 # CONFIGURATION
 # ============================================================================
 
-# Choose lipsync mode: False = Crossfade (default), True = FLOAT
 USE_FLOAT_LIPSYNC = True
-
-# Set to False to disable the pre-generated response
 USE_PREGENERATED_RESPONSE = False 
 
-# FLOAT model configuration
 FLOAT_CONFIG = {
     "ref_path": "assets/main2.png", 
     "ckpt_path": "./checkpoints/float.pth",
@@ -59,7 +53,7 @@ FLOAT_CONFIG = {
 
 
 class DarwinChatbot:
-    """Main chatbot with emotional lip-sync and FLOAT support"""
+    """Main chatbot with emotional lip-sync, FLOAT support, and speech reaction"""
     
     def __init__(self):
         self.use_float = USE_FLOAT_LIPSYNC
@@ -77,6 +71,11 @@ class DarwinChatbot:
         self.current_voice_msg_id = None
         self.final_voice_text = ""
         
+        # USER ACTIVITY TRACKING
+        self.typing_timer = None
+        self.typing_lock = threading.Lock()
+        self.TYPING_TIMEOUT = 1.0  # seconds of inactivity before stopping
+        
         self.lipsync_system = self.initialize_lipsync()
         
         self.chat_log = None
@@ -87,7 +86,6 @@ class DarwinChatbot:
         self._shutdown_flag = False
         
         self.video_event_queue = queue.Queue()
-        self.current_response_id = 0
 
         self.chunk_queue = asyncio.Queue()
         self.current_response_id_playing: Optional[str] = None
@@ -135,17 +133,43 @@ class DarwinChatbot:
             print(f"{Fore.YELLOW}[MAIN] Could not get video duration: {e}{Style.RESET_ALL}")
             return 5.0
 
-    # --- SAFE JS EXECUTION HELPER ---
     def safe_run_javascript(self, js_code: str):
         """Safely run JS, catching socket disconnect errors."""
         try:
             nicegui_ui.run_javascript(js_code)
         except (socket.error, ConnectionResetError, RuntimeError) as e:
-            # Silence specific connection errors to avoid console spam
-            # The user likely just refreshed or the tab died.
             print(f"{Fore.YELLOW}[SOCKET] UI Update skipped (Connection dropped): {e}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}[JS_ERROR] {e}{Style.RESET_ALL}")
+
+    # ========== USER ACTIVITY TRACKING ==========
+    
+    def on_typing_detected(self):
+        """Called when user is typing in the chat box"""
+        with self.typing_lock:
+            # Start activity in video manager
+            self.video_manager.start_user_activity()
+            
+            # Cancel existing timer
+            if self.typing_timer:
+                self.typing_timer.cancel()
+            
+            # Start new timer - stops activity after TYPING_TIMEOUT seconds of no typing
+            self.typing_timer = threading.Timer(self.TYPING_TIMEOUT, self._stop_typing_activity)
+            self.typing_timer.start()
+
+    def _stop_typing_activity(self):
+        """Called when typing timeout expires"""
+        with self.typing_lock:
+            self.video_manager.stop_user_activity()
+            self.typing_timer = None
+
+    def on_voice_partial(self, text: str):
+        """Called when voice input is detected - already integrated with voice system"""
+        # Voice activity automatically starts user activity
+        self.video_manager.start_user_activity()
+
+    # ===========================================
 
     def setup_ui(self):
         available_mics = self.voice_manager.get_available_microphones()
@@ -155,14 +179,14 @@ class DarwinChatbot:
             voice_change_callback=self.handle_voice_change,
             video_manager=self.video_manager,
             available_mics=available_mics,
-            mic_change_callback=self.handle_mic_select
+            mic_change_callback=self.handle_mic_select,
+            typing_callback=self.on_typing_detected  # NEW
         )
         
         self.chat_log = self.ui_components['chat_log']
         self.message_manager = ChatMessageManager(self.chat_log)
         self.video_manager.set_video_update_callback(self.queue_video_update)
         
-        # INCREASED TIMER INTERVAL to 0.2 to reduce loop pressure
         nicegui_ui.timer(0.2, self.process_video_events)
         nicegui_ui.timer(1.0, self.initialize_video_system, once=True)
         
@@ -175,7 +199,13 @@ class DarwinChatbot:
             print(f"{Fore.RED}[MAIN] Error setting input device: {e}{Style.RESET_ALL}")
 
     async def handle_ui_interaction(self, content, mode="text"):
+        # When user submits, stop activity tracking
         if mode == "text":
+            with self.typing_lock:
+                if self.typing_timer:
+                    self.typing_timer.cancel()
+                    self.typing_timer = None
+            self.video_manager.stop_user_activity()
             await self.process_llm_response(content)
         elif mode == "voice_toggle":
             if self.is_recording:
@@ -192,248 +222,178 @@ class DarwinChatbot:
         self.ui_components['prompt_input'].disable()
         self.ui_components['submit_btn'].disable()
         self.ui_components['mic_btn'].props('color=red icon=stop')
-        self.ui_components['cancel_btn'].classes(remove='hidden')
+        self.ui_components['cancel_btn'].props('remove-hidden')
+        
+        # Start activity tracking for voice
+        self.video_manager.start_user_activity()
+        
         self.current_voice_msg_id = self.message_manager.add_user_message("...")
         
-        def update_ui_text(text):
+        def update_partial_text(text):
             self.final_voice_text = text
-            self.video_event_queue.put(('update_user_bubble', {'id': self.current_voice_msg_id, 'text': text}))
-            
-        self.voice_manager.start_listening(update_ui_text)
-        print(f"{Fore.CYAN}[VOICE] Recording started...{Style.RESET_ALL}")
+            self.safe_run_javascript(f'window.updateUserMessage("{self.current_voice_msg_id}", "{text}")')
+            # Each partial update restarts the activity
+            self.on_voice_partial(text)
+        
+        self.voice_manager.start_listening(update_partial_text)
 
     async def stop_voice_recording_and_submit(self):
-        if not self.is_recording: return
         self.is_recording = False
         self.voice_manager.stop_listening()
+        
+        # Stop activity tracking
+        self.video_manager.stop_user_activity()
+        
         self.ui_components['prompt_input'].enable()
         self.ui_components['submit_btn'].enable()
-        self.ui_components['mic_btn'].props('color=blue icon=mic')
-        self.ui_components['cancel_btn'].classes(add='hidden')
+        self.ui_components['mic_btn'].props('color=primary icon=mic')
+        self.ui_components['cancel_btn'].props('add-hidden')
         
-        text_to_process = self.final_voice_text
-        print(f"{Fore.CYAN}[VOICE] Final text: {text_to_process}{Style.RESET_ALL}")
-        
-        if text_to_process and text_to_process.strip():
-            await self.process_llm_response(text_to_process)
+        if self.final_voice_text.strip():
+            await self.process_llm_response(self.final_voice_text)
         else:
-            self.cancel_voice_recording()
+            self.safe_run_javascript(f'window.removeMessageElement("{self.current_voice_msg_id}")')
+            self.current_voice_msg_id = None
 
     def cancel_voice_recording(self):
         self.is_recording = False
         self.voice_manager.stop_listening()
-        self.final_voice_text = ""
-        if self.current_voice_msg_id:
-            self.video_event_queue.put(('remove_bubble', self.current_voice_msg_id))
-            self.current_voice_msg_id = None
+        
+        # Stop activity tracking
+        self.video_manager.stop_user_activity()
+        
         self.ui_components['prompt_input'].enable()
         self.ui_components['submit_btn'].enable()
-        self.ui_components['mic_btn'].props('color=blue icon=mic')
-        self.ui_components['cancel_btn'].classes(add='hidden')
-        print(f"{Fore.YELLOW}[VOICE] Recording cancelled{Style.RESET_ALL}")
-
-    # ============================================================================
-    # QUEUE & EVENT HANDLING
-    # ============================================================================
+        self.ui_components['mic_btn'].props('color=primary icon=mic')
+        self.ui_components['cancel_btn'].props('add-hidden')
+        
+        if self.current_voice_msg_id:
+            self.safe_run_javascript(f'window.removeMessageElement("{self.current_voice_msg_id}")')
+            self.current_voice_msg_id = None
 
     def queue_video_update(self, video_url: str):
-        self.video_event_queue.put(('update_video', video_url))
-    
-    def queue_text_stream(self, element_id: str, text: str, duration: float):
-        self.video_event_queue.put(('stream_text', {'element_id': element_id, 'text': text, 'duration': duration}))
-    
-    def queue_typing_indicator(self, element_id: str, show: bool):
-        self.video_event_queue.put(('typing_indicator', {'element_id': element_id, 'show': show}))
-    
-    def queue_video_ended_event(self):
-        self.video_event_queue.put(('video_ended', None))
-    
-    def queue_clear_message_content(self, element_id: str):
-        self.video_event_queue.put(('clear_content', element_id))
+        self.video_event_queue.put(('update', video_url))
 
-    def queue_append_message_content(self, element_id: str, text: str):
-        self.video_event_queue.put(('append_content', {'id': element_id, 'text': text}))
-    
+    def queue_video_ended_event(self):
+        self.video_event_queue.put(('ended', None))
+
+    def queue_typing_indicator(self, element_id: str, show: bool):
+        self.video_event_queue.put(('typing', (element_id, show)))
+
+    def queue_text_stream(self, element_id: str, text: str, duration: float):
+        self.video_event_queue.put(('stream', (element_id, text, duration)))
+
+    def queue_clear_message_content(self, element_id: str):
+        self.video_event_queue.put(('clear', element_id))
+
     def process_video_events(self):
-        """Process all queued video events with Exception Safety"""
-        while not self.video_event_queue.empty():
-            try:
+        try:
+            while not self.video_event_queue.empty():
                 event_type, data = self.video_event_queue.get_nowait()
                 
-                if event_type == 'update_video':
-                    self.execute_video_update(data)
-                elif event_type == 'stream_text':
-                    self.execute_text_stream(data)
-                elif event_type == 'typing_indicator':
-                    self.execute_typing_indicator(data)
-                elif event_type == 'video_ended':
+                if event_type == 'update':
+                    # Check if it's a speedup command
+                    if data.startswith("SPEEDUP:"):
+                        speed = data.split(":")[1]
+                        self.safe_run_javascript(f'window.setVideoSpeed({speed})')
+                    else:
+                        self.safe_run_javascript(f'window.updateVideoSource("{data}")')
+                elif event_type == 'ended':
                     self.handle_video_ended_in_context()
-                elif event_type == 'clear_content':
-                    self.execute_clear_content(data)
-                elif event_type == 'append_content':
-                    self.execute_append_content(data)
-                
-                # NEW VOICE EVENTS - Using safe wrapper
-                elif event_type == 'update_user_bubble':
-                    escaped = data['text'].replace("'", "\\'")
-                    self.safe_run_javascript(f"window.updateUserMessage('{data['id']}', '{escaped}');")
-                elif event_type == 'remove_bubble':
-                    self.safe_run_javascript(f"window.removeMessageElement('{data}');")
-                    
-            except queue.Empty:
-                break
-            except Exception as e:
-                # Catch generic errors in processing to keep loop alive
-                pass
-    
-    def execute_video_update(self, video_url: str):
-        """Execute video update safely"""
-        self.safe_run_javascript(f"window.updateVideoSource('{video_url}');")
-    
-    def execute_text_stream(self, data: dict):
-        """Execute text streaming safely"""
-        element_id = data['element_id']
-        text = data['text']
-        duration = data['duration']
-        escaped_text = text.replace('\\', '\\\\').replace("'", "\\'").replace('\n', '\\n').replace('\r', '')
-        
-        print(f"{Fore.GREEN}[MAIN] Text streaming: {len(text)} chars{Style.RESET_ALL}")
-        self.safe_run_javascript(f"window.streamText('{element_id}', '{escaped_text}', {duration});")
-    
-    def execute_typing_indicator(self, data: dict):
-        """Execute typing indicator safely"""
-        element_id = data['element_id']
-        if data['show']:
-            self.safe_run_javascript(f"window.startTypingIndicator('{element_id}');")
-        else:
-            self.safe_run_javascript(f"window.stopTypingIndicator('{element_id}');")
-
-    def execute_clear_content(self, element_id: str):
-        self.safe_run_javascript(f"window.clearMessageContent('{element_id}');")
-
-    def execute_append_content(self, data: dict):
-        element_id = data['id']
-        text = data['text']
-        escaped_text = text.replace('\\', '\\\\').replace("'", "\\'").replace('\n', '\\n').replace('\r', '')
-        self.safe_run_javascript(f"window.appendMessageContent('{element_id}', '{escaped_text}');")
-
-    def handle_video_ended_in_context(self):
-        try:
-            current_mode = self.video_manager.current_mode
-            print(f"{Fore.BLUE}[MAIN] Video ended event. Mode was: {current_mode}{Style.RESET_ALL}")
-            if current_mode in ["lipsync", "pregenerated", "idle_chunk"]:
-                self.is_chunk_playing = False
-                asyncio.create_task(self.play_next_chunk())
-                return
-            self.video_manager.on_video_ended()
+                elif event_type == 'typing':
+                    element_id, show = data
+                    action = 'startTypingIndicator' if show else 'stopTypingIndicator'
+                    self.safe_run_javascript(f'window.{action}("{element_id}")')
+                elif event_type == 'stream':
+                    element_id, text, duration = data
+                    text_escaped = text.replace('"', '\\"').replace('\n', '\\n')
+                    self.safe_run_javascript(f'window.streamText("{element_id}", "{text_escaped}", {duration})')
+                elif event_type == 'clear':
+                    self.safe_run_javascript(f'window.clearMessageContent("{data}")')
+        except queue.Empty:
+            pass
         except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error handling video ended: {e}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[MAIN] Error processing video events: {e}{Style.RESET_ALL}")
 
     def initialize_video_system(self):
-        try:
-            print(f"{Fore.CYAN}[MAIN] Initializing video system...{Style.RESET_ALL}")
-            self.video_manager.play_next_idle_video()
-        except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error initializing video: {e}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[MAIN] Initializing video system...{Style.RESET_ALL}")
+        self.video_manager.play_next_idle_video()
 
-    async def process_llm_response(self, user_text: str):
-        if self.is_processing:
-            print(f"{Fore.YELLOW}[MAIN] Dropping request, already processing.{Style.RESET_ALL}")
+    def handle_video_ended_in_context(self):
+        current_mode = self.video_manager.current_mode
+        
+        if current_mode == "lipsync":
+            asyncio.create_task(self.play_next_chunk())
+        elif current_mode == "idle_chunk":
+            asyncio.create_task(self.play_next_chunk())
+        else:
+            self.video_manager.on_video_ended()
+
+    async def process_llm_response(self, user_input: str):
+        if not user_input.strip() or self.is_processing:
             return
         
         self.is_processing = True
         
         try:
-            if not user_text or not user_text.strip():
-                self.is_processing = False
-                return
+            if not self.is_recording:
+                self.message_manager.add_user_message(user_input)
+                self.ui_components['prompt_input'].value = ""
             
-            print(f"\n{Fore.CYAN}[USER] {user_text}{Style.RESET_ALL}")
-            
-            if self.use_pregenerated:
-                self.video_manager.queue_pregenerated_response()
-            
-            self.current_response_id += 1
-            response_id = f"response_{self.current_response_id}"
-            
-            if not self.current_voice_msg_id:
-                self.message_manager.add_user_message(user_text)
-            
-            self.current_voice_msg_id = None
-            self.message_manager.add_bot_message(response_id)
+            response_id = self.message_manager.add_bot_message()
             self.queue_typing_indicator(response_id, True)
             
-            asyncio.create_task(self.generate_response_chunks_task(user_text, response_id))
+            if self.use_pregenerated and not self.video_manager.pregenerated_pending:
+                self.video_manager.queue_pregenerated_response()
             
-        except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error in process_llm_response: {e}{Style.RESET_ALL}")
-            import traceback
-            traceback.print_exc()
-            self.is_processing = False
-
-    async def generate_response_chunks_task(self, user_text: str, response_id: str):
-        """Producer task."""
-        try:
-            print(f"{Fore.BLUE}[MAIN] Generating response...{Style.RESET_ALL}")
-            try:
-                response_data = await asyncio.to_thread(generate_darwin_response, user_text)
-            except AttributeError:
-                loop = asyncio.get_event_loop()
-                response_data = await loop.run_in_executor(None, generate_darwin_response, user_text)
+            print(f"{Fore.CYAN}[MAIN] User: {user_input}{Style.RESET_ALL}")
             
-            if self._shutdown_flag: return
-
-            full_text = response_data['text']
-            emotion = response_data['emotion']
-            print(f"{Fore.GREEN}[MAIN] LLM Response: {full_text}{Style.RESET_ALL}")
-
-            sentences = re.split(r'(?<=[.!?])\s+', full_text)
-            chunks = [s.strip() for s in sentences if s.strip()]
+            llm_response = await asyncio.to_thread(generate_darwin_response, user_input)
+            llm_text = llm_response['text']
+            emotion = llm_response.get('emotion', 'neutral')
             
-            if not chunks:
-                self.queue_typing_indicator(response_id, False)
-                return
-
-            print(f"{Fore.CYAN}[MAIN] Split into {len(chunks)} chunk(s).{Style.RESET_ALL}")
-
-            for i, sentence_text in enumerate(chunks):
-                if self._shutdown_flag: return
+            sentences = self._split_into_sentences(llm_text)
+            print(f"{Fore.GREEN}[MAIN] Darwin: {llm_text}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}[MAIN] Split into {len(sentences)} sentences{Style.RESET_ALL}")
+            
+            for i, sentence in enumerate(sentences):
+                # Use response_id for unique chunk filenames (e.g., "darwin_msg_1_0.wav")
+                chunk_audio_path = os.path.join(PROJECT_DIR, "tempstream", f"chunk_{response_id}_{i}.wav")
                 
-                print(f"{Fore.BLUE}[MAIN] Processing chunk {i+1}/{len(chunks)}: {sentence_text}{Style.RESET_ALL}")
-                
-                default_voice = os.path.join(PROJECT_DIR, "Piper_Voices", "en_GB-semaine-medium.onnx")
                 try:
-                    audio_path = await asyncio.to_thread(generate_complete_audio, sentence_text, None, default_voice)
-                except AttributeError:
-                    loop = asyncio.get_event_loop()
-                    audio_path = await loop.run_in_executor(None, generate_complete_audio, sentence_text, None, default_voice)
-
-                if not audio_path or not os.path.exists(audio_path) or self._shutdown_flag:
-                    continue
-
-                if self.use_float:
-                    lipsync_video = await self._generate_float_lipsync(audio_path, sentence_text)
-                else:
-                    lipsync_video = await self._generate_crossfade_lipsync(audio_path, sentence_text, emotion)
-                
-                if not lipsync_video or not os.path.exists(lipsync_video) or self._shutdown_flag:
-                    continue
-                
-                video_duration = self.get_video_duration(lipsync_video)
-                
-                chunk_data = {
-                    'id': response_id,
-                    'text': sentence_text,
-                    'video_path': lipsync_video,
-                    'duration': video_duration,
-                    'is_first': (i == 0),
-                }
-                
-                await self.chunk_queue.put(chunk_data)
-                print(f"{Fore.GREEN}[MAIN]   Chunk {i+1} ready and queued.{Style.RESET_ALL}")
-                
-                asyncio.create_task(self.play_next_chunk())
-
+                    # Generate TTS audio
+                    await asyncio.to_thread(generate_complete_audio, sentence, chunk_audio_path)
+                    
+                    # Verify audio file was created before proceeding
+                    if not os.path.exists(chunk_audio_path):
+                        print(f"{Fore.RED}[MAIN] TTS failed - audio file not created: {chunk_audio_path}{Style.RESET_ALL}")
+                        continue
+                    
+                    # Generate lipsync video
+                    if self.use_float:
+                        video_path = await self._generate_float_lipsync(chunk_audio_path, sentence)
+                    else:
+                        video_path = await self._generate_crossfade_lipsync(chunk_audio_path, sentence, emotion)
+                    
+                    if video_path:
+                        chunk_duration = self.get_video_duration(video_path)
+                        
+                        # If this is the first chunk and queue is empty, speed up current video
+                        if i == 0 and self.chunk_queue.empty():
+                            print(f"{Fore.CYAN}[MAIN] First chunk ready - requesting speedup of current video{Style.RESET_ALL}")
+                            self.video_manager.request_speedup_for_content()
+                        
+                        await self.chunk_queue.put({
+                            'id': response_id,
+                            'text': sentence,
+                            'video_path': video_path,
+                            'duration': chunk_duration
+                        })
+                except Exception as e:
+                    print(f"{Fore.RED}[MAIN] Error processing chunk {i}: {e}{Style.RESET_ALL}")
+                    import traceback
+                    traceback.print_exc()
+            
             try:
                 self.video_manager.cleanup_old_lipsync_videos(keep_last=5)
             except:
@@ -486,6 +446,11 @@ class DarwinChatbot:
             print(f"{Fore.RED}[MAIN] Error playing chunk: {e}{Style.RESET_ALL}")
             self.is_chunk_playing = False
 
+    def _split_into_sentences(self, text: str) -> list:
+        text = text.strip()
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        return [s.strip() for s in sentences if s.strip()]
+
     async def _generate_float_lipsync(self, audio_path: str, text: str) -> Optional[str]:
         def generate_float():
             try:
@@ -530,6 +495,13 @@ class DarwinChatbot:
     def cleanup(self):
         print(f"{Fore.YELLOW}[MAIN] Cleaning up...{Style.RESET_ALL}")
         self._shutdown_flag = True
+        
+        # Cancel typing timer
+        with self.typing_lock:
+            if self.typing_timer:
+                self.typing_timer.cancel()
+                self.typing_timer = None
+        
         if self.use_float and self.lipsync_system:
             try:
                 self.lipsync_system.cleanup()
@@ -566,22 +538,16 @@ class DarwinChatbot:
             self.setup_signal_handlers()
             from nicegui import app
             
-            # --- START EDIT: Exception Handler for Windows 10054 ---
             def handle_asyncio_exception(loop, context):
                 exception = context.get('exception')
-                # Ignore ConnectionResetError: [WinError 10054]
                 if isinstance(exception, ConnectionResetError):
                     return
-                # Also check message string just in case
                 msg = context.get('message', '')
                 if '10054' in str(exception) or '10054' in msg:
                     return
-                # Default behavior for other exceptions
                 loop.default_exception_handler(context)
 
-            # Register on startup
             app.on_startup(lambda: asyncio.get_event_loop().set_exception_handler(handle_asyncio_exception))
-            # --- END EDIT ---
 
             from fastapi.staticfiles import StaticFiles
             
