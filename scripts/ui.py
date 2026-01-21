@@ -292,11 +292,11 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                     ui.html('''
                     <div id="main-video-container" style="width: 100%; height: 100%; position: relative; background: #000; overflow: hidden;">
                         <video id="videoA" autoplay playsinline 
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 1; transition: opacity 0.1s ease;">
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 1; z-index: 1; transition: opacity 0.1s ease;">
                             <source src="" type="video/mp4">
                         </video>
                         <video id="videoB" autoplay playsinline 
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 0; transition: opacity 0.1s ease;">
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 0; z-index: 0; transition: opacity 0.1s ease;">
                             <source src="" type="video/mp4">
                         </video>
                         <div id="unmute-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
@@ -571,7 +571,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         console.log('[VIDEO] Playback speed changed to:', speed);
     }
     
-    // Simple video source update
+    // Simple video source update with FLASH-FREE crossfade
     window.updateVideoSource = function(videoUrl) {
         const videoA = document.getElementById('videoA');
         const videoB = document.getElementById('videoB');
@@ -589,11 +589,19 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         }
         
         isTransitioning = true;
-        console.log('[VIDEO] Starting crossfade to:', videoUrl);
+        console.log('[VIDEO] Starting flash-free crossfade to:', videoUrl);
         
         // Determine which video to load next
         const nextVideo = currentVideo === 'A' ? videoB : videoA;
         const prevVideo = currentVideo === 'A' ? videoA : videoB;
+        
+        // === CRITICAL: Z-INDEX LAYERING ===
+        // Put incoming video ON TOP, outgoing UNDERNEATH
+        nextVideo.style.zIndex = '2';  // Top layer (incoming)
+        prevVideo.style.zIndex = '1';   // Bottom layer (outgoing)
+        
+        // Ensure incoming video starts invisible
+        nextVideo.style.opacity = '0';
         
         // Preload the next video (hidden)
         nextVideo.src = videoUrl;
@@ -601,7 +609,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         
         // Wait for video to be ready
         nextVideo.onloadeddata = function() {
-            console.log('[VIDEO] Next video loaded, starting crossfade');
+            console.log('[VIDEO] Next video loaded, starting fade-in');
             
             // Ensure audio settings are preserved
             const overlay = document.getElementById('unmute-overlay');
@@ -618,24 +626,37 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             // Set up ended handler before playing
             nextVideo.onended = notifyPythonVideoEnded;
             
-            // Start playing the next video
+            // Start playing the next video (while still invisible)
             nextVideo.play().then(() => {
-                // Crossfade: show next, hide previous
-                nextVideo.style.opacity = '1';
-                prevVideo.style.opacity = '0';
+                console.log('[VIDEO] Next video playing, fading in ON TOP');
                 
-                // After transition completes, pause and reset the previous video
+                // === THE MAGIC: FADE IN ONLY ===
+                // Fade in the NEW video on top
+                // The OLD video stays at 100% opacity underneath
+                nextVideo.style.opacity = '1';
+                
+                // After transition completes (150ms), clean up the old video
                 setTimeout(() => {
+                    console.log('[VIDEO] Fade-in complete, cleaning up old video');
+                    
+                    // NOW we can hide the old video (it's fully covered)
+                    prevVideo.style.opacity = '0';
+                    
+                    // Pause and reset the previous video
                     prevVideo.pause();
                     prevVideo.currentTime = 0;
                     prevVideo.src = '';
+                    
+                    // Reset z-indexes for next transition
+                    prevVideo.style.zIndex = '0';
+                    nextVideo.style.zIndex = '1';
                     
                     // Update current video tracker
                     currentVideo = currentVideo === 'A' ? 'B' : 'A';
                     isTransitioning = false;
                     
                     console.log('[VIDEO] Crossfade complete, now showing video', currentVideo);
-                }, 100); // Match CSS transition duration
+                }, 150); // 150ms = slightly longer than 0.1s CSS transition
                 
             }).catch(err => {
                 console.error('[VIDEO] Play failed during crossfade:', err);
