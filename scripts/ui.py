@@ -119,13 +119,14 @@ def settings_page():
             
             ui.button('Save Settings', on_click=save_settings).classes('w-full bg-blue-600 text-white py-3 rounded-lg mt-4 hover:bg-blue-700')
 
-def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None, available_mics=None, mic_change_callback=None, mic_refresh_callback=None):
+def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None, available_mics=None, mic_change_callback=None, mic_refresh_callback=None, typing_callback=None):
     """
     Build the main UI with TYPING INDICATOR and streaming text.
     Updated arguments: 
       - available_mics: List of dicts for mic selection
       - mic_change_callback: Function to handle mic changes
       - mic_refresh_callback: Function to refresh mic list
+      - typing_callback: Function called when user is typing (for speech reaction)
     """
     
     ui.add_head_html('''
@@ -324,6 +325,11 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                         label='Your question for Darwin', 
                         placeholder='Ask Charles Darwin anything...'
                     ).props('outlined dark').classes('w-full').style('min-height: 120px; font-size: 16px;')
+                    
+                    # Add typing detection for speech reaction
+                    if typing_callback:
+                        prompt_input.on('keypress', lambda: typing_callback())
+                        prompt_input.on('input', lambda: typing_callback())
 
                     # === BUTTON ROW (Ask + Mic + Cancel) ===
                     with ui.row().classes('w-full gap-2 items-center'):
@@ -547,6 +553,24 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
     let currentVideo = 'A'; // Track which video is currently visible
     let isTransitioning = false;
     
+    // Set playback speed of current video
+    window.setVideoSpeed = function(speed) {
+        const videoA = document.getElementById('videoA');
+        const videoB = document.getElementById('videoB');
+        
+        if (!videoA || !videoB) {
+            console.error('[VIDEO] Video elements missing');
+            return;
+        }
+        
+        // Determine which video is currently playing
+        const activeVideo = currentVideo === 'A' ? videoA : videoB;
+        
+        // Set playback rate
+        activeVideo.playbackRate = parseFloat(speed);
+        console.log('[VIDEO] Playback speed changed to:', speed);
+    }
+    
     // Simple video source update
     window.updateVideoSource = function(videoUrl) {
         const videoA = document.getElementById('videoA');
@@ -587,6 +611,9 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             } else {
                 nextVideo.muted = true;
             }
+            
+            // Reset playback rate to normal speed
+            nextVideo.playbackRate = 1.0;
             
             // Set up ended handler before playing
             nextVideo.onended = notifyPythonVideoEnded;
