@@ -9,6 +9,11 @@ Miniconda3.exe
 #Temp files
 tempstream/
 
+
+#fish
+fish-speech/
+
+
 #FFMPEG
 tools/ffmpeg
 
