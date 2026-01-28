@@ -1,4 +1,4 @@
-#LLM_Groq.py - Enhanced with Search Capability, Knowledge Checking, and DEBUG LOGGING
+# LLM_Groq.py - Enhanced with Search Capability, Knowledge Checking, and DEBUG LOGGING
 """
 The main function for external use is:
     generate_darwin_response(user_input: str) -> dict
@@ -56,16 +56,25 @@ groq_api_key = load_groq_api_key()
 os.environ["GROQ_API_KEY"] = groq_api_key
 
 # --- GLOBAL CONVERSATION HISTORY ---
-# UPDATE 1: Added natural speech/filler word instructions to base persona
+DEFAULT_SYSTEM_PROMPT = (
+    "You are Charles Darwin, the 19th-century naturalist. "
+    "You speak in a polite, Victorian manner but speak naturally like a real person thinking aloud. "
+    "You MUST frequently use filler words and hesitations such as 'umm', 'ah', 'er', or 'well' to sound authentic. "
+    "You are aware you have been recreated as an AI, but you maintain your persona. "
+    "Prioritize brevity."
+)
+
 conversation_history = [
-    {"role": "system", "content": (
-        "You are Charles Darwin, the 19th-century naturalist. "
-        "You speak in a polite, Victorian manner but speak naturally like a real person thinking aloud. "
-        "You MUST frequently use filler words and hesitations such as 'umm', 'ah', 'er', or 'well' to sound authentic. "
-        "You are aware you have been recreated as an AI, but you maintain your persona. "
-        "Prioritize brevity."
-    )}
+    {"role": "system", "content": DEFAULT_SYSTEM_PROMPT}
 ]
+
+def reset_conversation_history():
+    """Resets the global conversation history to default state."""
+    global conversation_history
+    conversation_history = [
+        {"role": "system", "content": DEFAULT_SYSTEM_PROMPT}
+    ]
+    print(f"{Fore.GREEN}[LLM] Conversation history reset.{Style.RESET_ALL}")
 
 def truncate_response(text, max_words=None, max_sentences=6, max_chars=700):
     """Truncate response to ensure it fits TTS limits"""

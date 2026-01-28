@@ -35,15 +35,29 @@ class FloatLipsync:
         self._start_daemon()
         
     def update_reference_image(self, new_ref_path: str):
-        """Update reference image path for next generation"""
+        """Update reference image by sending command to daemon"""
         if not os.path.exists(new_ref_path):
             print(f"{Fore.RED}[SUBPROCESS] Reference image not found: {new_ref_path}{Style.RESET_ALL}")
             return False
         
-        # Update the config that will be used for next generation
-        self.config['ref_path'] = new_ref_path
-        print(f"{Fore.GREEN}[SUBPROCESS] Reference updated: {os.path.basename(new_ref_path)}{Style.RESET_ALL}")
-        return True
+        print(f"{Fore.YELLOW}[SUBPROCESS] 🖼️  Sending update_reference command to daemon...{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}[SUBPROCESS] 🖼️  New reference: {new_ref_path}{Style.RESET_ALL}")
+        
+        # Send update_reference command to daemon
+        cmd = {
+            "command": "update_reference",
+            "ref_path": new_ref_path
+        }
+        response = self._send_command(cmd)
+        
+        if response.get("status") == "ok":
+            # Also update local config for consistency
+            self.config['ref_path'] = new_ref_path
+            print(f"{Fore.GREEN}[SUBPROCESS] ✓ Reference updated in daemon: {os.path.basename(new_ref_path)}{Style.RESET_ALL}")
+            return True
+        else:
+            print(f"{Fore.RED}[SUBPROCESS] ✗ Failed to update reference: {response.get('message')}{Style.RESET_ALL}")
+            return False
 
 
     def _get_float_python_exe(self) -> Optional[str]:
@@ -247,4 +261,3 @@ class FloatLipsync:
             except Exception as e:
                 print(f"{Fore.RED}[SUBPROCESS] Error during daemon termination: {e}{Style.RESET_ALL}")
             self.proc = None
-

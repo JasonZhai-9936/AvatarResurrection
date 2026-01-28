@@ -103,6 +103,33 @@ def generate_video(audio_path, res_video_path):
         send_response({"status": "error", "message": f"Generation failed: {traceback.format_exc()}"})
 
 
+
+def update_reference_image(ref_path):
+    """Updates the preprocessed reference image to a new avatar"""
+    global LIPSYNC_SYSTEM
+    if LIPSYNC_SYSTEM is None:
+        send_response({"status": "error", "message": "System not initialized."})
+        return
+    
+    try:
+        print(f"\n[DAEMON] 🖼️🖼️🖼️  UPDATING REFERENCE IMAGE 🖼️🖼️🖼️", file=sys.stderr, flush=True)
+        print(f"[DAEMON] Old reference: {LIPSYNC_SYSTEM.opt.ref_path}", file=sys.stderr, flush=True)
+        print(f"[DAEMON] New reference: {ref_path}", file=sys.stderr, flush=True)
+        
+        # Reload and preprocess the new reference image
+        LIPSYNC_SYSTEM._preload_reference_image(ref_path)
+        
+        # Update the config path
+        LIPSYNC_SYSTEM.opt.ref_path = ref_path
+        
+        print(f"[DAEMON] ✓ Reference image updated successfully!", file=sys.stderr, flush=True)
+        send_response({"status": "ok", "type": "reference_updated", "ref_path": ref_path})
+    except Exception as e:
+        import traceback
+        error_msg = f"Reference update failed: {traceback.format_exc()}"
+        print(f"[DAEMON] ❌ {error_msg}", file=sys.stderr, flush=True)
+        send_response({"status": "error", "message": error_msg})
+
 class FloatLipSync:
     def __init__(self, project_dir: str, config: dict, FLOAT_model_class):
         """
@@ -408,6 +435,11 @@ class FloatLipSync:
         start = time.time()
         processed_audio = self.default_aud_loader(audio_path).unsqueeze(0).to(self.device)
         print(f"[DAEMON]   - Audio loading & preprocessing: {time.time() - start:.3f}s", file=sys.stderr, flush=True)
+        
+        # CRITICAL: Log which reference image we're using for generation
+        print(f"[DAEMON] 🖼️  USING REFERENCE FOR GENERATION: {self.opt.ref_path}", file=sys.stderr, flush=True)
+        print(f"[DAEMON] 🖼️  Reference tensor shape: {self.preprocessed_ref_image.shape}", file=sys.stderr, flush=True)
+        
         data = {'s': self.preprocessed_ref_image, 'a': processed_audio, 'p': None, 'e': None}
 
         print(f"[DAEMON] [2/3] MODEL INFERENCE", file=sys.stderr, flush=True)
@@ -446,6 +478,8 @@ def main_loop():
                 initialize_system(command.get("project_dir"), command.get("config"))
             elif cmd_type == "generate":
                 generate_video(command.get("audio_path"), command.get("res_video_path"))
+            elif cmd_type == "update_reference":
+                update_reference_image(command.get("ref_path"))
             elif cmd_type == "quit":
                 print("[DAEMON] Quit command received. Exiting.", file=sys.stderr, flush=True)
                 break

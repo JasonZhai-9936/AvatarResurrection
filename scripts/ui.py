@@ -4,6 +4,7 @@
 # ADDED: Microphone Buttons, Selector, and Refresh logic
 # FIXED: Microphone dropdown showing [object Object]
 # UPDATED: Smooth Crossfade with 0.25s transition and Early Trigger overlap
+# ADDED: Avatar Selection Sidebar
 
 from nicegui import ui
 import os
@@ -120,7 +121,7 @@ def settings_page():
             
             ui.button('Save Settings', on_click=save_settings).classes('w-full bg-blue-600 text-white py-3 rounded-lg mt-4 hover:bg-blue-700')
 
-def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None, available_mics=None, mic_change_callback=None, mic_refresh_callback=None, typing_callback=None):
+def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None, available_mics=None, mic_change_callback=None, mic_refresh_callback=None, typing_callback=None, available_avatars=None, avatar_select_callback=None):
     """
     Build the main UI with TYPING INDICATOR and streaming text.
     """
@@ -269,6 +270,17 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
         }
+
+        .avatar-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        .avatar-card:hover {
+            background: rgba(30, 41, 59, 0.8) !important;
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
     </style>
     ''')
     
@@ -314,13 +326,13 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 chat_log = ui.column().classes('w-full flex-grow p-4 gap-4 overflow-y-scroll rounded-lg').style('background: rgba(15, 23, 42, 0.6); max-height: 60vh; border: 1px solid rgba(59, 130, 246, 0.1);')
                 with chat_log:
                     with ui.row().classes('w-full justify-center'):
-                        ui.label('Ready to chat with Darwin').classes('text-lg text-center').style('color: #64748b;')
+                        ui.label('Ready to chat').classes('text-lg text-center').style('color: #64748b;')
 
                 # === TEXT INPUT & BUTTON ===
                 with ui.column().classes('items-center gap-4 w-full'):
                     prompt_input = ui.textarea(
-                        label='Your question for Darwin', 
-                        placeholder='Ask Charles Darwin anything...'
+                        label='Your question', 
+                        placeholder='Ask anything...'
                     ).props('outlined dark').classes('w-full').style('min-height: 120px; font-size: 16px;')
                     
                     # Add typing detection for speech reaction
@@ -340,7 +352,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                             else:
                                 ui.notify("Please enter a question first", color="warning")
 
-                        submit_btn = ui.button('Ask Darwin', on_click=submit_prompt).classes('flex-grow text-lg py-3 px-6 rounded-lg primary-button').style('font-weight: 600;')
+                        submit_btn = ui.button('Ask', on_click=submit_prompt).classes('flex-grow text-lg py-3 px-6 rounded-lg primary-button').style('font-weight: 600;')
                         
                         # MICROPHONE BUTTON
                         # Callback sends "voice_toggle" mode
@@ -361,7 +373,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                     ui.button('🗑️ Clear Chat', on_click=clear_chat).classes('w-full text-sm py-2 px-4 rounded-lg').style('background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 500;')
 
             # === RIGHT SIDEBAR ===
-            with ui.column().classes('h-full').style('width: 250px; background: rgba(15, 23, 42, 0.95); border-left: 1px solid rgba(59, 130, 246, 0.1);'):
+            with ui.column().classes('h-full scroll-y').style('width: 250px; background: rgba(15, 23, 42, 0.95); border-left: 1px solid rgba(59, 130, 246, 0.1);'):
                 with ui.row().classes('w-full items-center justify-between p-3').style('border-bottom: 1px solid rgba(59, 130, 246, 0.1);'):
                     ui.label('Menu').classes('font-semibold').style('color: #e2e8f0;')
                     ui.button(icon='menu', on_click=lambda: ui.notify('Sidebar toggle placeholder')).props('flat').style('color: #94a3b8;')
@@ -371,6 +383,23 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                     ui.button('⚙️ Settings', on_click=lambda: ui.navigate.to('/settings')).classes('w-full justify-start py-2 px-3 rounded').style('background: rgba(30, 41, 59, 0.5); color: #94a3b8;')
                     
                     ui.separator().style('background: rgba(59, 130, 246, 0.1);')
+                    
+                    # === AVATAR SELECTION ===
+                    if available_avatars:
+                        ui.label('Switch Avatar').classes('font-medium text-sm mt-2').style('color: #64748b;')
+                        
+                        with ui.column().classes('w-full gap-2'):
+                            for avatar in available_avatars:
+                                name = avatar['name']
+                                image_url = avatar['image_url']
+                                
+                                # Avatar Card
+                                with ui.row().classes('w-full items-center gap-2 p-2 rounded-lg avatar-card').style('background: rgba(30, 41, 59, 0.5);').on('click', lambda n=name: avatar_select_callback(n) if avatar_select_callback else None):
+                                    ui.image(image_url).classes('w-10 h-10 rounded-full object-cover').style('border: 1px solid rgba(59, 130, 246, 0.3);')
+                                    ui.label(name).classes('text-sm font-medium text-gray-200')
+                        
+                        ui.separator().style('background: rgba(59, 130, 246, 0.1);')
+
                     ui.label('System Status').classes('font-medium text-sm mt-4').style('color: #64748b;')
                     
                     video_status_label = ui.label('Status: Ready').classes('text-xs').style('color: #475569;')
