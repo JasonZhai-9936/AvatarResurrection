@@ -3,6 +3,7 @@
 # FIXED: window.streamText now APPENDS text for chunking
 # ADDED: Microphone Buttons, Selector, and Refresh logic
 # FIXED: Microphone dropdown showing [object Object]
+# UPDATED: Smooth Crossfade with 0.25s transition and Early Trigger overlap
 
 from nicegui import ui
 import os
@@ -122,11 +123,6 @@ def settings_page():
 def build_ui(trigger_response_callback, voice_change_callback=None, video_manager=None, available_mics=None, mic_change_callback=None, mic_refresh_callback=None, typing_callback=None):
     """
     Build the main UI with TYPING INDICATOR and streaming text.
-    Updated arguments: 
-      - available_mics: List of dicts for mic selection
-      - mic_change_callback: Function to handle mic changes
-      - mic_refresh_callback: Function to refresh mic list
-      - typing_callback: Function called when user is typing (for speech reaction)
     """
     
     ui.add_head_html('''
@@ -289,14 +285,15 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                     'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);'
                 )
                 with video_container:
+                    # UPDATED CSS TRANSITION TO 0.25s
                     ui.html('''
                     <div id="main-video-container" style="width: 100%; height: 100%; position: relative; background: #000; overflow: hidden;">
                         <video id="videoA" autoplay playsinline 
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 1; z-index: 1; transition: opacity 0.1s ease;">
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 1; z-index: 1; transition: opacity 0.25s ease;">
                             <source src="" type="video/mp4">
                         </video>
                         <video id="videoB" autoplay playsinline 
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 0; z-index: 0; transition: opacity 0.1s ease;">
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background: #000; opacity: 0; z-index: 0; transition: opacity 0.25s ease;">
                             <source src="" type="video/mp4">
                         </video>
                         <div id="unmute-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
@@ -623,8 +620,34 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             // Reset playback rate to normal speed
             nextVideo.playbackRate = 1.0;
             
-            // Set up ended handler before playing
-            nextVideo.onended = notifyPythonVideoEnded;
+            // === MODIFIED: Early Trigger Logic for Seamless Overlap (0.25s fade) ===
+            
+            // Flag to prevent double-firing
+            let nextRequested = false;
+            
+            // Remove old listeners to be safe
+            nextVideo.ontimeupdate = null;
+            nextVideo.onended = null;
+
+            nextVideo.ontimeupdate = function() {
+                // If we are within 0.5 seconds of the end, request the next clip
+                // This gives enough time for the fade to happen BEFORE the freeze
+                if (!nextRequested && this.duration > 0 && (this.currentTime >= this.duration - 0.5)) {
+                    console.log('[VIDEO] Requesting next clip early (0.5s overlap)');
+                    nextRequested = true;
+                    notifyPythonVideoEnded();
+                }
+            };
+            
+            // Fallback: If for some reason timeupdate misses it, catch it at the end
+            nextVideo.onended = function() {
+                if (!nextRequested) {
+                    console.log('[VIDEO] Catching end via onended fallback');
+                    nextRequested = true;
+                    notifyPythonVideoEnded();
+                }
+            };
+            // --------------------------------------------------------------------
             
             // Start playing the next video (while still invisible)
             nextVideo.play().then(() => {
@@ -635,7 +658,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 // The OLD video stays at 100% opacity underneath
                 nextVideo.style.opacity = '1';
                 
-                // After transition completes (150ms), clean up the old video
+                // After transition completes (300ms for 0.25s fade), clean up the old video
                 setTimeout(() => {
                     console.log('[VIDEO] Fade-in complete, cleaning up old video');
                     
@@ -656,7 +679,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                     isTransitioning = false;
                     
                     console.log('[VIDEO] Crossfade complete, now showing video', currentVideo);
-                }, 150); // 150ms = slightly longer than 0.1s CSS transition
+                }, 300); // 300ms = slightly longer than 0.25s CSS transition
                 
             }).catch(err => {
                 console.error('[VIDEO] Play failed during crossfade:', err);

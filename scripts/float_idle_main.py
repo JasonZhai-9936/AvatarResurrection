@@ -1,5 +1,6 @@
-# float_idle_complete.py - Complete working FLOAT idle system
-# Drop-in replacement - no patches needed
+# float_idle_main.py - Fixed Transitions
+# UPDATED: Uses ui.py's native crossfader (window.updateVideoSource) instead of hard cuts
+# REMOVED: add_video_compatibility_layer (conflicted with ui.py)
 
 import os
 import sys
@@ -80,11 +81,10 @@ class FloatIdleVideoManager:
     
     def play_next_float_idle_clip(self):
         """Play next FLOAT idle clip"""
-        print(f"{Fore.CYAN}[VIDEO] play_next_float_idle_clip() called{Style.RESET_ALL}")
+        # print(f"{Fore.CYAN}[VIDEO] play_next_float_idle_clip() called{Style.RESET_ALL}")
         
         if self.continuous_idle:
             video_path = self.continuous_idle.get_next_clip()
-            print(f"{Fore.CYAN}[VIDEO] Got clip path: {video_path}{Style.RESET_ALL}")
             
             if video_path:
                 self.current_mode = "float_idle"
@@ -109,24 +109,20 @@ class FloatIdleVideoManager:
     
     def on_video_ended(self):
         """Called when video ends"""
-        print(f"{Fore.BLUE}[VIDEO] Video ended, returning to idle{Style.RESET_ALL}")
+        # print(f"{Fore.BLUE}[VIDEO] Video ended, returning to idle{Style.RESET_ALL}")
         self.play_next_float_idle_clip()
     
     def _update_video(self, video_path: str):
         """Update video in UI"""
-        print(f"{Fore.MAGENTA}[VIDEO] _update_video called with: {video_path}{Style.RESET_ALL}")
-        
         # Check if file exists
         if not os.path.exists(video_path):
             print(f"{Fore.RED}[VIDEO] ERROR: Video file does not exist: {video_path}{Style.RESET_ALL}")
             return
         
-        print(f"{Fore.GREEN}[VIDEO] ✓ Video file exists{Style.RESET_ALL}")
-        
         if self.video_update_callback:
             rel_path = os.path.relpath(video_path, PROJECT_DIR).replace('\\', '/')
             video_url = f"/{rel_path}"
-            print(f"{Fore.GREEN}[VIDEO] Calling callback with URL: {video_url}{Style.RESET_ALL}")
+            # print(f"{Fore.GREEN}[VIDEO] Calling callback with URL: {video_url}{Style.RESET_ALL}")
             self.video_update_callback(video_url)
         else:
             print(f"{Fore.RED}[VIDEO] No video update callback set!{Style.RESET_ALL}")
@@ -137,7 +133,7 @@ class DarwinChatbotComplete:
     
     def __init__(self):
         print(f"\n{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}DARWIN CHATBOT - FLOAT IDLE (COMPLETE){Style.RESET_ALL}")
+        print(f"{Fore.CYAN}DARWIN CHATBOT - FLOAT IDLE (CROSSFADE ENABLED){Style.RESET_ALL}")
         print(f"{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
         
         self.voice_manager = VoiceInputManager(PROJECT_DIR)
@@ -244,8 +240,8 @@ class DarwinChatbotComplete:
         self.message_manager = ChatMessageManager(self.chat_log)
         self.video_manager.set_video_update_callback(self.queue_video_update)
         
-        # Add video compatibility layer directly in UI
-        self.add_video_compatibility_layer()
+        # --- FIXED: REMOVED COMPATIBILITY LAYER ---
+        # We now rely on ui.py's native window.updateVideoSource for crossfading
         
         # Add status
         with self.chat_log:
@@ -266,112 +262,11 @@ class DarwinChatbotComplete:
         if self.preload_complete:
             return f"✓ Ready ({self.continuous_idle.get_buffer_status()['buffer_size']} clips)"
         return f"Loading clips: {self.preload_progress}/{self.preload_total}..."
-    
-    def add_video_compatibility_layer(self):
-        """Add JavaScript to make video work with any UI setup"""
-        video_js = """
-        <script>
-        (function() {
-            console.log('[FLOAT] Initializing video system...');
-            
-            // Find video element
-            function findVideo() {
-                var ids = ['avatar-video', 'videoPlayer', 'main-video', 'video-display'];
-                for (var i = 0; i < ids.length; i++) {
-                    var v = document.getElementById(ids[i]);
-                    if (v) {
-                        console.log('[FLOAT] Found video by ID:', ids[i]);
-                        return v;
-                    }
-                }
-                var videos = document.getElementsByTagName('video');
-                if (videos.length > 0) {
-                    console.log('[FLOAT] Found video by tag, count:', videos.length);
-                    return videos[0];
-                }
-                console.error('[FLOAT] No video element found!');
-                return null;
-            }
-            
-            // Initialize after DOM loads
-            setTimeout(function() {
-                window.videoPlayer = findVideo();
-                
-                if (!window.videoPlayer) {
-                    console.error('[FLOAT] No video element found after timeout!');
-                    console.log('[FLOAT] Document body:', document.body.innerHTML.substring(0, 500));
-                    return;
-                }
-                
-                console.log('[FLOAT] Video element found:', window.videoPlayer.id || 'unnamed');
-                console.log('[FLOAT] Video src:', window.videoPlayer.src);
-                
-                // Add video ended event listener
-                window.videoPlayer.addEventListener('ended', function() {
-                    console.log('[FLOAT] Video ended, requesting next clip...');
-                    
-                    // Call API to notify Python that video ended
-                    fetch('/api/video-ended', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'}
-                    }).then(function(response) {
-                        console.log('[FLOAT] Video-ended event sent');
-                    }).catch(function(err) {
-                        console.error('[FLOAT] Failed to send video-ended:', err);
-                    });
-                });
-                
-                console.log('[FLOAT] Video ended listener added');
-                
-                // Create updateVideo function
-                window.updateVideo = function(url) {
-                    console.log('[FLOAT] ===== updateVideo CALLED =====');
-                    console.log('[FLOAT] URL:', url);
-                    
-                    if (!window.videoPlayer) {
-                        window.videoPlayer = findVideo();
-                    }
-                    
-                    if (window.videoPlayer) {
-                        console.log('[FLOAT] Setting video src to:', url);
-                        window.videoPlayer.src = url;
-                        
-                        // Enable preload for smoother transitions
-                        window.videoPlayer.preload = 'auto';
-                        
-                        window.videoPlayer.load();
-                        
-                        var playPromise = window.videoPlayer.play();
-                        if (playPromise) {
-                            playPromise.then(function() {
-                                console.log('[FLOAT] ✓ Video playing successfully');
-                            }).catch(function(err) {
-                                console.warn('[FLOAT] Autoplay blocked:', err.message);
-                                console.log('[FLOAT] Click anywhere to start video');
-                            });
-                        }
-                    } else {
-                        console.error('[FLOAT] Video player not found!');
-                    }
-                };
-                
-                console.log('[FLOAT] ✓ Video system ready');
-                console.log('[FLOAT] window.updateVideo:', typeof window.updateVideo);
-                console.log('[FLOAT] window.videoPlayer:', window.videoPlayer);
-            }, 1000);
-        })();
-        </script>
-        """
-        
-        # FIXED: Use add_body_html instead of html for script tags
-        nicegui_ui.add_body_html(video_js)
-        print(f"{Fore.GREEN}[MAIN] Video compatibility layer added{Style.RESET_ALL}")
 
     def handle_mic_select(self, device_index):
         self.voice_manager.set_input_device(device_index)
 
     def on_typing_detected(self):
-        # Simple implementation - can be expanded
         pass
 
     def handle_voice_change(self, voice_name: str):
@@ -394,7 +289,7 @@ class DarwinChatbotComplete:
             while not self.video_event_queue.empty():
                 event = self.video_event_queue.get_nowait()
                 
-                print(f"{Fore.MAGENTA}[DEBUG] Processing video event: {event['type']}{Style.RESET_ALL}")
+                # print(f"{Fore.MAGENTA}[DEBUG] Processing video event: {event['type']}{Style.RESET_ALL}")
                 
                 if event['type'] == 'update':
                     self.update_video_in_ui(event['url'])
@@ -416,13 +311,15 @@ class DarwinChatbotComplete:
             traceback.print_exc()
 
     def update_video_in_ui(self, video_url: str):
-        """Update video in UI"""
+        """Update video in UI using FLASH-FREE CROSSFADE"""
         try:
+            # --- FIXED: Use window.updateVideoSource from ui.py ---
+            # This triggers the dual-video opacity crossfade instead of a hard src swap
             js = f"""
-            if (window.updateVideo) {{
-                window.updateVideo('{video_url}');
+            if (window.updateVideoSource) {{
+                window.updateVideoSource('{video_url}');
             }} else {{
-                console.error('[FLOAT] updateVideo not ready yet');
+                console.error('[MAIN] window.updateVideoSource not found in UI!');
             }}
             """
             nicegui_ui.run_javascript(js)
@@ -592,18 +489,13 @@ class DarwinChatbotComplete:
                 js = f"if (window.updateTypingIndicator) {{ window.updateTypingIndicator('{msg_id}', {str(show).lower()}); }}"
                 nicegui_ui.run_javascript(js)
             except Exception as e:
-                # Silently ignore slot stack errors - common in background tasks
                 pass
-        
         try:
-            # Try to run immediately
             update()
         except:
-            # If that fails, queue it via timer
             try:
                 nicegui_ui.timer(0.1, update, once=True)
             except:
-                # Last resort - just skip it
                 pass
 
     def queue_clear_message_content(self, msg_id: str):
@@ -614,7 +506,6 @@ class DarwinChatbotComplete:
                 nicegui_ui.run_javascript(js)
             except:
                 pass
-        
         try:
             update()
         except:
@@ -632,7 +523,6 @@ class DarwinChatbotComplete:
                 nicegui_ui.run_javascript(js)
             except:
                 pass
-        
         try:
             update()
         except:
