@@ -76,16 +76,26 @@ class FloatIdleVideoManager:
     
     def set_video_update_callback(self, callback):
         self.video_update_callback = callback
+        print(f"{Fore.CYAN}[VIDEO] Video update callback set{Style.RESET_ALL}")
     
     def play_next_float_idle_clip(self):
         """Play next FLOAT idle clip"""
+        print(f"{Fore.CYAN}[VIDEO] play_next_float_idle_clip() called{Style.RESET_ALL}")
+        
         if self.continuous_idle:
             video_path = self.continuous_idle.get_next_clip()
+            print(f"{Fore.CYAN}[VIDEO] Got clip path: {video_path}{Style.RESET_ALL}")
+            
             if video_path:
                 self.current_mode = "float_idle"
                 self.current_video_path = video_path
                 self._update_video(video_path)
                 return True
+            else:
+                print(f"{Fore.RED}[VIDEO] No clip available from buffer{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.RED}[VIDEO] No continuous_idle system{Style.RESET_ALL}")
+        
         return False
     
     def play_lipsync_video(self, video_path: str):
@@ -104,10 +114,22 @@ class FloatIdleVideoManager:
     
     def _update_video(self, video_path: str):
         """Update video in UI"""
+        print(f"{Fore.MAGENTA}[VIDEO] _update_video called with: {video_path}{Style.RESET_ALL}")
+        
+        # Check if file exists
+        if not os.path.exists(video_path):
+            print(f"{Fore.RED}[VIDEO] ERROR: Video file does not exist: {video_path}{Style.RESET_ALL}")
+            return
+        
+        print(f"{Fore.GREEN}[VIDEO] ✓ Video file exists{Style.RESET_ALL}")
+        
         if self.video_update_callback:
             rel_path = os.path.relpath(video_path, PROJECT_DIR).replace('\\', '/')
             video_url = f"/{rel_path}"
+            print(f"{Fore.GREEN}[VIDEO] Calling callback with URL: {video_url}{Style.RESET_ALL}")
             self.video_update_callback(video_url)
+        else:
+            print(f"{Fore.RED}[VIDEO] No video update callback set!{Style.RESET_ALL}")
 
 
 class DarwinChatbotComplete:
@@ -257,10 +279,18 @@ class DarwinChatbotComplete:
                 var ids = ['avatar-video', 'videoPlayer', 'main-video', 'video-display'];
                 for (var i = 0; i < ids.length; i++) {
                     var v = document.getElementById(ids[i]);
-                    if (v) return v;
+                    if (v) {
+                        console.log('[FLOAT] Found video by ID:', ids[i]);
+                        return v;
+                    }
                 }
                 var videos = document.getElementsByTagName('video');
-                return videos.length > 0 ? videos[0] : null;
+                if (videos.length > 0) {
+                    console.log('[FLOAT] Found video by tag, count:', videos.length);
+                    return videos[0];
+                }
+                console.error('[FLOAT] No video element found!');
+                return null;
             }
             
             // Initialize after DOM loads
@@ -268,11 +298,13 @@ class DarwinChatbotComplete:
                 window.videoPlayer = findVideo();
                 
                 if (!window.videoPlayer) {
-                    console.error('[FLOAT] No video element found!');
+                    console.error('[FLOAT] No video element found after timeout!');
+                    console.log('[FLOAT] Document body:', document.body.innerHTML.substring(0, 500));
                     return;
                 }
                 
                 console.log('[FLOAT] Video element found:', window.videoPlayer.id || 'unnamed');
+                console.log('[FLOAT] Video src:', window.videoPlayer.src);
                 
                 // Add video ended event listener
                 window.videoPlayer.addEventListener('ended', function() {
@@ -293,20 +325,26 @@ class DarwinChatbotComplete:
                 
                 // Create updateVideo function
                 window.updateVideo = function(url) {
-                    console.log('[FLOAT] Update video:', url);
+                    console.log('[FLOAT] ===== updateVideo CALLED =====');
+                    console.log('[FLOAT] URL:', url);
                     
                     if (!window.videoPlayer) {
                         window.videoPlayer = findVideo();
                     }
                     
                     if (window.videoPlayer) {
+                        console.log('[FLOAT] Setting video src to:', url);
                         window.videoPlayer.src = url;
+                        
+                        // Enable preload for smoother transitions
+                        window.videoPlayer.preload = 'auto';
+                        
                         window.videoPlayer.load();
                         
                         var playPromise = window.videoPlayer.play();
                         if (playPromise) {
                             playPromise.then(function() {
-                                console.log('[FLOAT] Playing');
+                                console.log('[FLOAT] ✓ Video playing successfully');
                             }).catch(function(err) {
                                 console.warn('[FLOAT] Autoplay blocked:', err.message);
                                 console.log('[FLOAT] Click anywhere to start video');
@@ -317,7 +355,9 @@ class DarwinChatbotComplete:
                     }
                 };
                 
-                console.log('[FLOAT] Video system ready');
+                console.log('[FLOAT] ✓ Video system ready');
+                console.log('[FLOAT] window.updateVideo:', typeof window.updateVideo);
+                console.log('[FLOAT] window.videoPlayer:', window.videoPlayer);
             }, 1000);
         })();
         </script>
@@ -354,17 +394,26 @@ class DarwinChatbotComplete:
             while not self.video_event_queue.empty():
                 event = self.video_event_queue.get_nowait()
                 
+                print(f"{Fore.MAGENTA}[DEBUG] Processing video event: {event['type']}{Style.RESET_ALL}")
+                
                 if event['type'] == 'update':
                     self.update_video_in_ui(event['url'])
                 elif event['type'] == 'ended':
                     self.handle_video_ended()
                 elif event['type'] == 'start':
-                    # Start playing first clip
-                    self.video_manager.play_next_float_idle_clip()
+                    # Force start playing first clip
+                    print(f"{Fore.GREEN}[DEBUG] Start event received - playing first clip{Style.RESET_ALL}")
+                    clip_path = self.video_manager.play_next_float_idle_clip()
+                    if clip_path:
+                        print(f"{Fore.GREEN}[DEBUG] First clip started successfully{Style.RESET_ALL}")
+                    else:
+                        print(f"{Fore.RED}[DEBUG] Failed to start first clip{Style.RESET_ALL}")
         except queue.Empty:
             pass
         except Exception as e:
             print(f"{Fore.RED}[MAIN] Event error: {e}{Style.RESET_ALL}")
+            import traceback
+            traceback.print_exc()
 
     def update_video_in_ui(self, video_url: str):
         """Update video in UI"""

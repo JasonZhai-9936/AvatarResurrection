@@ -34,7 +34,17 @@ class FloatLipsync:
 
         self._start_daemon()
         
-    
+    def update_reference_image(self, new_ref_path: str):
+        """Update reference image path for next generation"""
+        if not os.path.exists(new_ref_path):
+            print(f"{Fore.RED}[SUBPROCESS] Reference image not found: {new_ref_path}{Style.RESET_ALL}")
+            return False
+        
+        # Update the config that will be used for next generation
+        self.config['ref_path'] = new_ref_path
+        print(f"{Fore.GREEN}[SUBPROCESS] Reference updated: {os.path.basename(new_ref_path)}{Style.RESET_ALL}")
+        return True
+
 
     def _get_float_python_exe(self) -> Optional[str]:
         """
