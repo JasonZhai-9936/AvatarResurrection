@@ -33,6 +33,8 @@ class FloatLipsync:
         self.lock = threading.Lock()
 
         self._start_daemon()
+        
+    
 
     def _get_float_python_exe(self) -> Optional[str]:
         """
