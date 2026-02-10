@@ -39,7 +39,7 @@ USE_FLOAT_LIPSYNC = True
 USE_PREGENERATED_RESPONSE = False 
 
 FLOAT_CONFIG = {
-    "ref_path": "assets/main2.png", 
+    "ref_path": "assets/darwin1024.png", 
     "ckpt_path": "./checkpoints/float.pth",
     "wav2vec_model_path": "./checkpoints/wav2vec2-base-960h",
     "audio2emotion_path": "./checkpoints/wav2vec-english-speech-emotion-recognition",
@@ -65,7 +65,7 @@ class DarwinChatbot:
         print(f"{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}[CONFIG] Lipsync mode: {'FLOAT' if self.use_float else 'Crossfade'}{Style.RESET_ALL}")
         
-        self.video_manager = SimplifiedVideoManager(avatar_name="Darwin")
+        self.video_manager = SimplifiedVideoManager(avatar_name="olddarwin")
         self.voice_manager = VoiceInputManager(PROJECT_DIR)
         
         self.is_recording = False
@@ -419,6 +419,10 @@ class DarwinChatbot:
                 if i == 0:
                     print(f"{Fore.GREEN}[MAIN] First chunk ready - requesting speedup of current video{Style.RESET_ALL}")
                     self.video_manager.request_speedup_for_content()
+                    # Start playing chunks if not already playing
+                    if not self.is_chunk_playing:
+                        print(f"{Fore.GREEN}[MAIN] Starting chunk playback{Style.RESET_ALL}")
+                        asyncio.create_task(self.play_next_chunk())
                 
             try:
                 self.video_manager.cleanup_old_lipsync_videos(keep_last=10)
@@ -433,27 +437,44 @@ class DarwinChatbot:
             
     async def play_next_chunk(self):
         """
-        FIXED: Removed the is_chunk_playing guard at the start
-        The flag is now reset in handle_video_ended_in_context before this is called
+        FIXED: Wait for chunks if generation is still in progress instead of playing idle
         """
-        try:
-            chunk_data = self.chunk_queue.get_nowait()
-        except asyncio.QueueEmpty:
-            if self.is_processing:
-                print(f"{Fore.YELLOW}[MAIN] Chunk queue empty, playing idle_chunk video...{Style.RESET_ALL}")
-                self.video_manager.play_next_idle_chunk_video()
-            else:
-                print(f"{Fore.GREEN}[MAIN] Chunk queue empty and producer finished. Returning to idle.{Style.RESET_ALL}")
+        # Try to get a chunk, waiting if necessary when generation is still in progress
+        chunk_data = None
+        max_wait_attempts = 30  # Wait up to 15 seconds (30 * 0.5s)
+        wait_attempt = 0
+        
+        while chunk_data is None:
+            try:
+                chunk_data = self.chunk_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                if self.is_processing:
+                    # Still generating - wait a bit and try again
+                    wait_attempt += 1
+                    if wait_attempt <= max_wait_attempts:
+                        print(f"{Fore.YELLOW}[MAIN] Waiting for next chunk... (attempt {wait_attempt}){Style.RESET_ALL}")
+                        await asyncio.sleep(0.5)
+                        continue
+                    else:
+                        # Waited too long, something's wrong
+                        print(f"{Fore.RED}[MAIN] Timeout waiting for chunk - returning to idle{Style.RESET_ALL}")
+                        self.is_chunk_playing = False
+                        self.current_response_id_playing = None
+                        self.video_manager.play_next_idle_video()
+                        return
+                else:
+                    # Generation finished and queue is empty - we're done
+                    print(f"{Fore.GREEN}[MAIN] All chunks played. Returning to idle.{Style.RESET_ALL}")
+                    self.is_chunk_playing = False
+                    self.current_response_id_playing = None
+                    self.video_manager.play_next_idle_video()
+                    return
+            except Exception as e:
+                print(f"{Fore.RED}[MAIN] Error getting from chunk queue: {e}{Style.RESET_ALL}")
                 self.is_chunk_playing = False
-                self.current_response_id_playing = None
-                self.video_manager.play_next_idle_video()
-            return
+                return
 
-        except Exception as e:
-            print(f"{Fore.RED}[MAIN] Error getting from chunk queue: {e}{Style.RESET_ALL}")
-            self.is_chunk_playing = False
-            return
-
+        # Got a chunk - play it
         self.is_chunk_playing = True
         response_id = chunk_data['id']
 
