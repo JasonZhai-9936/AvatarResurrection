@@ -23,7 +23,7 @@ SCRIPTS_DIR = os.path.join(PROJECT_DIR, "scripts")
 sys.path.insert(0, SCRIPTS_DIR)
 
 from LLM_Groq import generate_darwin_response
-from enhanced_tts_piper import generate_complete_audio
+from orpheustts import generate_complete_audio
 from simplified_video_manager import SimplifiedVideoManager
 from ui import build_ui
 from chat_message_manager import ChatMessageManager
