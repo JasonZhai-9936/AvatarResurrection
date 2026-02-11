@@ -224,7 +224,12 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             background: rgba(30, 41, 59, 0.9);
             border: 1px solid rgba(59, 130, 246, 0.2);
             padding: 12px 20px;
-            width: 85%;
+            display: inline-block !important;
+            min-width: 100px !important;
+            max-width: none !important;
+            white-space: nowrap !important;
+            word-wrap: normal !important;
+            overflow-wrap: normal !important;
         }
         
         .typing-dots {
@@ -508,6 +513,10 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             clearInterval(typingIntervals[elementId]);
         }
         
+        // Set fixed width to prevent wrapping during animation
+        element.style.minWidth = '80px';  // Wide enough for "typing..."
+        element.style.whiteSpace = 'nowrap';  // Prevent wrapping
+        
         let dots = 0;
         element.innerHTML = '<span style="color: #94a3b8;">typing</span>';
         
@@ -522,15 +531,14 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
     
     // Stop typing indicator
     window.stopTypingIndicator = function(elementId) {
+        // Stop the typing animation interval
         if (typingIntervals[elementId]) {
             clearInterval(typingIntervals[elementId]);
             delete typingIntervals[elementId];
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.innerHTML = ''; // Clear typing text
-            }
-            console.log('[TYPING] Stopped indicator for:', elementId);
+            console.log('[TYPING] Stopped typing indicator for:', elementId);
         }
+        // DON'T clear the element content - let streamText overwrite it
+        // This prevents the empty box gap between typing and streaming
     }
     
     // Video control - notify Python when video ends
@@ -732,7 +740,7 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             return;
         }
         
-        // Stop typing indicator first
+        // Stop typing indicator animation (but don't clear content yet)
         window.stopTypingIndicator(elementId);
         
         console.log('[STREAM] Starting text stream:', {
@@ -740,9 +748,14 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
             duration: durationSeconds
         });
         
-        // --- NEW LOGIC TO APPEND ---
-        // 1. Get text *already* in the bubble.
+        // --- GET EXISTING TEXT AND FILTER OUT TYPING INDICATOR ---
         let existingText = element.textContent;
+        console.log('[STREAM] Current element text:', existingText);
+        
+        // Remove typing indicator text if present
+        // Match "typing" followed by 0-3 dots (., .., ..., or no dots)
+        existingText = existingText.replace(/^typing\.{0,3}$/i, '').trim();
+        console.log('[STREAM] After filter:', existingText);
         
         // 2. Add a space if there's already text.
         if (existingText.length > 0 && existingText.slice(-1) !== ' ') {
@@ -751,14 +764,20 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
         
         // 3. The "full text" (for width calculation) is old + new
         const fullText = existingText + textToStream;
+        console.log('[STREAM] Full text will be:', fullText);
         // --- END NEW LOGIC ---
 
         // Set initial space to establish width (using the *complete* new text)
         element.textContent = fullText;
         element.style.visibility = 'hidden';
         const initialWidth = element.offsetWidth;
-        element.style.width = initialWidth + 'px';
+        // DON'T set fixed width - let it wrap naturally
+        // element.style.width = initialWidth + 'px';
         element.style.visibility = 'visible';
+        
+        // Remove the min-width and nowrap from typing indicator
+        element.style.minWidth = '';
+        element.style.whiteSpace = 'normal';  // Allow text to wrap
         
         // Set the text back to what it was *before* this chunk
         element.textContent = existingText;
@@ -789,10 +808,10 @@ def build_ui(trigger_response_callback, voice_change_callback=None, video_manage
                 
                 currentIndex++;
             } else {
-                // Streaming complete - remove cursor and width constraint
+                // Streaming complete - remove cursor
                 clearInterval(streamInterval);
                 element.classList.remove('streaming-cursor');
-                element.style.width = 'fit-content';
+                // Let bubble stay flexible (no fixed width)
                 console.log('[STREAM] Text streaming complete for this chunk');
             }
         }, delayPerChar);

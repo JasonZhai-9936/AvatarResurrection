@@ -23,7 +23,7 @@ SCRIPTS_DIR = os.path.join(PROJECT_DIR, "scripts")
 sys.path.insert(0, SCRIPTS_DIR)
 
 from LLM_Groq import generate_darwin_response
-from orpheustts import generate_complete_audio
+from enhanced_tts_piper import generate_complete_audio
 from simplified_video_manager import SimplifiedVideoManager
 from ui import build_ui
 from chat_message_manager import ChatMessageManager
@@ -341,7 +341,13 @@ class DarwinChatbot:
             self.is_chunk_playing = False
             print(f"{Fore.BLUE}[MAIN] Idle chunk ended, resetting flag and checking for next chunk{Style.RESET_ALL}")
             asyncio.create_task(self.play_next_chunk())
+        elif current_mode == "idle" and self.is_processing:
+            # If we're processing chunks and an idle video ends, check for the next chunk!
+            self.is_chunk_playing = False
+            print(f"{Fore.BLUE}[MAIN] Idle video ended during processing, checking for next chunk{Style.RESET_ALL}")
+            asyncio.create_task(self.play_next_chunk())
         else:
+            # Normal idle video ended - play another idle
             self.video_manager.on_video_ended()
 
     async def process_llm_response(self, user_input: str):
@@ -362,8 +368,8 @@ class DarwinChatbot:
 
     async def generate_response_chunks(self, user_input: str, response_id: str):
         try:
-            typing_id = f"{response_id}_typing"
-            self.message_manager.add_typing_indicator(typing_id)
+            # Start typing animation in the bot message bubble itself
+            self.queue_typing_indicator(response_id, True)
             
             if self.use_pregenerated:
                 self.video_manager.queue_pregenerated_response()
@@ -381,7 +387,8 @@ class DarwinChatbot:
                 response_text = str(response_data)
                 emotion = 'neutral'
             
-            self.queue_typing_indicator(typing_id, False)
+            # DON'T stop typing animation here - let streamText do it when first chunk is ready
+            # This keeps the animation running until text actually starts
             
             sentences = self._split_into_sentences(response_text)
             print(f"{Fore.YELLOW}[MAIN] Split into {len(sentences)} sentences{Style.RESET_ALL}")
@@ -437,52 +444,40 @@ class DarwinChatbot:
             
     async def play_next_chunk(self):
         """
-        FIXED: Wait for chunks if generation is still in progress instead of playing idle
+        Play next chunk from queue, or idle video if waiting for generation
         """
-        # Try to get a chunk, waiting if necessary when generation is still in progress
-        chunk_data = None
-        max_wait_attempts = 30  # Wait up to 15 seconds (30 * 0.5s)
-        wait_attempt = 0
-        
-        while chunk_data is None:
-            try:
-                chunk_data = self.chunk_queue.get_nowait()
-            except asyncio.QueueEmpty:
-                if self.is_processing:
-                    # Still generating - wait a bit and try again
-                    wait_attempt += 1
-                    if wait_attempt <= max_wait_attempts:
-                        print(f"{Fore.YELLOW}[MAIN] Waiting for next chunk... (attempt {wait_attempt}){Style.RESET_ALL}")
-                        await asyncio.sleep(0.5)
-                        continue
-                    else:
-                        # Waited too long, something's wrong
-                        print(f"{Fore.RED}[MAIN] Timeout waiting for chunk - returning to idle{Style.RESET_ALL}")
-                        self.is_chunk_playing = False
-                        self.current_response_id_playing = None
-                        self.video_manager.play_next_idle_video()
-                        return
-                else:
-                    # Generation finished and queue is empty - we're done
-                    print(f"{Fore.GREEN}[MAIN] All chunks played. Returning to idle.{Style.RESET_ALL}")
-                    self.is_chunk_playing = False
-                    self.current_response_id_playing = None
-                    self.video_manager.play_next_idle_video()
-                    return
-            except Exception as e:
-                print(f"{Fore.RED}[MAIN] Error getting from chunk queue: {e}{Style.RESET_ALL}")
+        # Try to get a chunk immediately
+        try:
+            chunk_data = self.chunk_queue.get_nowait()
+        except asyncio.QueueEmpty:
+            if self.is_processing:
+                # Still generating - play idle video while waiting
+                print(f"{Fore.YELLOW}[MAIN] No chunk ready yet, playing idle while generating...{Style.RESET_ALL}")
                 self.is_chunk_playing = False
+                self.video_manager.play_next_idle_video()
                 return
+            else:
+                # Generation finished and queue is empty - we're done
+                print(f"{Fore.GREEN}[MAIN] All chunks played. Returning to idle.{Style.RESET_ALL}")
+                self.is_chunk_playing = False
+                self.current_response_id_playing = None
+                self.video_manager.play_next_idle_video()
+                return
+        except Exception as e:
+            print(f"{Fore.RED}[MAIN] Error getting from chunk queue: {e}{Style.RESET_ALL}")
+            self.is_chunk_playing = False
+            return
 
         # Got a chunk - play it
         self.is_chunk_playing = True
         response_id = chunk_data['id']
 
         try:
+            # Only clear typing indicator for the VERY FIRST chunk
             if response_id != self.current_response_id_playing:
                 self.current_response_id_playing = response_id
-                self.queue_typing_indicator(response_id, False)
-                self.queue_clear_message_content(response_id)
+                # Don't clear typing here - let streamText do it
+                # This avoids the empty box gap
             
             self.video_manager.play_lipsync_video(chunk_data['video_path'])
             self.queue_text_stream(response_id, chunk_data['text'], chunk_data['duration'])
